@@ -4,8 +4,8 @@
 
 set -euo pipefail
 
-# Ruta del entorno virtual
-VENV_DIR="$HOME/entornos/Gestion_Suministros"
+# Ruta del entorno virtual (CORREGIDO)
+VENV_DIR="$HOME/Desarrollo/Gestion_Suministros/venv"
 
 # Comprobación: ¿estamos en el proyecto correcto?
 if [[ ! -f "main.py" ]]; then
@@ -18,6 +18,7 @@ fi
 if [[ ! -f "$VENV_DIR/bin/activate" ]]; then
   echo "ERROR: No se encuentra el entorno virtual en:"
   echo "       $VENV_DIR"
+  echo "       Crea uno con: python3 -m venv venv"
   exit 1
 fi
 
@@ -28,3 +29,4 @@ echo "🐍 Python activo: $(which python)"
 
 echo "🚀 Lanzando Gestion_Suministros..."
 exec python3 main.py
+
