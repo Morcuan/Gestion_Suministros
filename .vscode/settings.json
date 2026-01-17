@@ -1,22 +1,20 @@
 {
-    "python.defaultInterpreterPath": "/home/antoniom/entornos/Gestion_Suministros/bin/python3.13",
-
+    // --- Intérprete Python del proyecto ---
+    "python.defaultInterpreterPath": "venv/bin/python",
+    // --- Ruff: linter moderno ---
+    "ruff.enable": true,
+    // --- Formateo automático ---
     "editor.formatOnSave": true,
-
-    "ruff.lint.enable": true,
-    "ruff.lint.run": "onSave",
-
-    "ruff.format.enable": true,
-    "ruff.format.run": "onSave",
-
-    "python.linting.enabled": false,
-    "python.formatting.provider": "none",
-
-    "indentRainbow.errorColor": "rgba(255,0,0,0.3)",
-    "indentRainbow.colors": [
-        "rgba(150,150,150,0.1)",
-        "rgba(150,150,150,0.2)",
-        "rgba(150,150,150,0.3)",
-        "rgba(150,150,150,0.4)"
-    ]
+    // --- Formateador por defecto: Black ---
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    // --- Organizar imports con isort (integrado en Ruff) ---
+    "editor.codeActionsOnSave": {
+        "source.organizeImports": "explicit"
+    },
+    // --- Ajustes visuales útiles ---
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true,
+    "editor.renderWhitespace": "boundary",
+    "editor.tabSize": 4,
+    "editor.detectIndentation": false
 }

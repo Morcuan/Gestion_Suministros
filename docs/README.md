@@ -1,6 +1,6 @@
 
 
-# 📘 GESTION_SUMINIESTROS 
+# 📘 GESTION_SUMINISTROS 
 
 Aplicación de escritorio desarrollada en **Python + PySide6** para la gestión integral de contratos, consumos, facturación y comparativas de suministros.  
 El proyecto está diseñado con un flujo de trabajo profesional, un entorno virtual aislado y scripts automatizados que facilitan el desarrollo diario.

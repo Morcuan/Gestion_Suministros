@@ -1,11 +1,22 @@
 #!/bin/bash
 # nivelacion.sh - Guarda automáticamente todos los cambios en la rama 'desarrollo'
-# ⚠️ Ejecutar con: source nivelacion.sh
-
-# Ir al proyecto
-cd ~/Desarrollo/Gestion_Suministros || return
+# ⚠️ Ejecutar SIEMPRE con: source nivelacion.sh
 
 echo "📁 Nivelando proyecto Gestion_Suministros"
+
+# Ir al proyecto
+cd ~/Desarrollo/Gestion_Suministros || {
+    echo "❌ No se pudo acceder al directorio del proyecto."
+    return
+}
+
+# Asegurar que estamos en la rama correcta
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+if [ "$BRANCH" != "desarrollo" ]; then
+    echo "⚠️ Estabas en la rama '$BRANCH'. Cambiando a 'desarrollo'..."
+    git checkout desarrollo
+fi
+
 echo "🔍 Estado actual:"
 git status
 
@@ -18,21 +29,30 @@ fi
 echo "📝 Añadiendo todos los cambios..."
 git add -A
 
-# Crear mensaje de commit limpio y en una sola línea
-COMMIT_MSG="Elininacion de cualquier referencia a OCU_SOLAR en los modulos" \
-        #-m "Hacer que nivelacion.sh cierre el entorno" \
-        #-m "Prueba de commit multilinea" \
-        -m "$(date '+%Y-%m-%d %H:%M')"
+# Crear mensaje de commit limpio
+COMMIT_MSG="Nivelación automática $(date '+%Y-%m-%d %H:%M')"
 
 echo "💾 Realizando commit: $COMMIT_MSG"
 git commit -m "$COMMIT_MSG"
+
+# Comprobar remoto
+if ! git remote | grep -q origin; then
+    echo "❌ No existe el remoto 'origin'. No se puede hacer push."
+    return
+fi
 
 echo "⬆️ Enviando cambios a la rama 'desarrollo'..."
 git push origin desarrollo
 
 echo "✔️ Nivelación completada."
 
-echo "🔻 Cerrando entorno virtual..."
-deactivate || true
-echo "🟤 Entorno virtual desactivado. Sesión finalizada."
+# Cerrar entorno virtual si está activo
+if [ -n "$VIRTUAL_ENV" ]; then
+    echo "🔻 Cerrando entorno virtual..."
+    deactivate || true
+    echo "🟤 Entorno virtual desactivado. Sesión finalizada."
+else
+    echo "ℹ️ No había entorno virtual activo."
+fi
+
 

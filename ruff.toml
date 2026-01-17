@@ -5,7 +5,7 @@ line-length = 88
 indent-width = 4
 
 # Versión objetivo de Python
-target-version = "py311"
+target-version = "py313"
 
 # Carpetas excluidas
 exclude = [
