@@ -1,0 +1,35 @@
+# Longitud máxima de línea
+line-length = 88
+
+# Ancho de indentación
+indent-width = 4
+
+# Versión objetivo de Python
+target-version = "py311"
+
+# Carpetas excluidas
+exclude = [
+    ".git",
+    "__pycache__",
+    "venv",
+]
+
+[lint]
+# Reglas activas
+select = ["E", "F", "W", "I", "UP", "B", "C90"]
+
+# Ignorar reglas que molestan demasiado
+ignore = ["E501"]
+
+# Complejidad ciclomática
+[mccabe]
+max-complexity = 10
+
+[format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+
+[lint.isort]
+combine-as-imports = true
+force-single-line = false

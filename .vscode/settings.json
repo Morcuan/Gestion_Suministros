@@ -1,0 +1,22 @@
+{
+    "python.defaultInterpreterPath": "/home/antoniom/entornos/Gestion_Suministros/bin/python3.13",
+
+    "editor.formatOnSave": true,
+
+    "ruff.lint.enable": true,
+    "ruff.lint.run": "onSave",
+
+    "ruff.format.enable": true,
+    "ruff.format.run": "onSave",
+
+    "python.linting.enabled": false,
+    "python.formatting.provider": "none",
+
+    "indentRainbow.errorColor": "rgba(255,0,0,0.3)",
+    "indentRainbow.colors": [
+        "rgba(150,150,150,0.1)",
+        "rgba(150,150,150,0.2)",
+        "rgba(150,150,150,0.3)",
+        "rgba(150,150,150,0.4)"
+    ]
+}
