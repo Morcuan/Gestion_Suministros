@@ -7,19 +7,13 @@
 # Fecha: 2025-12-01                                    #
 # ------------------------------------------------------#
 
-from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
-    QLineEdit,
-    QPushButton,
-)
 from PySide6.QtCore import Signal
+from PySide6.QtWidgets import QHBoxLayout, QLineEdit, QPushButton, QVBoxLayout, QWidget
 
-from contrato_consulta import ConsultaContratoWidget
-from contrato_nuevo import NuevoContratoWidget
-from contrato_modificacion import ContratoModificacion
 from contrato_baja import ContratoBaja
+from contrato_consulta import ConsultaContratoWidget
+from contrato_modificacion import ContratoModificacion
+from contrato_nuevo import NuevoContratoWidget
 
 
 # ---------------------------------------------------------

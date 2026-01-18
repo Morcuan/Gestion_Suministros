@@ -7,7 +7,6 @@
 
 from PySide6.QtGui import QColor
 
-
 # -------------------------------------------------------------
 # Mapa centralizado de colores por estado
 # -------------------------------------------------------------

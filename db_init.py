@@ -5,9 +5,10 @@
 # Fecha: 2025-12-01                                    #
 # ------------------------------------------------------#
 
-import sqlite3
-import pandas as pd
 import os
+import sqlite3
+
+import pandas as pd
 
 # Ruta absoluta a la base de datos
 DB_PATH = os.path.join(os.path.dirname(__file__), "data", "almacen.db")

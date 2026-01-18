@@ -5,35 +5,33 @@
 # Fecha: 2025-12                                      #
 # ----------------------------------------------------#
 
+from PySide6.QtCore import QRegularExpression, Qt, Signal
+from PySide6.QtGui import QFont, QRegularExpressionValidator
 from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
-    QFormLayout,
-    QLineEdit,
-    QPushButton,
-    QHBoxLayout,
-    QMessageBox,
     QCheckBox,
     QComboBox,
+    QFormLayout,
+    QHBoxLayout,
     QLabel,
+    QLineEdit,
     QListView,
+    QMessageBox,
+    QPushButton,
+    QVBoxLayout,
 )
-from PySide6.QtGui import QFont, QRegularExpressionValidator
-from PySide6.QtCore import QRegularExpression, Qt, Signal
 
 from aux_database import (
-    listar_companias,
-    insertar_contrato,
     actualizar_contrato,
-    obtener_poblaciones_por_cp,
     construir_tupla_contrato,
     construir_tupla_contrato_edicion,
     existe_contrato,
+    insertar_contrato,
+    listar_companias,
+    obtener_poblaciones_por_cp,
 )
-
 from aux_fechas import a_ddmm, a_iso
-from aux_validacion import validar_rango
 from aux_presentacion import estilo_boton
+from aux_validacion import validar_rango
 from base_formulario import BaseFormulario
 
 

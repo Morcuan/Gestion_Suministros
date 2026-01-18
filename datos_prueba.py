@@ -2,7 +2,6 @@
 # cpostales y companias que van en db_init
 
 from modules_backup.utilidades_bd import get_connection
-import sqlite3
 
 conn = get_connection()
 cur = conn.cursor()
@@ -18,7 +17,7 @@ INSERT INTO contratos (
     importe_consumo_punta, importe_consumo_llano, importe_consumo_valle,
     vertido, importe_excedentes, importe_bono_social, importe_alquiler_contador,
     importe_asistente_smart, impuesto_electricidad, iva
-    ) VALUES 
+    ) VALUES
     (25, 45638, 'C-2025-001', '2025-01-01', '2025-12-31',
     4.4, 0.086301, 4, 0.013014,
     0.172576, 0.119892, 0.087904,
@@ -61,17 +60,17 @@ INSERT INTO facturas (
     bateria_virtual,
     total_factura,
     pendiente_consumos
-) VALUES 
-    (1, 'FAC-2025-001', 30, '2025-11-27', 120.45,                    
+) VALUES
+    (1, 'FAC-2025-001', 30, '2025-11-27', 120.45,
     15.20, 8.75, 21.00, -5.50, 160.90, TRUE),
 
-    (1, 'FAC-2025-002', 30, '2025-10-27', 120.45,                    
+    (1, 'FAC-2025-002', 30, '2025-10-27', 120.45,
     15.20, 8.75, 21.00, -10.50, 144.90, FALSE),
 
-    (2, 'FAC-2025-001', 30, '2025-11-27', 120.45,                    
+    (2, 'FAC-2025-001', 30, '2025-11-27', 120.45,
     15.20, 8.75, 21.00, -7.50, 160.90, FALSE),
 
-    (3, 'FAC-2024-001', 30, '2024-11-27', 120.45,                    
+    (3, 'FAC-2024-001', 30, '2024-11-27', 120.45,
     15.20, 8.75, 21.00, -0.50, 160.90, TRUE);
 """
 )

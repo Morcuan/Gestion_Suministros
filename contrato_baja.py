@@ -5,20 +5,17 @@
 # Fecha: 2025-12-01                         #
 # ------------------------------------------#
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QDialog,
-    QVBoxLayout,
     QHBoxLayout,
     QLabel,
-    QPushButton,
     QMessageBox,
+    QPushButton,
+    QVBoxLayout,
 )
-from PySide6.QtCore import Qt
 
-from aux_database import (
-    anulacion_contrato,
-    obtener_contrato_por_numero,
-)
+from aux_database import anulacion_contrato, obtener_contrato_por_numero
 
 
 # ---------------------------------------------------------

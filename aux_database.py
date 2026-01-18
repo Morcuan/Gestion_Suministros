@@ -5,11 +5,10 @@
 # Fecha: 2025-12-01                                  #
 # --------------------------------------------------#
 
-import os
-from datetime import datetime, date
+from datetime import date, datetime
 
-from base_bd import BaseBD
 from aux_fechas import a_iso, hoy_iso
+from base_bd import BaseBD
 
 # Instancia centralizada de la BD
 bd = BaseBD("data/almacen.db")

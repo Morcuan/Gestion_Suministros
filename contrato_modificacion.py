@@ -7,16 +7,16 @@
 
 from PySide6.QtWidgets import QMessageBox
 
-from contrato_nuevo import NuevoContratoWidget
 from aux_database import (
-    obtener_contrato_para_edicion,
     actualizar_contrato,
     modificacion_contrato,
-    rehabilitacion_contrato,
+    obtener_contrato_para_edicion,
     obtener_contrato_por_numero,
+    rehabilitacion_contrato,
 )
 from aux_fechas import a_iso
 from base_formulario import BaseFormulario
+from contrato_nuevo import NuevoContratoWidget
 
 
 class ContratoModificacion(BaseFormulario):

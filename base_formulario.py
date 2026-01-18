@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QWidget, QMessageBox
+from PySide6.QtWidgets import QMessageBox, QWidget
 
 
 class BaseFormulario(QWidget):

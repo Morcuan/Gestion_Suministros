@@ -8,26 +8,24 @@
 
 import sys
 
+from PySide6.QtGui import QAction, QColor, QFont, QPalette
 from PySide6.QtWidgets import (
     QApplication,
-    QMainWindow,
-    QWidget,
-    QVBoxLayout,
-    QLabel,
     QHBoxLayout,
+    QLabel,
+    QMainWindow,
     QMessageBox,
+    QVBoxLayout,
+    QWidget,
 )
-from PySide6.QtGui import QFont, QPalette, QColor, QAction
-from PySide6.QtCore import Qt
 
+import config
+import paletas
+from base_bd import BaseBD
+from comparativas import ComparativasWidget
+from consumos import ConsumosWidget
 from contrato_main import ContratoMain
 from facturas import FacturasWidget
-from consumos import ConsumosWidget
-from comparativas import ComparativasWidget
-from base_bd import BaseBD
-
-import paletas
-import config
 
 
 class MainWindow(QMainWindow):

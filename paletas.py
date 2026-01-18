@@ -6,7 +6,7 @@
 # Fecha: 2025-12-01                                    #
 # ------------------------------------------------------#
 
-from PySide6.QtGui import QPalette, QColor
+from PySide6.QtGui import QColor, QPalette
 
 
 # ---------------------------------------------------------

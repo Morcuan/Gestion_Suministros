@@ -6,8 +6,8 @@
 # -----------------------------------#
 
 # Importaciones necesarias de PySide6
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel
 from PySide6.QtGui import QFont
+from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
 
 # Definicion del widget ConsumosWidget

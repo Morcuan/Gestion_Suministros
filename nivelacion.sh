@@ -30,7 +30,7 @@ echo "📝 Añadiendo todos los cambios..."
 git add -A
 
 # Crear mensaje de commit limpio
-COMMIT_MSG="Nivelación automática, nivelacion definitiva del proyecto en LMDE 7 $(date '+%Y-%m-%d %H:%M')"
+COMMIT_MSG="Nivelación automática, Organizacion de los import en modulos. $(date '+%Y-%m-%d %H:%M')"
 
 echo "💾 Realizando commit: $COMMIT_MSG"
 git commit -m "$COMMIT_MSG"

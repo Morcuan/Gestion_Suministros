@@ -24,7 +24,7 @@ def cargar_config():
         return CONFIG_DEFAULT.copy()
 
     try:
-        with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+        with open(CONFIG_FILE, encoding="utf-8") as f:
             return json.load(f)
     except Exception:
         return CONFIG_DEFAULT.copy()

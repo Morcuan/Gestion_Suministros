@@ -6,30 +6,25 @@
 # Fecha: 2025-12-01                          #
 # --------------------------------------------#
 
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
+    QDialog,
+    QGroupBox,
     QHBoxLayout,
+    QHeaderView,
     QLabel,
     QPushButton,
+    QScrollArea,
     QTableWidget,
     QTableWidgetItem,
-    QDialog,
-    QScrollArea,
-    QMessageBox,
-    QGroupBox,
-    QHeaderView,
+    QVBoxLayout,
+    QWidget,
 )
-from PySide6.QtGui import QFont
-from PySide6.QtCore import Qt
 
-from aux_database import (
-    listar_contratos,
-    obtener_contrato_por_numero,
-    parse_fecha,
-)
+from aux_database import listar_contratos, obtener_contrato_por_numero
 from aux_fechas import a_ddmm
-from aux_presentacion import color_estado, estilo_boton, color_fila_estado
+from aux_presentacion import color_estado, color_fila_estado, estilo_boton
 from base_formulario import BaseFormulario
 from contrato_baja import ConfirmacionBajaDialog
 
