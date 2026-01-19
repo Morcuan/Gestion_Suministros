@@ -8,11 +8,19 @@
 # ------------------------------------------------------#
 
 from PySide6.QtCore import Signal
-from PySide6.QtWidgets import QHBoxLayout, QLineEdit, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QHBoxLayout,
+    QLineEdit,
+    QMessageBox,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
 
+# Import correcto para edición
+from aux_database import obtener_contrato_para_edicion
 from contrato_baja import ContratoBaja
 from contrato_consulta import ConsultaContratoWidget
-from contrato_modificacion import ContratoModificacion
 from contrato_nuevo import NuevoContratoWidget
 
 
@@ -81,9 +89,20 @@ class ContratoMain:
 
     # -----------------------------------------------------
     def _abrir_edicion(self, numero_contrato):
-        # ContratoModificacion(numero_contrato, parent)
-        self.modificacion = ContratoModificacion(numero_contrato, None)
-        self.modificacion.show()
+        # Recuperar datos en el formato correcto para edición
+        datos = obtener_contrato_para_edicion(numero_contrato)
+
+        if not datos:
+            QMessageBox.warning(
+                None,
+                "Contrato no encontrado",
+                f"No existe el contrato {numero_contrato}.",
+            )
+            return
+
+        # Abrir ventana moderna en modo edición
+        self.modificacion = NuevoContratoWidget(modo="edicion", datos=datos, bd=self.bd)
+        self.modificacion.abrir()
 
     # -----------------------------------------------------
     def abrir_baja(self):

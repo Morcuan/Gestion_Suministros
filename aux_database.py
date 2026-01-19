@@ -273,7 +273,7 @@ def construir_tupla_contrato(datos: dict) -> tuple:
         datos.get("id_postal"),
         datos.get("numero"),
         datos.get("fecha_inicio"),
-        datos.get("fecha_fin"),
+        datos.get("fecha_final"),
         datos.get("potencia_punta"),
         datos.get("importe_potencia_punta"),
         datos.get("potencia_valle"),

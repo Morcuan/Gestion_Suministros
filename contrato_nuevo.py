@@ -213,8 +213,11 @@ class NuevoContratoWidget(BaseFormulario):
                 return
 
             # Validar fechas
-            fecha_inicio_iso = a_iso(self.fecha_inicio_edit.text())
-            fecha_final_iso = a_iso(self.fecha_final_edit.text())
+            fecha_inicio_raw = self.fecha_inicio_edit.text().strip()
+            fecha_final_raw = self.fecha_final_edit.text().strip()
+
+            fecha_inicio_iso = a_iso(fecha_inicio_raw)
+            fecha_final_iso = a_iso(fecha_final_raw)
 
             if not fecha_inicio_iso:
                 self.marcar_error(self.fecha_inicio_edit)
@@ -275,7 +278,11 @@ class NuevoContratoWidget(BaseFormulario):
             # Recoger datos
             datos = self.recoger_datos()
             datos["fecha_inicio"] = fecha_inicio_iso
-            datos["fecha_fin"] = fecha_final_iso
+            datos["fecha_final"] = fecha_final_iso
+
+            print("DEBUG fecha_final_edit.text():", repr(self.fecha_final_edit.text()))
+            print("DEBUG fecha_final_iso:", repr(fecha_final_iso))
+            print("DEBUG datos['fecha_final']:", repr(datos["fecha_final"]))
 
             # Guardar según modo
             if self.modo == "nuevo":
@@ -310,7 +317,7 @@ class NuevoContratoWidget(BaseFormulario):
             "poblacion": t[2],
             "numero": t[3],
             "fecha_inicio": t[4],
-            "fecha_fin": t[5],
+            "fecha_final": t[5],
             "potencia_punta": t[6],
             "importe_potencia_punta": t[7],
             "potencia_valle": t[8],
@@ -341,7 +348,7 @@ class NuevoContratoWidget(BaseFormulario):
 
         self.numero_contrato_edit.setText(d.get("numero", ""))
         self.fecha_inicio_edit.setText(a_ddmm(d.get("fecha_inicio", "")))
-        self.fecha_final_edit.setText(a_ddmm(d.get("fecha_fin", "")))
+        self.fecha_final_edit.setText(a_ddmm(d.get("fecha_final", "")))
 
         self.potencia_punta_edit.setText(str(d.get("potencia_punta", "")))
         self.importe_potencia_punta_edit.setText(
@@ -451,3 +458,9 @@ class NuevoContratoWidget(BaseFormulario):
         self.importe_asistente_smart_edit.clear()
         self.impuesto_electricidad_edit.clear()
         self.iva_edit.clear()
+
+    # ---------------------------------------------------------
+    # MÉTODO ABRIR (compatibilidad con el menú)
+    # ---------------------------------------------------------
+    def abrir(self):
+        self.show()

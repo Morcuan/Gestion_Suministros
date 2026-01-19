@@ -30,7 +30,7 @@ echo "📝 Añadiendo todos los cambios..."
 git add -A
 
 # Crear mensaje de commit limpio
-COMMIT_MSG="Nivelación automática, Organizacion de los import en modulos. $(date '+%Y-%m-%d %H:%M')"
+COMMIT_MSG="Nivelación manual, Solucionados los problemas de modificacion de contrato (pantalla erronea y problemas en el update) en version directa. $(date '+%Y-%m-%d %H:%M')"
 
 echo "💾 Realizando commit: $COMMIT_MSG"
 git commit -m "$COMMIT_MSG"
