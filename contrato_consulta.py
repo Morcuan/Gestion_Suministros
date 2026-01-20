@@ -61,8 +61,9 @@ def crear_grupo(titulo, campos):
 # Ventana principal de consulta
 # ---------------------------------------------------------
 class ConsultaContratoWidget(BaseFormulario):
-    def __init__(self, parent=None):
+    def __init__(self, contrato_main=None, parent=None):
         super().__init__(parent)
+        self.contrato_main = contrato_main
 
         self.setAttribute(Qt.WA_DeleteOnClose, True)
         self.setWindowTitle("Lista de contratos")
@@ -168,7 +169,10 @@ class ConsultaContratoWidget(BaseFormulario):
             )
             return
 
-        detalles = DetallesContratoWidget(contrato_completo, self)
+        detalles = DetallesContratoWidget(
+            contrato_completo, parent=self, contrato_main=self.contrato_main
+        )
+
         detalles.exec()
 
     # ---------------------------------------------------------
@@ -184,10 +188,10 @@ class ConsultaContratoWidget(BaseFormulario):
 # Ventana de detalles del contrato
 # ---------------------------------------------------------
 class DetallesContratoWidget(QDialog):
-    def __init__(self, contrato, parent=None):
+    def __init__(self, contrato, parent=None, contrato_main=None):
         super().__init__(parent)
+        self.contrato_main = contrato_main
 
-        self.contrato = contrato
         self.setWindowTitle(f"Comercializadora - {contrato[1]}")
         self.resize(550, 900)
 
@@ -314,13 +318,10 @@ class DetallesContratoWidget(QDialog):
         )
 
     # ---------------------------------------------------------
-    # Abrir modificación
+    # Abrir modificación (misma vía que el menú, sin pedir número)
     # ---------------------------------------------------------
     def abrir_modificacion(self, numero_contrato):
-        from contrato_modificacion import ContratoModificacion
-
-        ventana_modificacion = ContratoModificacion(numero_contrato, self)
-        ventana_modificacion.show()
+        self.contrato_main._abrir_edicion(numero_contrato)
         self.close()
 
     # ---------------------------------------------------------

@@ -77,8 +77,13 @@ class ContratoMain:
         self.nuevo.abrir()
 
     # -----------------------------------------------------
+    # def abrir_consulta(self):
+    #    self.consulta = ConsultaContratoWidget(contrato_main=self)
+
+    #    self.consulta.show()
+
     def abrir_consulta(self):
-        self.consulta = ConsultaContratoWidget()
+        self.consulta = ConsultaContratoWidget(contrato_main=self)
         self.consulta.show()
 
     # -----------------------------------------------------
