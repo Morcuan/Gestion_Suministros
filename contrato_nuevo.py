@@ -280,10 +280,6 @@ class NuevoContratoWidget(BaseFormulario):
             datos["fecha_inicio"] = fecha_inicio_iso
             datos["fecha_final"] = fecha_final_iso
 
-            print("DEBUG fecha_final_edit.text():", repr(self.fecha_final_edit.text()))
-            print("DEBUG fecha_final_iso:", repr(fecha_final_iso))
-            print("DEBUG datos['fecha_final']:", repr(datos["fecha_final"]))
-
             # Guardar según modo
             if self.modo == "nuevo":
                 tupla = construir_tupla_contrato(datos)
