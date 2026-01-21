@@ -111,4 +111,10 @@ class ContratoMain:
 
     # -----------------------------------------------------
     def abrir_baja(self):
-        self.baja.abrir()
+        self.seleccion = SeleccionContratoWindow()
+        self.seleccion.contrato_seleccionado.connect(self._abrir_baja_real)
+        self.seleccion.show()
+
+    def _abrir_baja_real(self, numero_contrato):
+        self.baja.parent = None  # o self.consulta si quieres refrescar lista
+        self.baja.abrir(numero_contrato)

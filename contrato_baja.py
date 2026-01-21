@@ -27,7 +27,7 @@ def validar_estado_para_baja(parent, numero_contrato):
     Reglas:
       - No se puede anular si ya está ANULADO
       - No se puede anular si está CADUCADO
-      - Se puede anular si está ACTIVO o PENDIENTE
+      - Se puede anular si está ACTIVO, PENDIENTE o REHABILITADO
     """
 
     contrato = obtener_contrato_por_numero(numero_contrato)
@@ -52,7 +52,7 @@ def validar_estado_para_baja(parent, numero_contrato):
         )
         return False
 
-    if estado_actual in ("ACTIVO", "PENDIENTE"):
+    if estado_actual in ("ACTIVO", "PENDIENTE", "REHABILITADO"):
         return True
 
     QMessageBox.warning(
@@ -139,7 +139,35 @@ class ContratoBaja:
         self.parent = parent
 
     def abrir(self, numero_contrato=None):
-        if numero_contrato:
-            print(f"Abrir ventana: Bajas de Contratos (numero: {numero_contrato})")
-        else:
-            print("Abrir ventana: Bajas de Contratos (sin numero capturado)")
+        parent = self.parent
+
+        # Si no viene número (no debería ocurrir desde menú), avisar
+        if not numero_contrato:
+            QMessageBox.warning(
+                parent, "Aviso", "Debe introducir un número de contrato."
+            )
+            return
+
+        # Validar existencia del contrato
+        contrato = obtener_contrato_por_numero(numero_contrato)
+        if not contrato:
+            QMessageBox.critical(
+                parent,
+                "Error",
+                f"El contrato {numero_contrato} no existe en la base de datos.",
+            )
+            return
+
+        # Estado actual desde la BD
+        estado_actual = contrato[6].strip()
+
+        # Usar el flujo oficial de anulación (diálogo centralizado)
+        dialogo = ConfirmacionBajaDialog(numero_contrato, estado_actual, parent)
+
+        if dialogo.exec() == QDialog.Accepted:
+            # Si el parent es una ventana con lista, refrescarla
+            try:
+                if hasattr(parent, "cargar_contratos"):
+                    parent.cargar_contratos()
+            except Exception:
+                pass
