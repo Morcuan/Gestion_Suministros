@@ -35,30 +35,6 @@ def parse_fecha(fecha):
     raise ValueError(f"Formato de fecha no reconocido: {fecha}")
 
 
-def calcular_estado(fecha_inicial, fecha_final, anulado):
-    """
-    Determina el estado del contrato según fechas y estado de anulación.
-    """
-    hoy = date.today()
-
-    fecha_inicial = parse_fecha(fecha_inicial)
-    fecha_final = parse_fecha(fecha_final)
-
-    if anulado and str(anulado).upper() == "ANULADO":
-        return "ANULADO"
-
-    if fecha_inicial <= hoy <= fecha_final:
-        return "ACTIVO"
-
-    if hoy > fecha_final:
-        return "CADUCADO"
-
-    if hoy < fecha_inicial:
-        return "PENDIENTE"
-
-    return "DESCONOCIDO"
-
-
 # -------------------------------------------------------------#
 # Funciones de conexión y pruebas                              #
 # -------------------------------------------------------------#
@@ -299,6 +275,24 @@ def existe_contrato(bd, numero):
 
 def construir_tupla_contrato_edicion(datos: dict, numero_contrato: str) -> tuple:
     return construir_tupla_contrato(datos) + (numero_contrato,)
+
+
+def obtener_historico_estados(numero_contrato):
+    conn = conectar()
+    cursor = conn.conn.cursor()
+
+    cursor.execute(
+        """
+        SELECT fecha_modificacion, estado
+        FROM contratos_estados
+        WHERE numero_contrato = ?
+        ORDER BY fecha_modificacion ASC
+        """,
+        (numero_contrato,),
+    )
+
+    datos = cursor.fetchall()
+    return datos
 
 
 # -------------------------------------------------------------#

@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QHeaderView,
     QLabel,
+    QMessageBox,
     QPushButton,
     QScrollArea,
     QTableWidget,
@@ -27,6 +28,7 @@ from aux_fechas import a_ddmm
 from aux_presentacion import color_estado, color_fila_estado, estilo_boton
 from base_formulario import BaseFormulario
 from contrato_baja import ConfirmacionBajaDialog
+from historico_estados import HistoricoEstadosWidget
 
 
 # ---------------------------------------------------------
@@ -104,10 +106,14 @@ class ConsultaContratoWidget(BaseFormulario):
 
         # Botones
         botones = QHBoxLayout()
+
         detalles_btn = QPushButton("Detalles")
+        self.btn_historico = QPushButton("Histórico")
         salir_btn = QPushButton("Salir")
 
+        # Orden: Detalles | Histórico | (espacio) | Salir
         botones.addWidget(detalles_btn)
+        botones.addWidget(self.btn_historico)
         botones.addStretch()
         botones.addWidget(salir_btn)
 
@@ -116,8 +122,10 @@ class ConsultaContratoWidget(BaseFormulario):
         layout.addLayout(botones)
         self.setLayout(layout)
 
+        # Conexiones
         salir_btn.clicked.connect(self.cerrar_consulta_top_level)
         detalles_btn.clicked.connect(self.abrir_detalles)
+        self.btn_historico.clicked.connect(self.abrir_historico)
 
         self.cargar_contratos()
 
@@ -174,6 +182,20 @@ class ConsultaContratoWidget(BaseFormulario):
         )
 
         detalles.exec()
+
+    def abrir_historico(self):
+        fila = self.tabla.currentRow()
+
+        if fila < 0:
+            QMessageBox.warning(
+                self, "Aviso", "Debe seleccionar un contrato de la lista."
+            )
+            return
+
+        numero_contrato = self.tabla.item(fila, 0).text().strip()
+
+        ventana = HistoricoEstadosWidget(numero_contrato, parent=self)
+        ventana.show()
 
     # ---------------------------------------------------------
     # Cerrar ventana principal

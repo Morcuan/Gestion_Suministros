@@ -15,6 +15,7 @@ _COLORES_ESTADO = {
     "CADUCADO": QColor("orange"),
     "ANULADO": QColor("red"),
     "PENDIENTE": QColor("blue"),
+    "REHABILITADO": QColor("green"),
 }
 
 

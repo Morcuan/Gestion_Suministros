@@ -29,8 +29,12 @@ fi
 echo "📝 Añadiendo todos los cambios..."
 git add -A
 
+
 # Crear mensaje de commit limpio
-COMMIT_MSG="Nivelación manual, Solucionados los errores de la modificacion de contrato via lista de contratos. $(date '+%Y-%m-%d %H:%M')"
+COMMIT_MSG="Nivelación manual:
+Terminada la anulacion de contrato con las dos vias operativas.
+Implementada la vista de historicos de movimientos en contrato desde lista de contratos.
+Corregidos los aux_XXX para adecuarlos a lo anterior $(date '+%Y-%m-%d %H:%M')"
 
 echo "💾 Realizando commit: $COMMIT_MSG"
 git commit -m "$COMMIT_MSG"

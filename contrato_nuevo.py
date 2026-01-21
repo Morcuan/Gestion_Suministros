@@ -294,11 +294,24 @@ class NuevoContratoWidget(BaseFormulario):
                 numero_original = self.numero_contrato_edit.text().strip()
                 tupla = construir_tupla_contrato_edicion(datos, numero_original)
                 actualizar_contrato(tupla)
-                QMessageBox.information(
-                    self, "Contrato", "Contrato actualizado correctamente."
+
+            # Registrar estado MODIFICADO
+            try:
+                from aux_database import registrar_estado_contrato
+
+                registrar_estado_contrato(numero_original, "MODIFICADO")
+            except Exception as e:
+                QMessageBox.warning(
+                    self,
+                    "Aviso",
+                    f"El contrato se actualizó, pero no se pudo registrar el estado MODIFICADO.\n{e}",
                 )
-                self.contrato_guardado.emit()
-                self.close()
+
+            QMessageBox.information(
+                self, "Contrato", "Contrato actualizado correctamente."
+            )
+            self.contrato_guardado.emit()
+            self.close()
 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"No se pudo guardar el contrato:\n{e}")
