@@ -140,7 +140,7 @@ def obtener_contrato_por_numero(numero):
             poblacion,
             fecha_inicio,
             fecha_final,
-            estado_actual,
+            estado_admin,
             potencia_punta,
             importe_potencia_punta,
             potencia_valle,
@@ -222,7 +222,9 @@ def registrar_estado_contrato(numero_contrato, estado):
             numero_contrato, estado, fecha_baja, fecha_modificacion
         ) VALUES (?, ?, ?, ?)
     """
-    fecha_iso = hoy_iso()
+
+    fecha_iso = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
     bd.ejecutar(sql, (numero_contrato, estado, fecha_iso, fecha_iso))
 
 

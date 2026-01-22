@@ -31,10 +31,18 @@ git add -A
 
 
 # Crear mensaje de commit limpio
-COMMIT_MSG="Nivelación manual:
-Terminada la anulacion de contrato con las dos vias operativas.
-Implementada la vista de historicos de movimientos en contrato desde lista de contratos.
-Corregidos los aux_XXX para adecuarlos a lo anterior $(date '+%Y-%m-%d %H:%M')"
+COMMIT_MSG="Nivelaccion manual, modificaciones:
+Modificado el create view de vista_contratos para que se adecue a todos los estados
+Modificado el nombre a visualizar de los estados ej. ANULADO -> Anulado
+Otras modificaciones:
+Recuperado funciones perdidas
+Corregido errores de conversión
+Alineado el histórico
+Validado el formato de fechas
+Eliminado referencias a Qt5
+Consolidado el módulo historico_estados.py
+Detectado un nuevo bug: Cuando rehabilitas un contrato y contestas si a la modificacion
+acto seguido, la ventana que se abre es la de contrato_nuevo pero no en modo edicion. $(date '+%Y-%m-%d %H:%M')"
 
 echo "💾 Realizando commit: $COMMIT_MSG"
 git commit -m "$COMMIT_MSG"

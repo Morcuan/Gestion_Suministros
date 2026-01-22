@@ -6,6 +6,8 @@
 # Fecha: 2025-12-01                          #
 # --------------------------------------------#
 
+from datetime import datetime
+
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
@@ -25,7 +27,7 @@ from PySide6.QtWidgets import (
 
 from aux_database import listar_contratos, obtener_contrato_por_numero
 from aux_fechas import a_ddmm
-from aux_presentacion import color_estado, color_fila_estado, estilo_boton
+from aux_presentacion import color_estado, color_fila_estado, estado_real, estilo_boton
 from base_formulario import BaseFormulario
 from contrato_baja import ConfirmacionBajaDialog
 from historico_estados import HistoricoEstadosWidget
@@ -111,7 +113,6 @@ class ConsultaContratoWidget(BaseFormulario):
         self.btn_historico = QPushButton("Histórico")
         salir_btn = QPushButton("Salir")
 
-        # Orden: Detalles | Histórico | (espacio) | Salir
         botones.addWidget(detalles_btn)
         botones.addWidget(self.btn_historico)
         botones.addStretch()
@@ -138,6 +139,13 @@ class ConsultaContratoWidget(BaseFormulario):
 
         for i, contrato in enumerate(contratos):
             numero, comercializadora, cp, poblacion, f_ini, f_fin, estado = contrato[:7]
+
+            # Calcular estado real
+            fecha_inicio = datetime.strptime(f_ini, "%d/%m/%Y").date()
+            fecha_final = datetime.strptime(f_fin, "%d/%m/%Y").date()
+
+            estado_admin = estado
+            estado = estado_real(fecha_inicio, fecha_final, estado_admin)
 
             self.tabla.setItem(i, 0, QTableWidgetItem(str(numero)))
             self.tabla.setItem(i, 1, QTableWidgetItem(str(comercializadora)))
@@ -180,9 +188,11 @@ class ConsultaContratoWidget(BaseFormulario):
         detalles = DetallesContratoWidget(
             contrato_completo, parent=self, contrato_main=self.contrato_main
         )
-
         detalles.exec()
 
+    # ---------------------------------------------------------
+    # Abrir histórico de estados
+    # ---------------------------------------------------------
     def abrir_historico(self):
         fila = self.tabla.currentRow()
 
@@ -226,13 +236,13 @@ class DetallesContratoWidget(QDialog):
 
         # Datos principales
         numero = contrato[0]
-        estado_actual = contrato[6]
+        self.estado_admin = contrato[6].strip().upper()
         fecha_inicio = a_ddmm(contrato[4])
         fecha_final = a_ddmm(contrato[5])
 
-        self.label_estado = QLabel(estado_actual)
+        self.label_estado = QLabel(self.estado_admin)
         self.label_estado.setStyleSheet(
-            f"color: {color_estado(estado_actual).name()}; font-weight: bold;"
+            f"color: {color_estado(self.estado_admin).name()}; font-weight: bold;"
         )
 
         # Grupos
@@ -304,9 +314,6 @@ class DetallesContratoWidget(QDialog):
 
         self.btn_anular = btn_anular
 
-        if estado_actual.upper() == "ANULADO":
-            btn_anular.setEnabled(False)
-
         btn_modificar.clicked.connect(lambda: self.abrir_modificacion(numero))
         btn_anular.clicked.connect(lambda: self.preparar_anulacion(numero))
         btn_cerrar.clicked.connect(self.close)
@@ -343,6 +350,57 @@ class DetallesContratoWidget(QDialog):
     # Abrir modificación (misma vía que el menú, sin pedir número)
     # ---------------------------------------------------------
     def abrir_modificacion(self, numero_contrato):
+        estado = self.label_estado.text().strip()
+        print("DEBUG ESTADO QUE LLEGA A DETALLES:", repr(estado))
+
+        # Si está anulado → preguntar si rehabilitar
+        if self.estado_admin == "ANULADO":
+            respuesta = QMessageBox.question(
+                self,
+                "Contrato anulado",
+                "Este contrato está ANULADO.\n\n¿Desea rehabilitarlo?",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No,
+            )
+
+            if respuesta == QMessageBox.No:
+                return
+
+            from aux_database import rehabilitacion_contrato
+
+            rehabilitacion_contrato(numero_contrato)
+
+            # Preguntar si quiere modificar
+            respuesta2 = QMessageBox.question(
+                self,
+                "Rehabilitación completada",
+                "El contrato ha sido rehabilitado.\n\n¿Desea modificarlo ahora?",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No,
+            )
+
+            if respuesta2 == QMessageBox.No:
+                # 🔵 REFRESCO DE LISTA (Punto 3)
+                if self.parent():
+                    try:
+                        self.parent().cargar_contratos()
+                    except:
+                        pass
+                self.close()
+                return
+
+        # 🔵 REFRESCO DE LISTA ANTES DE SALIR (Punto 3)
+        if self.parent():
+            try:
+                self.parent().cargar_contratos()
+            except:
+                pass
+
+        # Abrir edición
+        self.contrato_main._abrir_edicion(numero_contrato)
+        self.close()
+
+        # Abrir edición
         self.contrato_main._abrir_edicion(numero_contrato)
         self.close()
 

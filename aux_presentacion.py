@@ -5,6 +5,8 @@
 # Fecha: 2025-12-22                                            #
 # -------------------------------------------------------------#
 
+from datetime import date
+
 from PySide6.QtGui import QColor
 
 # -------------------------------------------------------------
@@ -22,9 +24,33 @@ _COLORES_ESTADO = {
 # -------------------------------------------------------------
 # Devuelve el color asociado a un estado
 # -------------------------------------------------------------
+
+
 def color_estado(estado: str) -> QColor:
+    if not estado:
+        return QColor("black")  # o el color neutro que prefieras
+
     estado = estado.upper().strip()
     return _COLORES_ESTADO.get(estado, QColor("black"))
+
+
+def estado_real(fecha_inicio, fecha_final, estado_admin):
+    hoy = date.today()
+
+    # 1. Si está anulado → prevalece
+    if estado_admin == "ANULADO":
+        return "ANULADO"
+
+    # 2. Si está rehabilitado → se recalcula por fechas
+    #    (rehabilitar solo quita la anulación)
+
+    # 3. Si no hay estado_admin → contrato normal
+    if hoy < fecha_inicio:
+        return "PENDIENTE"
+    elif fecha_inicio <= hoy <= fecha_final:
+        return "EN VIGOR"
+    else:
+        return "FINALIZADO"
 
 
 # -------------------------------------------------------------

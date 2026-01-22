@@ -146,8 +146,11 @@ class NuevoContratoWidget(BaseFormulario):
         self.cancelar_btn.clicked.connect(self.close)
 
         # Modo edición
-        if self.modo == "edicion" and self.datos:
-            self.cargar_datos(self.datos)
+        if self.modo == "edicion":
+            # Guardamos el número original ANTES de que el usuario pueda cambiarlo
+            self.numero_original = self.datos[3]  # índice 3 = numero_contrato
+        else:
+            self.numero_original = None
 
     # ---------------------------------------------------------
     # VALIDAR CÓDIGO POSTAL
@@ -190,9 +193,6 @@ class NuevoContratoWidget(BaseFormulario):
         for cid, nombre in listar_companias():
             self.compania_combo.addItem(nombre, cid)
 
-    # ---------------------------------------------------------
-    # GUARDAR CONTRATO
-    # ---------------------------------------------------------
     def guardar_contrato(self):
         try:
             self.limpiar_estilos()
@@ -280,69 +280,53 @@ class NuevoContratoWidget(BaseFormulario):
             datos["fecha_inicio"] = fecha_inicio_iso
             datos["fecha_final"] = fecha_final_iso
 
-            # Guardar según modo
+            # ---------------------------------------------------------
+            # MODO NUEVO
+            # ---------------------------------------------------------
             if self.modo == "nuevo":
                 tupla = construir_tupla_contrato(datos)
                 insertar_contrato(tupla)
+
+                # Registrar estado inicial
+                from aux_database import registrar_estado_contrato
+
+                registrar_estado_contrato(numero, "EN VIGOR")
+
                 QMessageBox.information(
                     self, "Contrato", "Contrato creado correctamente."
                 )
                 self.contrato_guardado.emit()
                 self.close()
+                return
 
-            elif self.modo == "edicion":
-                numero_original = self.numero_contrato_edit.text().strip()
-                tupla = construir_tupla_contrato_edicion(datos, numero_original)
+            # ---------------------------------------------------------
+            # MODO EDICIÓN
+            # ---------------------------------------------------------
+            if self.modo == "edicion":
+                tupla = construir_tupla_contrato_edicion(datos, self.numero_original)
                 actualizar_contrato(tupla)
 
-            # Registrar estado MODIFICADO
-            try:
-                from aux_database import registrar_estado_contrato
+                # Registrar estado MODIFICADO
+                try:
+                    from aux_database import registrar_estado_contrato
 
-                registrar_estado_contrato(numero_original, "MODIFICADO")
-            except Exception as e:
-                QMessageBox.warning(
-                    self,
-                    "Aviso",
-                    f"El contrato se actualizó, pero no se pudo registrar el estado MODIFICADO.\n{e}",
+                    registrar_estado_contrato(self.numero_original, "MODIFICADO")
+                except Exception as e:
+                    QMessageBox.warning(
+                        self,
+                        "Aviso",
+                        f"El contrato se actualizó, pero no se pudo registrar el estado MODIFICADO.\n{e}",
+                    )
+
+                QMessageBox.information(
+                    self, "Contrato", "Contrato actualizado correctamente."
                 )
-
-            QMessageBox.information(
-                self, "Contrato", "Contrato actualizado correctamente."
-            )
-            self.contrato_guardado.emit()
-            self.close()
+                self.contrato_guardado.emit()
+                self.close()
+                return
 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"No se pudo guardar el contrato:\n{e}")
-
-    # ---------------------------------------------------------
-    # CARGAR DATOS EN MODO EDICIÓN
-    # ---------------------------------------------------------
-    def cargar_datos(self, t):
-        d = {
-            "id_compania": t[0],
-            "codigo_postal": t[1],
-            "poblacion": t[2],
-            "numero": t[3],
-            "fecha_inicio": t[4],
-            "fecha_final": t[5],
-            "potencia_punta": t[6],
-            "importe_potencia_punta": t[7],
-            "potencia_valle": t[8],
-            "importe_potencia_valle": t[9],
-            "importe_consumo_punta": t[10],
-            "importe_consumo_llano": t[11],
-            "importe_consumo_valle": t[12],
-            "vertido": t[13],
-            "importe_excedentes": t[14],
-            "importe_bono_social": t[15],
-            "importe_alquiler_contador": t[16],
-            "importe_asistente_smart": t[17],
-            "impuesto_electricidad": t[18],
-            "iva": t[19],
-        }
-        self.cargar_desde_dict(d)
 
     # ---------------------------------------------------------
     # CARGAR DESDE DICCIONARIO
