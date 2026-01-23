@@ -31,18 +31,9 @@ git add -A
 
 
 # Crear mensaje de commit limpio
-COMMIT_MSG="Nivelaccion manual, modificaciones:
-Modificado el create view de vista_contratos para que se adecue a todos los estados
-Modificado el nombre a visualizar de los estados ej. ANULADO -> Anulado
-Otras modificaciones:
-Recuperado funciones perdidas
-Corregido errores de conversión
-Alineado el histórico
-Validado el formato de fechas
-Eliminado referencias a Qt5
-Consolidado el módulo historico_estados.py
-Detectado un nuevo bug: Cuando rehabilitas un contrato y contestas si a la modificacion
-acto seguido, la ventana que se abre es la de contrato_nuevo pero no en modo edicion. $(date '+%Y-%m-%d %H:%M')"
+COMMIT_MSG="Nivelaccion manual, se borran los modulos y se mantienen los sh.
+Se mantiene la base de datos en /data/ aunque las tablas y vistas se borraran al inicializarla.
+Inicio del proyecto Gestion_suministros_2.0 $(date '+%Y-%m-%d %H:%M')"
 
 echo "💾 Realizando commit: $COMMIT_MSG"
 git commit -m "$COMMIT_MSG"
