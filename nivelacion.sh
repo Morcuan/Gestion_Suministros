@@ -31,9 +31,8 @@ git add -A
 
 
 # Crear mensaje de commit limpio
-COMMIT_MSG="Nivelaccion manual, se borran los modulos y se mantienen los sh.
-Se mantiene la base de datos en /data/ aunque las tablas y vistas se borraran al inicializarla.
-Inicio del proyecto Gestion_suministros_2.0 $(date '+%Y-%m-%d %H:%M')"
+COMMIT_MSG="Nivelaccion manual, Creacion del marco general y del menu lateral.
+ $(date '+%Y-%m-%d %H:%M')"
 
 echo "💾 Realizando commit: $COMMIT_MSG"
 git commit -m "$COMMIT_MSG"
