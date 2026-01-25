@@ -40,3 +40,66 @@ def aplicar_estilo_boton(boton: QPushButton, principal=False):
         }}
     """
     )
+
+
+# ---------------------------------------------------------
+# PALETAS DE COLORES
+# ---------------------------------------------------------
+
+PALETA_CLARA = {
+    "fondo": "#FFFFFF",
+    "panel": "#F7F7F7",
+    "texto": COLOR_TEXTO,
+    "boton": COLOR_SECUNDARIO,
+    "boton_principal": COLOR_PRIMARIO,
+    "acento": COLOR_ACENTO,
+}
+
+PALETA_OSCURA = {
+    "fondo": "#1E1E1E",
+    "panel": "#2C2C2C",
+    "texto": "#E0E0E0",
+    "boton": "#3A3A3A",
+    "boton_principal": "#4A90E2",
+    "acento": "#F5A623",
+}
+
+PALETA_SOLARIZADA = {
+    "fondo": "#FDF6E3",
+    "panel": "#EEE8D5",
+    "texto": "#657B83",
+    "boton": "#EEE8D5",
+    "boton_principal": "#268BD2",
+    "acento": "#B58900",
+}
+
+PALETAS = {
+    "Clara": PALETA_CLARA,
+    "Oscura": PALETA_OSCURA,
+    "Solarizada": PALETA_SOLARIZADA,
+}
+
+
+def generar_stylesheet(paleta):
+    return f"""
+        QWidget {{
+            background-color: {paleta['fondo']};
+            color: {paleta['texto']};
+        }}
+
+        QScrollArea {{
+            background-color: {paleta['panel']};
+        }}
+
+        QPushButton {{
+            background-color: {paleta['boton']};
+            color: {paleta['texto']};
+            border-radius: 6px;
+            padding: 6px 10px;
+            text-align: left;
+        }}
+
+        QPushButton:hover {{
+            background-color: {paleta['acento']};
+        }}
+    """

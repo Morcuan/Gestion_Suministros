@@ -9,7 +9,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from estilo import aplicar_estilo_boton, aplicar_estilo_panel_lateral
+from estilo import PALETAS, aplicar_estilo_boton, aplicar_estilo_panel_lateral
 
 
 class MainWindow(QMainWindow):
@@ -31,7 +31,6 @@ class MainWindow(QMainWindow):
         # PANEL LATERAL (scroll + estilo + ancho fijo)
         # ---------------------------------------------------------
         panel_lateral_widget = self.crear_menu_lateral()
-        panel_lateral_widget.setFixedWidth(300)
         aplicar_estilo_panel_lateral(panel_lateral_widget)
 
         scroll_lateral = QScrollArea()
@@ -40,7 +39,9 @@ class MainWindow(QMainWindow):
         scroll_lateral.setHorizontalScrollBarPolicy(
             Qt.ScrollBarPolicy.ScrollBarAlwaysOff
         )
+
         scroll_lateral.setWidget(panel_lateral_widget)
+        scroll_lateral.setFixedWidth(260)
 
         self.panel_lateral = scroll_lateral
         layout_principal.addWidget(self.panel_lateral)
@@ -53,7 +54,6 @@ class MainWindow(QMainWindow):
         self.zona_contenido_layout.setContentsMargins(20, 20, 20, 20)
         self.zona_contenido_layout.setSpacing(15)
 
-        # Encabezado superior dinámico
         self.encabezado_modulo = QLabel("Pantalla de Inicio")
         self.encabezado_modulo.setStyleSheet("font-size: 18px; font-weight: bold;")
         self.zona_contenido_layout.addWidget(self.encabezado_modulo)
@@ -62,7 +62,6 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(contenedor)
 
-        # Cargar pantalla inicial
         self.cargar_modulo(self.crear_pantalla_inicio(), "Pantalla de Inicio")
 
     # ---------------------------------------------------------
@@ -77,42 +76,59 @@ class MainWindow(QMainWindow):
         self.secciones_acordeon = {}
 
         # --- Sección Inicio ---
-        btn_inicio = QPushButton("Inicio")
-        aplicar_estilo_boton(btn_inicio, principal=False)
-        btn_inicio.clicked.connect(
-            lambda: self.cargar_modulo(
-                self.crear_pantalla_inicio(), "Pantalla de Inicio"
+        layout.addWidget(
+            self.crear_seccion_acordeon(
+                "🏠 Inicio",
+                [
+                    (
+                        "🏡 Pantalla de inicio",
+                        lambda: self.cargar_modulo(
+                            self.crear_pantalla_inicio(), "Pantalla de Inicio"
+                        ),
+                    ),
+                    (
+                        "🎨 Paleta de colores",
+                        lambda: self.cargar_modulo(
+                            self.crear_pantalla_paleta(), "Paleta de colores"
+                        ),
+                    ),
+                    (
+                        "ℹ️ Acerca de...",
+                        lambda: self.cargar_modulo(
+                            self.crear_pantalla_acerca(), "Acerca de..."
+                        ),
+                    ),
+                ],
             )
         )
-        layout.addWidget(btn_inicio)
 
         # --- Sección Contratos ---
         layout.addWidget(
             self.crear_seccion_acordeon(
-                "Contratos",
+                "📄 Contratos",
                 [
                     (
-                        "Nuevo contrato",
+                        "➕ Nuevo contrato",
                         lambda: self.cargar_modulo(
                             self.crear_placeholder("Nuevo contrato"), "Nuevo contrato"
                         ),
                     ),
                     (
-                        "Consulta",
+                        "🔍 Consulta",
                         lambda: self.cargar_modulo(
                             self.crear_placeholder("Consulta contratos"),
                             "Consulta contratos",
                         ),
                     ),
                     (
-                        "Modificación",
+                        "✏️ Modificación",
                         lambda: self.cargar_modulo(
                             self.crear_placeholder("Modificar contrato"),
                             "Modificar contrato",
                         ),
                     ),
                     (
-                        "Anulación",
+                        "❌ Anulación",
                         lambda: self.cargar_modulo(
                             self.crear_placeholder("Anular contrato"), "Anular contrato"
                         ),
@@ -124,23 +140,23 @@ class MainWindow(QMainWindow):
         # --- Sección Facturas ---
         layout.addWidget(
             self.crear_seccion_acordeon(
-                "Facturas",
+                "💡 Facturas",
                 [
                     (
-                        "Nueva factura",
+                        "➕ Nueva factura",
                         lambda: self.cargar_modulo(
                             self.crear_placeholder("Nueva factura"), "Nueva factura"
                         ),
                     ),
                     (
-                        "Consulta",
+                        "🔍 Consulta",
                         lambda: self.cargar_modulo(
                             self.crear_placeholder("Consulta facturas"),
                             "Consulta facturas",
                         ),
                     ),
                     (
-                        "Modificación",
+                        "✏️ Modificación",
                         lambda: self.cargar_modulo(
                             self.crear_placeholder("Modificar factura"),
                             "Modificar factura",
@@ -153,16 +169,16 @@ class MainWindow(QMainWindow):
         # --- Sección Consumos ---
         layout.addWidget(
             self.crear_seccion_acordeon(
-                "Consumos",
+                "⚡ Consumos",
                 [
                     (
-                        "Nuevo consumo",
+                        "➕ Nuevo consumo",
                         lambda: self.cargar_modulo(
                             self.crear_placeholder("Nuevo consumo"), "Nuevo consumo"
                         ),
                     ),
                     (
-                        "Consulta",
+                        "🔍 Consulta",
                         lambda: self.cargar_modulo(
                             self.crear_placeholder("Consulta consumos"),
                             "Consulta consumos",
@@ -173,10 +189,17 @@ class MainWindow(QMainWindow):
         )
 
         layout.addStretch()
+
+        # --- Botón Salir ---
+        btn_salir = QPushButton("🚪 Salir")
+        aplicar_estilo_boton(btn_salir, principal=False)
+        btn_salir.clicked.connect(self.close)
+        layout.addWidget(btn_salir)
+
         return panel
 
     # ---------------------------------------------------------
-    # CREAR UNA SECCIÓN DEL ACORDEÓN
+    # SECCIÓN ACORDEÓN
     # ---------------------------------------------------------
     def crear_seccion_acordeon(self, titulo, opciones):
         contenedor = QWidget()
@@ -226,7 +249,46 @@ class MainWindow(QMainWindow):
         return w
 
     # ---------------------------------------------------------
-    # PLACEHOLDER PARA MÓDULOS
+    # PANTALLA PALETAS (FUNCIONAL)
+    # ---------------------------------------------------------
+    def crear_pantalla_paleta(self):
+        w = QWidget()
+        l = QVBoxLayout(w)
+
+        l.addWidget(QLabel("Selecciona una paleta de colores"))
+
+        for nombre, paleta in PALETAS.items():
+            btn = QPushButton(nombre)
+            aplicar_estilo_boton(btn)
+            btn.clicked.connect(lambda _, p=paleta: self.aplicar_paleta(p))
+            l.addWidget(btn)
+
+        l.addStretch()
+        return w
+
+    # ---------------------------------------------------------
+    # PANTALLA ACERCA DE
+    # ---------------------------------------------------------
+    def crear_pantalla_acerca(self):
+        w = QWidget()
+        l = QVBoxLayout(w)
+
+        texto = (
+            "<b>Gestion_suministros 2.0</b><br>"
+            "Proyecto iniciado: <b>enero 2025</b><br>"
+            "Programador: <b>Antonio Morales</b><br><br>"
+            "Aplicación para la gestión modular de contratos, facturas y consumos."
+        )
+
+        lbl = QLabel(texto)
+        lbl.setWordWrap(True)
+        l.addWidget(lbl)
+
+        l.addStretch()
+        return w
+
+    # ---------------------------------------------------------
+    # PLACEHOLDER
     # ---------------------------------------------------------
     def crear_placeholder(self, nombre):
         w = QWidget()
@@ -236,10 +298,9 @@ class MainWindow(QMainWindow):
         return w
 
     # ---------------------------------------------------------
-    # CARGA DE MÓDULOS EN LA ZONA DE CONTENIDO
+    # CARGA DE MÓDULOS
     # ---------------------------------------------------------
     def cargar_modulo(self, widget, titulo):
-        # Limpiar zona de contenido (excepto encabezado)
         for i in reversed(range(self.zona_contenido_layout.count())):
             item = self.zona_contenido_layout.itemAt(i)
             w = item.widget()
@@ -248,3 +309,11 @@ class MainWindow(QMainWindow):
 
         self.encabezado_modulo.setText(titulo)
         self.zona_contenido_layout.addWidget(widget)
+
+    # ---------------------------------------------------------
+    # APLICAR PALETA
+    # ---------------------------------------------------------
+    def aplicar_paleta(self, paleta):
+        from estilo import generar_stylesheet
+
+        self.setStyleSheet(generar_stylesheet(paleta))

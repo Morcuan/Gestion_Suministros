@@ -31,8 +31,10 @@ git add -A
 
 
 # Crear mensaje de commit limpio
-COMMIT_MSG="Nivelaccion manual, Creacion del marco general y del menu lateral.
- $(date '+%Y-%m-%d %H:%M')"
+COMMIT_MSG="Nivelaccion manual, Finalizacion del modulo main_window.
+Solucionado el problema del menu lateral, integradas tres paletas de colores,
+integrado la opcion >acerca de...< integrados iconos en las opciones
+generales y opciones secundarias. $(date '+%Y-%m-%d %H:%M')"
 
 echo "💾 Realizando commit: $COMMIT_MSG"
 git commit -m "$COMMIT_MSG"
