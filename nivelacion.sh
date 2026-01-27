@@ -10,6 +10,20 @@ cd ~/Desarrollo/Gestion_Suministros || {
     return
 }
 
+# --- Verificar identidad Git ---
+if ! git config user.name >/dev/null 2>&1 || ! git config user.email >/dev/null 2>&1; then
+    echo "⚠️ Git no tiene configurado nombre o correo."
+    echo "🛠️ Configurando identidad global..."
+    git config --global user.name "Antonio"
+    git config --global user.email "antonio@pepino.local"
+    echo "✅ Identidad configurada: Antonio <antonio@pepino.local>"
+else
+    echo "🧾 Identidad Git detectada:"
+    echo "   Nombre: $(git config user.name)"
+    echo "   Correo: $(git config user.email)"
+fi
+# --- Fin verificación identidad Git ---
+
 # Asegurar que estamos en la rama correcta
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 if [ "$BRANCH" != "desarrollo" ]; then
@@ -29,9 +43,8 @@ fi
 echo "📝 Añadiendo todos los cambios..."
 git add -A
 
-
 # Crear mensaje de commit limpio
-COMMIT_MSG="Nivelaccion manual, Antes de migrar a mint 22.3$(date '+%Y-%m-%d %H:%M')"
+COMMIT_MSG="Nivelaccion manual, Instalado Linux Mint 22.3, Proyecto limpio de Qt y funcionando. $(date '+%Y-%m-%d %H:%M')"
 
 echo "💾 Realizando commit: $COMMIT_MSG"
 git commit -m "$COMMIT_MSG"
@@ -55,5 +68,3 @@ if [ -n "$VIRTUAL_ENV" ]; then
 else
     echo "ℹ️ No había entorno virtual activo."
 fi
-
-
