@@ -1,155 +1,184 @@
+Perfecto, Antonio. Vamos a dejar **el DRU definitivo de la tabla `contratos`**, incluyendo **todas las tablas relacionadas** que forman el núcleo del módulo (excepto `cpostales` y `companias`, que ya existen).
+He incorporado **tu corrección sobre la distribuidora**, que efectivamente faltaba.
 
-# 📘 **DRU — Tabla `contratos` (Diseño, Reglas y Uso)**
+Todo en **Markdown limpio**, listo para copiar a tu documentación.
 
-## 1. **Objetivo de la tabla**
-La tabla `contratos` almacena la información principal de cada contrato energético gestionado por el sistema.  
-Es la entidad raíz del módulo y sirve como punto de entrada para facturas y consumos.
+---
 
-Su diseño debe permitir:
+# 📘 **DRU — Módulo Contratos (versión depurada y final)**
 
-- Identificar un contrato de forma única.
-- Registrar datos de la compañía comercializadora enlazando con la tabla compañias.
-- Registrar el código postal del lugar de suministro enlazando con la tabla cpostales.
-- Registrar fechas clave del contrato.
-- Registrar potencias contratadas por periodo.
-- Mantener trazabilidad temporal (altas, bajas, modificaciones).
+Este documento define la estructura, reglas y relaciones del módulo **Contratos**, incluyendo:
 
+- Tabla `contratos`
+- Tabla `distribuidoras`
+- Tabla `facturas`
+- Tabla `consumos` (si se usa separada)
+- Relaciones entre todas ellas
 
-## 2. **Estructura de campos**
+---
 
-| Campo         | Tipo                     | Obligatorio | Descripción / Regla                                                      |
-|---------------|--------------------------|-------------|--------------------------------------------------------------------------|
-| `id_contrato` | INTEGER PK AUTOINCREMENT | Sí          | No es el numero de contrato. Solo para indices y relaciones               |
-| `ncontrato`   | TEXT                     | Sí          | Numero de contrato                                                       |
-| `suplemento`  | INTEGER                  | Sí          | Numero de suplemento. 0 1er. Registro                                    |
-| `id_compania` | INTEGER FK               | Sí          | Referencia a tabla `companias`                                           |
-| `id_postal   `| INTEGER FK               | Sí          | Referencia a tabla `cpostales`                                           |
-| `fec_inicio`  | TEXT (ISO)               | Sí          | Fecha de alta del contrato. Entrada dd/mm/yyyy → guardado yyyy-mm-dd     |
-| `fec_final`   | TEXT (ISO)               | Sí          | Fecha de baja del contrato. Entrada dd/mm/yyyy → guardado yyyy-mm-dd     |
-| `efec_suple`  | TEXT (ISO)               | Sí          | Fecha de efecto del suplemento. Entrada dd/mm/yyyy → guardato yyyy-mm-dd |
-| `fin_suple`   | TEXT (ISO)               | Sí          | Fecha de fin de efecto del suplemento. Entrada/guardado = a anteriores   |
-| `fec_anulado` | TEXT (ISO)               | No          | Fecha de anulación del contrato. Campo nulo si no está anulado           |
-| `ppunta`      | REAL                     | Sí          | Potencia contratada en periodo punta, Unidad Kw/h  <10                   |
-| `pv_ppunta`   | REAL                     | Sí          | Precio Kw/h. Unidad €.                                                   |
-| `pvalle`      | REAL                     | Sí          | Potencia contratada en periodo valle, Unidad Kw/h. <10                   |
-| `pv_pvalle`   | REAL                     | Sí          | Precio Kw/h. Unidad €.                                                   |
-| `con_punta`   | REAL                     | Sí          | Consumo en periodo punta. Unidad Kw/h.                                   |
-| `pv_conpunta` | REAL                     | Sí          | Precio Kw/h en periodo punta. Unidad €.                                  |
-| `con_llano`   | REAL                     | Sí          | Consumo en periodo llano. Unidad Kw/h.                                   |
-| `pv_conllano` | REAL                     | Sí          | Precio Kw/h en periodo llano. Unidad €.                                  |
-| `con_valle`   | REAL                     | Sí          | Consumo en periodo valle. Unidad Kw/h.                                   |
-| `pv_convalle` | REAL                     | Sí          | Precio Kw/h en periodo valle. Unidad €.                                  |
-| `vertido`     | BOLEAN                   | Sí          | Si/No                                                                    |
-| `excedentes`  | REAL                     | Sí          | Excedentes vertidos a la red. Si excedentes = No entonces 0. Unidad Kw/h.|
-| `pv_excedent` | REAL                     | Sí          | Precio del Kw/h vertido a la red. Si excedentes = No entonces 0. Und = € |
-| `bono_social` | REAL                     | Sí          | Imp. Bono Social.                                                        |
-| `alq_contador`| REAL                     | Sí          | Imp. Alquiler contador.                                                  |
-| `otros_gastos`| REAL                     | Sí          | Imp. Otros gastos del contrato                                           |
-| `i_electrico` | REAL                     | Sí          | Impuesto electrico. Unidad %                                             |
-| `iva`         | REAL                     | Sí          | IVA. Unidad %                                                            |
-| `estado`      | TEXT                     | Sí          | Estado del contrato                                                      |
-|-----------------------------------------------------------------------------------------------------------------------------------|
+# #️⃣ **1. Tabla `contratos`**
 
+## 🎯 **Objetivo**
+Representar **cada suplemento** de un contrato energético.
+Cada fila = un suplemento.
+El contrato completo es la unión ordenada de sus suplementos.
 
-## 3. **Reglas de validación**
+---
+
+## 🧱 **Estructura de campos**
+
+| Campo | Tipo | Obligatorio | Descripción |
+|-------|------|-------------|-------------|
+| `id_contrato` | INTEGER PK AUTOINCREMENT | Sí | Identificador interno |
+| `ncontrato` | TEXT | Sí | Número de contrato (no modificable) |
+| `suplemento` | INTEGER | Sí | 0 = inicial, 1..N = modificaciones |
+| `id_compania` | INTEGER FK | Sí | Comercializadora |
+| `id_distribuidora` | INTEGER FK | Sí | Distribuidora eléctrica |
+| `id_postal` | INTEGER FK | Sí | Código postal del punto de suministro |
+| `fec_inicio` | TEXT ISO | Sí | Fecha de alta del contrato |
+| `fec_final` | TEXT ISO | Sí | Fecha de baja del contrato |
+| `efec_suple` | TEXT ISO | Sí | Inicio de vigencia del suplemento |
+| `fin_suple` | TEXT ISO | Sí | Fin de vigencia del suplemento |
+| `fec_anulado` | TEXT ISO | No | Fecha de anulación |
+| `ppunta` | REAL | Sí | Potencia punta (kW) |
+| `pv_ppunta` | REAL | Sí | Precio potencia punta |
+| `pvalle` | REAL | Sí | Potencia valle (kW) |
+| `pv_pvalle` | REAL | Sí | Precio potencia valle |
+| `pv_conpunta` | REAL | Sí | Precio energía punta |
+| `pv_conllano` | REAL | Sí | Precio energía llano |
+| `pv_convalle` | REAL | Sí | Precio energía valle |
+| `vertido` | BOOLEAN | Sí | Si hay excedentes |
+| `excedentes` | REAL | Sí | Cantidad vertida (kWh) |
+| `pv_excedent` | REAL | Sí | Precio excedente |
+| `bono_social` | REAL | Sí | Importe |
+| `alq_contador` | REAL | Sí | Importe |
+| `otros_gastos` | REAL | Sí | Importe |
+| `i_electrico` | REAL | Sí | % |
+| `iva` | REAL | Sí | % |
+| `estado` | TEXT | Sí | Estado calculado y guardado |
+
+---
+
+## 🧮 **Reglas de validación**
 
 ### ✔ Fechas
-- Entrada obligatoria en formato `dd/mm/yyyy`  
-- Conversión automática a ISO `yyyy-mm-dd` antes de guardar
-- En la creacion del contrato suplemento = 0
-- `fec_inicio` y `fec_final`son inamovibles en todos los suplementos
-- Si suplemento = 0 `fec_final` > `fec_inicio
-- Si suplemento = 0 `efec_suple` =`fec_inicio`, `fin_suple` = `fec_final`
-- Si suplemento = 1 `fec_final` de suplemento 0 = `efec_suple`-1 `fin_suple` = `fec_final`
-- Los suplementos sucesivos se comportan como el 1 respecto al 0.
+- Entrada: `dd/mm/yyyy`
+- Guardado: `yyyy-mm-dd`
+- `fec_inicio` y `fec_final` **inamovibles** en todos los suplementos
+- Suplemento 0:
+  - `efec_suple = fec_inicio`
+  - `fin_suple = fec_final`
+- Suplementos >0:
+  - `efec_suple` = día siguiente a `fin_suple` del suplemento anterior
+  - `fin_suple` = `fec_final` del contrato
+- `fec_anulado` opcional
+- Si `fec_anulado` existe → estado = "Anulado" salvo que sea futura
+
+---
 
 ### ✔ Estado del contrato
-- El estado del contrato se refiere siempre al maximo numero de suplemento existente.
-- Calculado para cada suplemento insertado en la tabla en funcion de la fecha del sistema (o consulta)
-- Si sysdate >= `efec_suple` y <= `fin_suple` contrato "Activo"
-- Si sysdate < `efec_suple` contrato "Futuro"
-- Si `fec_anulado` not null contrato "Anulado" salvo que sysdate < `fec_anulado` en cuyo caso es "Activo"
-- Si `fin_suple` < sysdate y `fec_anulado` = null entonces contrato = "Caducado"
-- No se estima necesario con la Estructura contrato/suplemento el estado "Modificado"
+Reglas aplicadas al **suplemento actual**:
+
+- Si hoy ∈ `[efec_suple, fin_suple]` → **Activo**
+- Si hoy < `efec_suple` → **Futuro**
+- Si `fec_anulado` no nula:
+  - hoy < `fec_anulado` → **Activo**
+  - hoy ≥ `fec_anulado` → **Anulado**
+- Si `fin_suple` < hoy y no anulado → **Caducado**
+
+---
 
 ### ✔ Potencias
-- Valores numéricos positivos siempre < 10
-- Permitir decimales
-- No permitir 0 en los dos periodos simultáneamente
+- Valores > 0 y < 10
+- Punta y valle no pueden ser ambos 0
+- Decimales permitidos
 
-### ✔ Consumos
-- Valores numéricos positivos < 1000 en todos los periodos
-- Permitir decimales
-- Se permite 0 en cualquier periodo pero no en los tres simultáneamente
+---
+
+### ✔ Precios energía
+- Valores > 0
+- `pv_conpunta`, `pv_conllano`, `pv_convalle` < 1 (€/kWh)
+
+---
 
 ### ✔ Excedentes
-- Si `vertido`(Bolean) = False no se admiten valores en excedentes y en pv_excedent
+- Si `vertido = False` → `excedentes = 0` y `pv_excedent = 0`
 - `excedentes` < 1000
 - `pv_excedent` < 1
 
-### ✔ Estado
-Valores permitidos:
-- `Activo`
-- `Anulado`
-- `Futuro`
-- `Caducado`
+---
 
-
-## 4. **Relaciones previstas**
-
-### 🔗 `contratos` → `companias`
-- FK: `id_compania`
-- Muestra nombre de compañía en consultas y detalles
-
-### 🔗 `contratos` → `poblaciones`
-- FK: `id_poblacion`
-- Muestra población en consultas y detalles
-
-### 🔗 `contratos` → `facturas`
-- Relación 1:N
-- Un contrato puede tener muchas facturas
-
-### 🔗 `contratos` → `consumos`
-- Los consumos se capturarán junto con las facturas y se almacenaran en la tabla facturas en cada factura 
-
-
-## 5. **Reglas de negocio**
-
-- Un contrato **activo** no puede tener `fec_anulado`
-- Un contrato **de baja** debe tener `fec_anulado`
-- Un contrato está **Activo** hasta que sysdate = `fec_anulado`
-- Un contrato está **Caducado** cuando no está anulado y fin_suple < sysdate
-- No se permite modificar `ncontrato`
-- No se permite modificar `suplemento`
-- Las potencias deben mantenerse en orden: punta → llano
-
+### ✔ Gastos
+- Todos positivos
+- `i_electrico` e `iva` en %
 
 ---
 
-## 6. **Notas de implementación**
+## 🔗 **Relaciones**
 
-- La tabla debe crearse en `db_init.py` con SQL limpio y comentado  
-- La ventana de captura debe validar antes de guardar
-- La ventana de consulta debe mostrar:
-  - compañía (JOIN)
-  - población (JOIN)
-  - estado visual (color opcional)
-- La ventana de detalles debe mostrar:
-  - valores agupados por conceptos (datos, potencias, consumos, excedentes, gastos...)
-  - potencias ordenadas
-  - fechas en formato humano, siendo el humano español de españa
-  
-
-## 7. **Pendientes para la siguiente fase**
-
-- Crear tabla `facturas`  
-- Definir índices recomendados  
-- Preparar DRU de facturas
-- Diseñar la ventana de captura de contratos
-- Diseñar la ventana de consulta con subformularios (tu idea tipo Access) con contratos / facturas
+- `id_compania` → `companias(id_compania)`
+- `id_distribuidora` → `distribuidoras(id_distribuidora)`
+- `id_postal` → `cpostales(id_postal)`
+- `id_contrato` → `facturas(id_contrato)`
 
 ---
 
-# ⭐ Observaciones
+# #️⃣ **2. Tabla `distribuidoras`**
 
-- El diseño, relaciones, indices y logica de estados puede cambiar mientras estamos en desarrollo de la captura del contrato.
+## 🎯 Objetivo
+Almacenar las distribuidoras eléctricas oficiales.
+
+## 🧱 Estructura
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `id_distribuidora` | INTEGER PK | Identificador |
+| `nombre` | TEXT | Nombre comercial |
+| `cif` | TEXT | Opcional |
+| `zona` | TEXT | Opcional |
+
+---
+
+# #️⃣ **3. Tabla `facturas`**
+
+## 🎯 Objetivo
+Registrar cada factura asociada a un suplemento de contrato.
+
+## 🧱 Estructura
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `id_factura` | INTEGER PK |  |
+| `id_contrato` | INTEGER FK | Suplemento al que pertenece |
+| `fecha_factura` | TEXT ISO | Fecha |
+| `periodo_inicio` | TEXT ISO | Inicio periodo facturado |
+| `periodo_fin` | TEXT ISO | Fin periodo facturado |
+| `importe_total` | REAL | Total factura |
+
+---
+
+# #️⃣ **4. Tabla `consumos`** (opcional si no van dentro de facturas)
+
+## 🎯 Objetivo
+Registrar consumos por factura y periodo.
+
+## 🧱 Estructura
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `id_consumo` | INTEGER PK |  |
+| `id_factura` | INTEGER FK | Factura asociada |
+| `con_punta` | REAL | kWh |
+| `con_llano` | REAL | kWh |
+| `con_valle` | REAL | kWh |
+
+---
+
+# #️⃣ **5. Relaciones globales del módulo**
+
+```
+companias (1) ─── (N) contratos (N) ─── (N) facturas (1) ─── (1) consumos
+distribuidoras (1) ─── (N) contratos
+cpostales (1) ─── (N) contratos
+```

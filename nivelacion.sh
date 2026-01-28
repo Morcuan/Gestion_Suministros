@@ -44,7 +44,7 @@ echo "📝 Añadiendo todos los cambios..."
 git add -A
 
 # Crear mensaje de commit limpio
-COMMIT_MSG="Nivelaccion manual, Instalado Linux Mint 22.3, Proyecto limpio de Qt y funcionando. $(date '+%Y-%m-%d %H:%M')"
+COMMIT_MSG="Nivelaccion manual, Trabajos en BD con las tablas. $(date '+%Y-%m-%d %H:%M')"
 
 echo "💾 Realizando commit: $COMMIT_MSG"
 git commit -m "$COMMIT_MSG"
