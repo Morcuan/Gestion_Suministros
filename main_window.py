@@ -7,14 +7,22 @@ from PySide6.QtWidgets import (
     QScrollArea,
     QVBoxLayout,
     QWidget,
+    QMessageBox
 )
 
 from estilo import PALETAS, aplicar_estilo_boton, aplicar_estilo_panel_lateral
+import db_init
 
 
 class MainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, conn, cursor):
         super().__init__()
+
+        # ---------------------------------------------------------
+        # CONEXIÓN A BD (RECIBIDA DESDE main.py)
+        # ---------------------------------------------------------
+        self.conn = conn
+        self.cursor = cursor
 
         self.setWindowTitle("Gestion_suministros 2.0")
         self.resize(1200, 800)
@@ -28,7 +36,7 @@ class MainWindow(QMainWindow):
         layout_principal.setSpacing(0)
 
         # ---------------------------------------------------------
-        # PANEL LATERAL (scroll + estilo + ancho fijo)
+        # PANEL LATERAL
         # ---------------------------------------------------------
         panel_lateral_widget = self.crear_menu_lateral()
         aplicar_estilo_panel_lateral(panel_lateral_widget)
@@ -36,10 +44,7 @@ class MainWindow(QMainWindow):
         scroll_lateral = QScrollArea()
         scroll_lateral.setWidgetResizable(True)
         scroll_lateral.setFrameShape(QScrollArea.Shape.NoFrame)
-        scroll_lateral.setHorizontalScrollBarPolicy(
-            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
-        )
-
+        scroll_lateral.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         scroll_lateral.setWidget(panel_lateral_widget)
         scroll_lateral.setFixedWidth(260)
 
@@ -59,13 +64,12 @@ class MainWindow(QMainWindow):
         self.zona_contenido_layout.addWidget(self.encabezado_modulo)
 
         layout_principal.addWidget(self.zona_contenido, stretch=1)
-
         self.setCentralWidget(contenedor)
 
         self.cargar_modulo(self.crear_pantalla_inicio(), "Pantalla de Inicio")
 
     # ---------------------------------------------------------
-    # MENÚ LATERAL CON ACORDEÓN
+    # MENÚ LATERAL
     # ---------------------------------------------------------
     def crear_menu_lateral(self):
         panel = QWidget()
@@ -80,24 +84,12 @@ class MainWindow(QMainWindow):
             self.crear_seccion_acordeon(
                 "🏠 Inicio",
                 [
-                    (
-                        "🏡 Pantalla de inicio",
-                        lambda: self.cargar_modulo(
-                            self.crear_pantalla_inicio(), "Pantalla de Inicio"
-                        ),
-                    ),
-                    (
-                        "🎨 Paleta de colores",
-                        lambda: self.cargar_modulo(
-                            self.crear_pantalla_paleta(), "Paleta de colores"
-                        ),
-                    ),
-                    (
-                        "ℹ️ Acerca de...",
-                        lambda: self.cargar_modulo(
-                            self.crear_pantalla_acerca(), "Acerca de..."
-                        ),
-                    ),
+                    ("🏡 Pantalla de inicio",
+                     lambda: self.cargar_modulo(self.crear_pantalla_inicio(), "Pantalla de Inicio")),
+                    ("🎨 Paleta de colores",
+                     lambda: self.cargar_modulo(self.crear_pantalla_paleta(), "Paleta de colores")),
+                    ("ℹ️ Acerca de...",
+                     lambda: self.cargar_modulo(self.crear_pantalla_acerca(), "Acerca de...")),
                 ],
             )
         )
@@ -107,32 +99,14 @@ class MainWindow(QMainWindow):
             self.crear_seccion_acordeon(
                 "📄 Contratos",
                 [
-                    (
-                        "➕ Nuevo contrato",
-                        lambda: self.cargar_modulo(
-                            self.crear_placeholder("Nuevo contrato"), "Nuevo contrato"
-                        ),
-                    ),
-                    (
-                        "🔍 Consulta",
-                        lambda: self.cargar_modulo(
-                            self.crear_placeholder("Consulta contratos"),
-                            "Consulta contratos",
-                        ),
-                    ),
-                    (
-                        "✏️ Modificación",
-                        lambda: self.cargar_modulo(
-                            self.crear_placeholder("Modificar contrato"),
-                            "Modificar contrato",
-                        ),
-                    ),
-                    (
-                        "❌ Anulación",
-                        lambda: self.cargar_modulo(
-                            self.crear_placeholder("Anular contrato"), "Anular contrato"
-                        ),
-                    ),
+                    ("➕ Nuevo contrato",
+                     lambda: self.cargar_modulo(self.crear_placeholder("Nuevo contrato"), "Nuevo contrato")),
+                    ("🔍 Consulta",
+                     lambda: self.cargar_modulo(self.crear_placeholder("Consulta contratos"), "Consulta contratos")),
+                    ("✏️ Modificación",
+                     lambda: self.cargar_modulo(self.crear_placeholder("Modificar contrato"), "Modificar contrato")),
+                    ("❌ Anulación",
+                     lambda: self.cargar_modulo(self.crear_placeholder("Anular contrato"), "Anular contrato")),
                 ],
             )
         )
@@ -142,26 +116,12 @@ class MainWindow(QMainWindow):
             self.crear_seccion_acordeon(
                 "💡 Facturas",
                 [
-                    (
-                        "➕ Nueva factura",
-                        lambda: self.cargar_modulo(
-                            self.crear_placeholder("Nueva factura"), "Nueva factura"
-                        ),
-                    ),
-                    (
-                        "🔍 Consulta",
-                        lambda: self.cargar_modulo(
-                            self.crear_placeholder("Consulta facturas"),
-                            "Consulta facturas",
-                        ),
-                    ),
-                    (
-                        "✏️ Modificación",
-                        lambda: self.cargar_modulo(
-                            self.crear_placeholder("Modificar factura"),
-                            "Modificar factura",
-                        ),
-                    ),
+                    ("➕ Nueva factura",
+                     lambda: self.cargar_modulo(self.crear_placeholder("Nueva factura"), "Nueva factura")),
+                    ("🔍 Consulta",
+                     lambda: self.cargar_modulo(self.crear_placeholder("Consulta facturas"), "Consulta facturas")),
+                    ("✏️ Modificación",
+                     lambda: self.cargar_modulo(self.crear_placeholder("Modificar factura"), "Modificar factura")),
                 ],
             )
         )
@@ -171,19 +131,21 @@ class MainWindow(QMainWindow):
             self.crear_seccion_acordeon(
                 "⚡ Consumos",
                 [
-                    (
-                        "➕ Nuevo consumo",
-                        lambda: self.cargar_modulo(
-                            self.crear_placeholder("Nuevo consumo"), "Nuevo consumo"
-                        ),
-                    ),
-                    (
-                        "🔍 Consulta",
-                        lambda: self.cargar_modulo(
-                            self.crear_placeholder("Consulta consumos"),
-                            "Consulta consumos",
-                        ),
-                    ),
+                    ("➕ Nuevo consumo",
+                     lambda: self.cargar_modulo(self.crear_placeholder("Nuevo consumo"), "Nuevo consumo")),
+                    ("🔍 Consulta",
+                     lambda: self.cargar_modulo(self.crear_placeholder("Consulta consumos"), "Consulta consumos")),
+                ],
+            )
+        )
+
+        # --- Sección Sistema (NUEVA) ---
+        layout.addWidget(
+            self.crear_seccion_acordeon(
+                "🛠️ Sistema",
+                [
+                    ("🧱 Inicializar BD",
+                     self.opcion_inicializar_bd),
                 ],
             )
         )
@@ -199,7 +161,34 @@ class MainWindow(QMainWindow):
         return panel
 
     # ---------------------------------------------------------
-    # SECCIÓN ACORDEÓN
+    # OPCIÓN: INICIALIZAR BD
+    # ---------------------------------------------------------
+    def opcion_inicializar_bd(self):
+        self.cargar_modulo(QWidget(), "Inicialización BD")
+
+        msg = QMessageBox(self)
+        msg.setWindowTitle("Inicializar Base de Datos")
+        msg.setIcon(QMessageBox.Warning)
+        msg.setText(
+            "Esta operación creará o actualizará la estructura de la base de datos.\n"
+            "Debe usarse solo en instalaciones nuevas o bajo supervisión.\n\n"
+            "¿Deseas continuar?"
+        )
+        msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        respuesta = msg.exec()
+
+        if respuesta == QMessageBox.Yes:
+            db_init.crear_tablas_y_vistas(self.cursor)
+            self.conn.commit()
+
+            ok = QMessageBox(self)
+            ok.setWindowTitle("BD Inicializada")
+            ok.setIcon(QMessageBox.Information)
+            ok.setText("La base de datos ha sido inicializada correctamente.")
+            ok.exec()
+
+    # ---------------------------------------------------------
+    # ACORDEÓN
     # ---------------------------------------------------------
     def crear_seccion_acordeon(self, titulo, opciones):
         contenedor = QWidget()
@@ -227,9 +216,6 @@ class MainWindow(QMainWindow):
         cont_layout.addWidget(panel_opciones)
         return contenedor
 
-    # ---------------------------------------------------------
-    # LÓGICA DEL ACORDEÓN
-    # ---------------------------------------------------------
     def toggle_acordeon(self, titulo):
         for nombre, (btn, panel) in self.secciones_acordeon.items():
             if nombre == titulo:
@@ -239,7 +225,7 @@ class MainWindow(QMainWindow):
                 panel.setVisible(False)
 
     # ---------------------------------------------------------
-    # PANTALLA INICIAL
+    # PANTALLAS
     # ---------------------------------------------------------
     def crear_pantalla_inicio(self):
         w = QWidget()
@@ -248,13 +234,9 @@ class MainWindow(QMainWindow):
         l.addStretch()
         return w
 
-    # ---------------------------------------------------------
-    # PANTALLA PALETAS (FUNCIONAL)
-    # ---------------------------------------------------------
     def crear_pantalla_paleta(self):
         w = QWidget()
         l = QVBoxLayout(w)
-
         l.addWidget(QLabel("Selecciona una paleta de colores"))
 
         for nombre, paleta in PALETAS.items():
@@ -266,30 +248,20 @@ class MainWindow(QMainWindow):
         l.addStretch()
         return w
 
-    # ---------------------------------------------------------
-    # PANTALLA ACERCA DE
-    # ---------------------------------------------------------
     def crear_pantalla_acerca(self):
         w = QWidget()
         l = QVBoxLayout(w)
-
-        texto = (
+        lbl = QLabel(
             "<b>Gestion_suministros 2.0</b><br>"
             "Proyecto iniciado: <b>enero 2025</b><br>"
             "Programador: <b>Antonio Morales</b><br><br>"
             "Aplicación para la gestión modular de contratos, facturas y consumos."
         )
-
-        lbl = QLabel(texto)
         lbl.setWordWrap(True)
         l.addWidget(lbl)
-
         l.addStretch()
         return w
 
-    # ---------------------------------------------------------
-    # PLACEHOLDER
-    # ---------------------------------------------------------
     def crear_placeholder(self, nombre):
         w = QWidget()
         l = QVBoxLayout(w)
@@ -315,5 +287,4 @@ class MainWindow(QMainWindow):
     # ---------------------------------------------------------
     def aplicar_paleta(self, paleta):
         from estilo import generar_stylesheet
-
         self.setStyleSheet(generar_stylesheet(paleta))

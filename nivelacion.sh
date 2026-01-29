@@ -44,7 +44,12 @@ echo "📝 Añadiendo todos los cambios..."
 git add -A
 
 # Crear mensaje de commit limpio
-COMMIT_MSG="Nivelaccion manual, Trabajos en BD con las tablas. $(date '+%Y-%m-%d %H:%M')"
+COMMIT_MSG="Nivelaccion manual, Creacion del DRU definitivo de la BD.
+Creacion de db_init.py y los sql de creacion de tablas y vistas en BD.
+Modificacion de main.py para que abra y cierre la conexion con BD.
+Modificacion de main_window para que integre db_init.py como opcion de menu.
+Inicializada BD almacen.db via opcion menu y db_init.
+Creacion DRU Nuevo contrato provisional $(date '+%Y-%m-%d %H:%M')"
 
 echo "💾 Realizando commit: $COMMIT_MSG"
 git commit -m "$COMMIT_MSG"
