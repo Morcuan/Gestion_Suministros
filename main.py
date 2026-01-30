@@ -1,7 +1,8 @@
-import sys
 import sqlite3
+import sys
 
 from PySide6.QtWidgets import QApplication
+
 from main_window import MainWindow
 
 DB_PATH = "data/almacen.db"

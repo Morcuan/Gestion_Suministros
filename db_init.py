@@ -15,7 +15,7 @@ def crear_tabla_contratos_identificacion(cursor):
             id_contrato     INTEGER PRIMARY KEY AUTOINCREMENT,
             ncontrato       TEXT NOT NULL,
             suplemento      INTEGER NOT NULL,
-            cod_compania    TEXT NOT NULL,
+            compania        TEXT NOT NULL,
             cod_postal      TEXT NOT NULL,
             fec_inicio      TEXT NOT NULL,
             fec_final       TEXT NOT NULL,
@@ -23,7 +23,6 @@ def crear_tabla_contratos_identificacion(cursor):
             fin_suple       TEXT NOT NULL,
             fec_anulacion   TEXT,
             estado          TEXT NOT NULL,
-            FOREIGN KEY (cod_compania) REFERENCES companias(cod_compania),
             FOREIGN KEY (cod_postal)   REFERENCES cpostales(cod_postal)
         );
     """)
@@ -137,12 +136,10 @@ def crear_vista_contratos_completo(cursor):
             ce.vertido, ce.excedentes, ce.pv_excedent,
             cg.bono_social, cg.alq_contador, cg.otros_gastos,
             cg.i_electrico, cg.iva,
-            co.nombre AS nombre_compania,
             cp.poblacion AS nombre_poblacion
         FROM contratos_identificacion ci
         JOIN contratos_energia ce ON ci.id_contrato = ce.id_contrato
         JOIN contratos_gastos cg ON ci.id_contrato = cg.id_contrato
-        JOIN companias co ON ci.cod_compania = co.cod_compania
         JOIN cpostales cp ON ci.cod_postal = cp.cod_postal;
     """)
 
