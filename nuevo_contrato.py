@@ -1,6 +1,7 @@
 import sqlite3
 
-from PySide6.QtWidgets import QMessageBox, QVBoxLayout, QWidget
+from PySide6.QtCore import Signal
+from PySide6.QtWidgets import QMessageBox, QSizePolicy, QVBoxLayout, QWidget
 
 from form_contrato import FormContrato
 
@@ -8,38 +9,48 @@ from form_contrato import FormContrato
 class NuevoContrato(QWidget):
     """
     Módulo funcional para dar de alta un contrato nuevo.
-    Gestiona:
-    - Llamada al formulario
-    - Carga de compañías
-    - Validación de CP
-    - Alta de CP inexistente
-    - Inserción transaccional en las tres tablas
+    Integrado en el contenedor central de MainWindow.
     """
+    cerrado = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
 
         self.db_path = "data/almacen.db"
 
-        # --- Contenedor principal del módulo ---
+        # ------------------------------------------------------------
+        # CONTENEDOR PRINCIPAL DEL MÓDULO
+        # ------------------------------------------------------------
         layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(10)
         self.setLayout(layout)
 
-        # --- Crear formulario en modo "nuevo" ---
+        # ------------------------------------------------------------
+        # FORMULARIO DE CONTRATO
+        # ------------------------------------------------------------
         self.form = FormContrato(modo="nuevo", parent=self)
         layout.addWidget(self.form)
 
-        # --- Conectar señales ---
+        # Ajustes de tamaño dentro del contenedor
+        self.form.setMinimumHeight(650)
+        self.form.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        # ------------------------------------------------------------
+        # SEÑALES
+        # ------------------------------------------------------------
         self.form.contrato_guardado.connect(self.insertar_contrato)
         self.form.cancelado.connect(self.cerrar)
 
-        # --- Cargar compañías ---
+        # ------------------------------------------------------------
+        # CARGA DE COMPAÑÍAS
+        # ------------------------------------------------------------
         self.cargar_companias()
 
     # ------------------------------------------------------------
     #  Cargar compañías desde la BD
     # ------------------------------------------------------------
-
     def cargar_companias(self):
         try:
             con = sqlite3.connect(self.db_path)
@@ -55,9 +66,8 @@ class NuevoContrato(QWidget):
             QMessageBox.critical(self, "Error", f"No se pudieron cargar las compañías:\n{e}")
 
     # ------------------------------------------------------------
-    #  Comprobación de existencia de CP (llamado por el formulario)
+    #  Comprobación de existencia de CP
     # ------------------------------------------------------------
-
     def existe_cp(self, cp):
         try:
             con = sqlite3.connect(self.db_path)
@@ -72,52 +82,21 @@ class NuevoContrato(QWidget):
             return False
 
     # ------------------------------------------------------------
-    #  Inserción de CP nuevo (llamado por la ventana auxiliar)
-    # ------------------------------------------------------------
-
-    def insertar_cp(self, cp):
-        """
-        El formulario AltaCodigoPostal emite solo el CP.
-        Aquí pedimos la población directamente desde la BD.
-        """
-        try:
-            # Recuperar población desde la ventana auxiliar
-            # La ventana auxiliar ya insertó la población en su señal
-            # pero aquí debemos obtenerla del widget
-            # Sin embargo, la señal solo trae el CP, así que
-            # la ventana auxiliar debe haber insertado ya en BD.
-            pass
-
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"No se pudo insertar el código postal:\n{e}")
-
-    # ------------------------------------------------------------
     #  Inserción transaccional del contrato
     # ------------------------------------------------------------
-
     def insertar_contrato(self, datos):
-        """
-        Inserta en:
-        - contratos_identificacion
-        - contratos_energia
-        - contratos_gastos
-        Todo dentro de una transacción.
-        """
-
         ident = datos["identificacion"]
         ener = datos["energia"]
         gas = datos["gastos"]
 
+        con = None
         try:
             con = sqlite3.connect(self.db_path)
             cur = con.cursor()
 
-            # Iniciar transacción
             con.execute("BEGIN")
 
-            # ----------------------------------------------------
-            # 1. Insertar en contratos_identificacion
-            # ----------------------------------------------------
+            # 1. Identificación
             cur.execute("""
                 INSERT INTO contratos_identificacion
                 (ncontrato, suplemento, compania, cod_postal,
@@ -137,12 +116,9 @@ class NuevoContrato(QWidget):
                 ident["fin_suple"]
             ))
 
-            # Obtener id_contrato generado
             id_contrato = cur.lastrowid
 
-            # ----------------------------------------------------
-            # 2. Insertar en contratos_energia
-            # ----------------------------------------------------
+            # 2. Energía
             cur.execute("""
                 INSERT INTO contratos_energia
                 (id_contrato, ppunta, pvalle, pv_ppunta, pv_pvalle,
@@ -163,9 +139,7 @@ class NuevoContrato(QWidget):
                 ener["pv_excedent"]
             ))
 
-            # ----------------------------------------------------
-            # 3. Insertar en contratos_gastos
-            # ----------------------------------------------------
+            # 3. Gastos
             cur.execute("""
                 INSERT INTO contratos_gastos
                 (id_contrato, bono_social, alq_contador, otros_gastos,
@@ -180,7 +154,6 @@ class NuevoContrato(QWidget):
                 gas["iva"]
             ))
 
-            # Confirmar transacción
             con.commit()
             con.close()
 
@@ -190,17 +163,18 @@ class NuevoContrato(QWidget):
                 "El contrato se ha guardado correctamente."
             )
 
+            # 🔁 Tras guardar, cerramos el módulo → MainWindow volverá al inicio
             self.cerrar()
 
         except Exception as e:
-            con.rollback()
-            con.close()
+            if con is not None:
+                con.rollback()
+                con.close()
             QMessageBox.critical(self, "Error", f"No se pudo guardar el contrato:\n{e}")
 
     # ------------------------------------------------------------
     #  Cierre del módulo
     # ------------------------------------------------------------
-
     def cerrar(self):
-        self.form.close()
-        self.close()
+        # No cerramos ventana (no es independiente), solo avisamos al MainWindow
+        self.cerrado.emit()

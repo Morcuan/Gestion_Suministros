@@ -44,10 +44,8 @@ echo "📝 Añadiendo todos los cambios..."
 git add -A
 
 # Crear mensaje de commit limpio
-COMMIT_MSG="Nivelaccion manual, Revision DRU Nuevo contrato.
-Creacion del modulo form_contrato.py que diseña el formulario de contrato.
-Ordenacion de los import en los modulos existentes con Ruff.
-Creacion del modulo nuevo_contrato.py.
+COMMIT_MSG="Nivelaccion manual, Ajustando la visualizacion del formulario de nuevo contrato.
+Falta ajustar la altura de los contenedores visualmente.
  $(date '+%Y-%m-%d %H:%M')"
 
 echo "💾 Realizando commit: $COMMIT_MSG"

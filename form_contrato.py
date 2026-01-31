@@ -1,5 +1,5 @@
 import re
-from datetime import datetime
+from datetime import date, datetime
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QMessageBox,
     QPushButton,
+    QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
@@ -58,7 +59,6 @@ class AltaCodigoPostal(QDialog):
             QMessageBox.warning(self, "Atención", "Debe introducir la población.")
             return
 
-        # Señal con el CP creado
         self.codigo_postal_creado.emit(self.cp.text())
         self.accept()
 
@@ -78,9 +78,6 @@ class FormContrato(QWidget):
         self.modo = modo
         self.datos = datos or {}
 
-        # 🔥 Esto es lo que convierte el formulario en una ventana real
-        self.setWindowFlags(Qt.Window)
-
         self.setWindowTitle("Formulario de contrato")
 
         # ============================================================
@@ -91,7 +88,13 @@ class FormContrato(QWidget):
         self.bloque_energia = self.crear_bloque_energia()
         self.bloque_gastos = self.crear_bloque_gastos()
 
-        # Botones
+        # 🔧 Ajustes de tamaño del formulario
+        self.setMinimumWidth(650)
+        self.setMaximumWidth(750)
+
+        # ------------------------------------------------------------
+        # BOTONES
+        # ------------------------------------------------------------
         self.btn_guardar = QPushButton("Guardar contrato")
         self.btn_cancelar = QPushButton("Cancelar")
 
@@ -102,7 +105,9 @@ class FormContrato(QWidget):
         if self.modo == "consulta":
             self.btn_guardar.hide()
 
-        # Layout general
+        # ------------------------------------------------------------
+        # LAYOUT GENERAL
+        # ------------------------------------------------------------
         layout = QVBoxLayout()
         layout.addWidget(self.bloque_ident)
         layout.addWidget(self.bloque_energia)
@@ -116,13 +121,19 @@ class FormContrato(QWidget):
         layout.addLayout(botones)
         self.setLayout(layout)
 
-        # Precarga si procede
+        # 🔧 Ajuste de anchos
+        self.ajustar_anchos()
+
+        # ------------------------------------------------------------
+        # PRECARGA SI PROCEDE
+        # ------------------------------------------------------------
         if self.modo in ("modificar", "consulta"):
             self.cargar_datos()
 
-        # Conectar validaciones progresivas
+        # ------------------------------------------------------------
+        # VALIDACIONES
+        # ------------------------------------------------------------
         self.conectar_validaciones()
-
 
 
     # ============================================================
@@ -133,12 +144,14 @@ class FormContrato(QWidget):
         box = QGroupBox("Identificación")
         layout = QFormLayout()
 
+        layout.setHorizontalSpacing(20)
+        layout.setVerticalSpacing(6)
+
         self.ncontrato = QLineEdit()
         self.suplemento = QLineEdit("0")
         self.suplemento.setReadOnly(True)
 
         self.compania = QComboBox()
-        # Se cargará desde BD en el módulo llamador
 
         self.cod_postal = QLineEdit()
         self.fec_inicio = QLineEdit()
@@ -168,6 +181,7 @@ class FormContrato(QWidget):
         layout.addRow("Fin suplemento:", self.fin_suple)
 
         box.setLayout(layout)
+        box.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding)
         return box
 
 
@@ -179,6 +193,9 @@ class FormContrato(QWidget):
     def crear_bloque_energia(self):
         box = QGroupBox("Energía")
         layout = QFormLayout()
+
+        layout.setHorizontalSpacing(20)
+        layout.setVerticalSpacing(6)
 
         self.ppunta = QLineEdit()
         self.pvalle = QLineEdit()
@@ -208,6 +225,7 @@ class FormContrato(QWidget):
         layout.addRow("PV excedente:", self.pv_excedent)
 
         box.setLayout(layout)
+        box.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding)
         return box
 
 
@@ -219,6 +237,9 @@ class FormContrato(QWidget):
     def crear_bloque_gastos(self):
         box = QGroupBox("Gastos")
         layout = QFormLayout()
+
+        layout.setHorizontalSpacing(20)
+        layout.setVerticalSpacing(6)
 
         self.bono_social = QLineEdit()
         self.alq_contador = QLineEdit()
@@ -233,6 +254,7 @@ class FormContrato(QWidget):
         layout.addRow("IVA (%):", self.iva)
 
         box.setLayout(layout)
+        box.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding)
         return box
 
 
@@ -263,16 +285,9 @@ class FormContrato(QWidget):
     # ============================================================
 
     def validar_formulario(self):
-        """
-        Validación defensiva completa.
-        Habilita o deshabilita el botón Guardar.
-        """
-
-        # Normalización de ncontrato
         nc = self.ncontrato.text().strip().upper().replace(" ", "")
         self.ncontrato.setText(nc)
 
-        # Validación de fechas
         if not self.validar_fecha(self.fec_inicio.text()):
             self.btn_guardar.setEnabled(False)
             return
@@ -281,7 +296,6 @@ class FormContrato(QWidget):
             self.btn_guardar.setEnabled(False)
             return
 
-        # Coherencia inicio < final
         try:
             fi = self.to_iso(self.fec_inicio.text())
             ff = self.to_iso(self.fec_final.text())
@@ -292,12 +306,10 @@ class FormContrato(QWidget):
             self.btn_guardar.setEnabled(False)
             return
 
-        # Validación CP (solo formato aquí)
         if not re.fullmatch(r"\d{5}", self.cod_postal.text()):
             self.btn_guardar.setEnabled(False)
             return
 
-        # Validación potencias
         try:
             p1 = float(self.ppunta.text().replace(",", "."))
             p2 = float(self.pvalle.text().replace(",", "."))
@@ -308,7 +320,6 @@ class FormContrato(QWidget):
             self.btn_guardar.setEnabled(False)
             return
 
-        # Si todo está OK:
         self.btn_guardar.setEnabled(True)
 
 
@@ -319,11 +330,6 @@ class FormContrato(QWidget):
 
     def pre_guardado(self):
         cp = self.cod_postal.text()
-
-        # Aquí NO consultamos BD: lo hará el módulo llamador.
-        # Simulamos consulta mediante señal o callback externo.
-        # Para este esqueleto, asumimos que el módulo llamador
-        # implementará un método: self.existe_cp(cp)
 
         if hasattr(self.parent(), "existe_cp"):
             if not self.parent().existe_cp(cp):
@@ -339,7 +345,6 @@ class FormContrato(QWidget):
                     self.cod_postal.setFocus()
                     return
 
-                # Abrir ventana auxiliar
                 dlg = AltaCodigoPostal(cp, self)
                 dlg.codigo_postal_creado.connect(self.parent().insertar_cp)
                 dlg.exec()
@@ -349,7 +354,7 @@ class FormContrato(QWidget):
 
 
     # ============================================================
-    #  GUARDADO FINAL (emite señal)
+    #  GUARDADO FINAL
     # ============================================================
 
     def guardar(self):
@@ -395,6 +400,15 @@ class FormContrato(QWidget):
     #  FUNCIONES AUXILIARES
     # ============================================================
 
+    def ajustar_anchos(self):
+        for w in self.findChildren(QLineEdit):
+            w.setMinimumWidth(260)
+            w.setMaximumWidth(320)
+
+        for w in self.findChildren(QComboBox):
+            w.setMinimumWidth(260)
+            w.setMaximumWidth(320)
+
     def validar_fecha(self, f):
         return bool(re.fullmatch(r"\d{2}/\d{2}/\d{4}", f))
 
@@ -407,12 +421,11 @@ class FormContrato(QWidget):
             return 0.0
         return float(t.replace(",", "."))
 
-    def calcular_estado(self, fi_iso, ff_iso):
+    def calcular_estado(self):
         hoy = date.today()
-        fi = datetime.strptime(fi_iso, "%Y-%m-%d").date()
-        ff = datetime.strptime(ff_iso, "%Y-%m-%d").date()
+        fi = datetime.strptime(self.to_iso(self.fec_inicio.text()), "%Y-%m-%d").date()
+        ff = datetime.strptime(self.to_iso(self.fec_final.text()), "%Y-%m-%d").date()
 
-        # En nuevo contrato no hay anulación
         if fi <= hoy <= ff:
             return "Activo"
         elif hoy < fi:
@@ -422,10 +435,4 @@ class FormContrato(QWidget):
         return "Activo"
 
     def cargar_datos(self):
-        """
-        Punto de extensión para modo modificar/consulta.
-        Aquí mapearías self.datos → widgets.
-        """
         pass
-
-

@@ -12,8 +12,6 @@ from PySide6.QtWidgets import (
 
 import db_init
 from estilo import PALETAS, aplicar_estilo_boton, aplicar_estilo_panel_lateral
-
-# 🔥 INTEGRACIÓN NUEVA
 from nuevo_contrato import NuevoContrato
 
 
@@ -71,9 +69,6 @@ class MainWindow(QMainWindow):
 
         self.cargar_modulo(self.crear_pantalla_inicio(), "Pantalla de Inicio")
 
-        # Mantener referencia a ventanas externas
-        self.ventana_nuevo_contrato = None
-
     # ---------------------------------------------------------
     # MENÚ LATERAL
     # ---------------------------------------------------------
@@ -106,8 +101,7 @@ class MainWindow(QMainWindow):
                 "📄 Contratos",
                 [
                     ("➕ Nuevo contrato",
-                     lambda: self.cargar_modulo(NuevoContrato(self), "Nuevo contrato")),
-
+                     lambda: self.abrir_nuevo_contrato()),
                     ("🔍 Consulta",
                      lambda: self.cargar_modulo(self.crear_placeholder("Consulta contratos"), "Consulta contratos")),
                     ("✏️ Modificación",
@@ -168,15 +162,18 @@ class MainWindow(QMainWindow):
         return panel
 
     # ---------------------------------------------------------
-    # OPCIÓN: NUEVO CONTRATO (INTEGRACIÓN)
+    # OPCIÓN: NUEVO CONTRATO (INTEGRACIÓN EN CONTENEDOR)
     # ---------------------------------------------------------
     def abrir_nuevo_contrato(self):
-        print("ABRIENDO NUEVO CONTRATO...")
-        """
-        Lanza el módulo NuevoContrato como ventana independiente.
-        """
-        self.ventana_nuevo_contrato = NuevoContrato(parent=self)
-        self.ventana_nuevo_contrato.show()
+        modulo = NuevoContrato(parent=self)
+        modulo.cerrado.connect(self.volver_inicio)
+        self.cargar_modulo(modulo, "Nuevo contrato")
+
+    # ---------------------------------------------------------
+    # VOLVER A PANTALLA DE INICIO
+    # ---------------------------------------------------------
+    def volver_inicio(self):
+        self.cargar_modulo(self.crear_pantalla_inicio(), "Pantalla de Inicio")
 
     # ---------------------------------------------------------
     # OPCIÓN: INICIALIZAR BD
@@ -290,9 +287,7 @@ class MainWindow(QMainWindow):
     # ---------------------------------------------------------
     # CARGA DE MÓDULOS
     # ---------------------------------------------------------
-
     def cargar_modulo(self, widget, titulo):
-        # Limpiar completamente la zona de contenido excepto el encabezado
         for i in reversed(range(self.zona_contenido_layout.count())):
             item = self.zona_contenido_layout.itemAt(i)
             w = item.widget()
@@ -300,11 +295,8 @@ class MainWindow(QMainWindow):
                 self.zona_contenido_layout.removeWidget(w)
                 w.deleteLater()
 
-        # Título
         self.encabezado_modulo.setText(titulo)
-
-        # Añadir el nuevo módulo
-        self.zona_contenido_layout.addWidget(widget)
+        self.zona_contenido_layout.addWidget(widget, stretch=1)
 
     # ---------------------------------------------------------
     # APLICAR PALETA
