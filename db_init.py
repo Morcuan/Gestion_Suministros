@@ -10,13 +10,14 @@ DB_PATH = "data/almacen.db"
 # ---------------------------------------------------------
 
 def crear_tabla_contratos_identificacion(cursor):
+    cursor.execute("DROP TABLE IF EXISTS contratos_identificacion;")
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS contratos_identificacion (
             id_contrato     INTEGER PRIMARY KEY AUTOINCREMENT,
             ncontrato       TEXT NOT NULL,
             suplemento      INTEGER NOT NULL,
             compania        TEXT NOT NULL,
-            cod_postal      TEXT NOT NULL,
+            codigo_postal   TEXT NOT NULL,
             fec_inicio      TEXT NOT NULL,
             fec_final       TEXT NOT NULL,
             efec_suple      TEXT NOT NULL,
@@ -29,6 +30,7 @@ def crear_tabla_contratos_identificacion(cursor):
 
 
 def crear_tabla_contratos_energia(cursor):
+    cursor.execute("DROP TABLE IF EXISTS contratos_energia;")
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS contratos_energia (
             id_contrato     INTEGER PRIMARY KEY,
@@ -40,7 +42,6 @@ def crear_tabla_contratos_energia(cursor):
             pv_conllano     REAL NOT NULL,
             pv_convalle     REAL NOT NULL,
             vertido         INTEGER NOT NULL,
-            excedentes      REAL NOT NULL,
             pv_excedent     REAL NOT NULL,
             FOREIGN KEY (id_contrato) REFERENCES contratos_identificacion(id_contrato)
         );
@@ -48,6 +49,7 @@ def crear_tabla_contratos_energia(cursor):
 
 
 def crear_tabla_contratos_gastos(cursor):
+    cursor.execute("DROP TABLE IF EXISTS contratos_gastos;")
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS contratos_gastos (
             id_contrato     INTEGER PRIMARY KEY,
@@ -95,6 +97,7 @@ def crear_tabla_cpostales(cursor):
 # ---------------------------------------------------------
 
 def crear_tabla_facturas(cursor):
+    cursor.execute("DROP TABLE IF EXISTS facturas;")
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS facturas (
             id_factura      INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -102,21 +105,13 @@ def crear_tabla_facturas(cursor):
             fecha_factura   TEXT NOT NULL,
             periodo_inicio  TEXT NOT NULL,
             periodo_fin     TEXT NOT NULL,
+            dias_factura    REAL NOT NULL,
+            con_punta       REAL NOT NULL,
+            con_llano       REAL NOT NULL,
+            con_valle       REAL NOT NULL,
+            excedentes      REAL NOT NULL,
             importe_total   REAL NOT NULL,
             FOREIGN KEY (id_contrato) REFERENCES contratos_identificacion(id_contrato)
-        );
-    """)
-
-
-def crear_tabla_consumos(cursor):
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS consumos (
-            id_consumo  INTEGER PRIMARY KEY AUTOINCREMENT,
-            id_factura  INTEGER NOT NULL,
-            con_punta   REAL NOT NULL,
-            con_llano   REAL NOT NULL,
-            con_valle   REAL NOT NULL,
-            FOREIGN KEY (id_factura) REFERENCES facturas(id_factura)
         );
     """)
 
@@ -133,7 +128,7 @@ def crear_vista_contratos_completo(cursor):
             ci.*,
             ce.ppunta, ce.pv_ppunta, ce.pvalle, ce.pv_pvalle,
             ce.pv_conpunta, ce.pv_conllano, ce.pv_convalle,
-            ce.vertido, ce.excedentes, ce.pv_excedent,
+            ce.vertido, ce.pv_excedent,
             cg.bono_social, cg.alq_contador, cg.otros_gastos,
             cg.i_electrico, cg.iva,
             cp.poblacion AS nombre_poblacion
@@ -153,9 +148,11 @@ def crear_tablas_y_vistas(cursor):
     crear_tabla_contratos_energia(cursor)
     crear_tabla_contratos_gastos(cursor)
     crear_tabla_facturas(cursor)
-    crear_tabla_consumos(cursor)
     crear_vista_contratos_completo(cursor)
 
+# ----------------------------------
+# DROP DE TABLAS
+# ----------------------------------
 
 # ---------------------------------------------------------
 # MODO AUTÓNOMO (SOLO SI SE EJECUTA DIRECTAMENTE)
@@ -164,6 +161,7 @@ def crear_tablas_y_vistas(cursor):
 if __name__ == "__main__":
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
+    borrar_tablas_y_vistas(cursor)
     crear_tablas_y_vistas(cursor)
     conn.commit()
     conn.close()

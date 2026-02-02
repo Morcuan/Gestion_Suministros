@@ -26,7 +26,7 @@ class MainWindow(QMainWindow):
         self.cursor = cursor
 
         self.setWindowTitle("Gestion_suministros 2.0")
-        self.resize(1200, 800)
+        self.resize(950, 1000)
 
         # ---------------------------------------------------------
         # CONTENEDOR PRINCIPAL

@@ -72,7 +72,7 @@ class NuevoContrato(QWidget):
         try:
             con = sqlite3.connect(self.db_path)
             cur = con.cursor()
-            cur.execute("SELECT COUNT(*) FROM cpostales WHERE cod_postal = ?", (cp,))
+            cur.execute("SELECT COUNT(*) FROM cpostales WHERE codigo_postal = ?", (cp,))
             existe = cur.fetchone()[0] > 0
             con.close()
             return existe
@@ -99,7 +99,7 @@ class NuevoContrato(QWidget):
             # 1. Identificación
             cur.execute("""
                 INSERT INTO contratos_identificacion
-                (ncontrato, suplemento, compania, cod_postal,
+                (ncontrato, suplemento, compania, codigo_postal,
                  fec_inicio, fec_final, fec_anulacion, estado,
                  efec_suple, fin_suple)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -107,7 +107,7 @@ class NuevoContrato(QWidget):
                 ident["ncontrato"],
                 ident["suplemento"],
                 ident["compania"],
-                ident["cod_postal"],
+                ident["codigo_postal"],
                 ident["fec_inicio"],
                 ident["fec_final"],
                 ident["fec_anulacion"],

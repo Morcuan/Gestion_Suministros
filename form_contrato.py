@@ -17,6 +17,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+# Import del estilo
+from estilo import aplicar_estilo_campo
+
 # ============================================================
 #  Ventana auxiliar para alta de códigos postales
 # ============================================================
@@ -88,6 +91,15 @@ class FormContrato(QWidget):
         self.bloque_energia = self.crear_bloque_energia()
         self.bloque_gastos = self.crear_bloque_gastos()
 
+        # ------------------------------------------------------------
+        # APLICAR ESTILO A TODOS LOS CAMPOS
+        # ------------------------------------------------------------
+        for w in self.findChildren(QLineEdit):
+            aplicar_estilo_campo(w)
+
+        for w in self.findChildren(QComboBox):
+            aplicar_estilo_campo(w)
+
         # 🔧 Ajustes de tamaño del formulario
         self.setMinimumWidth(650)
         self.setMaximumWidth(750)
@@ -153,7 +165,7 @@ class FormContrato(QWidget):
 
         self.compania = QComboBox()
 
-        self.cod_postal = QLineEdit()
+        self.codigo_postal = QLineEdit()
         self.fec_inicio = QLineEdit()
         self.fec_final = QLineEdit()
         self.fec_anulacion = QLineEdit()
@@ -172,7 +184,7 @@ class FormContrato(QWidget):
         layout.addRow("Nº contrato:", self.ncontrato)
         layout.addRow("Suplemento:", self.suplemento)
         layout.addRow("Compañía:", self.compania)
-        layout.addRow("Código postal:", self.cod_postal)
+        layout.addRow("Código postal:", self.codigo_postal)
         layout.addRow("Fecha inicio:", self.fec_inicio)
         layout.addRow("Fecha final:", self.fec_final)
         layout.addRow("Fecha anulación:", self.fec_anulacion)
@@ -254,7 +266,8 @@ class FormContrato(QWidget):
         layout.addRow("IVA (%):", self.iva)
 
         box.setLayout(layout)
-        box.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding)
+        box.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
+
         return box
 
 
@@ -265,7 +278,7 @@ class FormContrato(QWidget):
 
     def conectar_validaciones(self):
         widgets = [
-            self.ncontrato, self.cod_postal, self.fec_inicio, self.fec_final,
+            self.ncontrato, self.codigo_postal, self.fec_inicio, self.fec_final,
             self.ppunta, self.pvalle, self.pv_ppunta, self.pv_pvalle,
             self.pv_conpunta, self.pv_conllano, self.pv_convalle,
             self.excedentes, self.pv_excedent,
@@ -306,7 +319,7 @@ class FormContrato(QWidget):
             self.btn_guardar.setEnabled(False)
             return
 
-        if not re.fullmatch(r"\d{5}", self.cod_postal.text()):
+        if not re.fullmatch(r"\d{5}", self.codigo_postal.text()):
             self.btn_guardar.setEnabled(False)
             return
 
@@ -329,7 +342,7 @@ class FormContrato(QWidget):
     # ============================================================
 
     def pre_guardado(self):
-        cp = self.cod_postal.text()
+        cp = self.codigo_postal.text()
 
         if hasattr(self.parent(), "existe_cp"):
             if not self.parent().existe_cp(cp):
@@ -341,8 +354,8 @@ class FormContrato(QWidget):
                 )
 
                 if r == QMessageBox.No:
-                    self.cod_postal.setStyleSheet("color: red;")
-                    self.cod_postal.setFocus()
+                    self.codigo_postal.setStyleSheet("color: red;")
+                    self.codigo_postal.setFocus()
                     return
 
                 dlg = AltaCodigoPostal(cp, self)
@@ -363,7 +376,7 @@ class FormContrato(QWidget):
                 "ncontrato": self.ncontrato.text(),
                 "suplemento": 0,
                 "compania": self.compania.currentText(),
-                "cod_postal": self.cod_postal.text(),
+                "codigo_postal": self.codigo_postal.text(),
                 "fec_inicio": self.to_iso(self.fec_inicio.text()),
                 "fec_final": self.to_iso(self.fec_final.text()),
                 "fec_anulacion": None,

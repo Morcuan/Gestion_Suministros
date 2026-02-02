@@ -1,28 +1,40 @@
 # estilo.py
 from PySide6.QtGui import QFont
-from PySide6.QtWidgets import QPushButton
+from PySide6.QtWidgets import QComboBox, QLineEdit, QPushButton
 
-# Paleta base (DRU)
-COLOR_PRIMARIO = "#4A90E2"  # azul suave
-COLOR_SECUNDARIO = "#F0F0F0"  # gris claro
-COLOR_ACENTO = "#F5A623"  # naranja suave
-COLOR_ERROR = "#D0021B"  # rojo suave
-COLOR_TEXTO = "#333333"  # gris oscuro
+# ---------------------------------------------------------
+# PALETA BASE (DRU)
+# ---------------------------------------------------------
 
-# Tipografías
+COLOR_PRIMARIO = "#4A90E2"      # azul suave
+COLOR_SECUNDARIO = "#F0F0F0"    # gris claro
+COLOR_ACENTO = "#F5A623"        # naranja suave
+COLOR_ERROR = "#D0021B"         # rojo suave
+COLOR_TEXTO = "#333333"         # gris oscuro
+
+# ---------------------------------------------------------
+# TIPOGRAFÍAS
+# ---------------------------------------------------------
+
 FUENTE_TITULO = QFont("DejaVu Sans", 16)
 FUENTE_NORMAL = QFont("DejaVu Sans", 13)
 FUENTE_BOTON = QFont("DejaVu Sans", 12)
 
+# ---------------------------------------------------------
+# ESTILO PANEL LATERAL
+# ---------------------------------------------------------
 
 def aplicar_estilo_panel_lateral(widget):
     widget.setStyleSheet(
         """
         background-color: #F7F7F7;
         border-right: 1px solid #CCCCCC;
-    """
+        """
     )
 
+# ---------------------------------------------------------
+# ESTILO BOTONES
+# ---------------------------------------------------------
 
 def aplicar_estilo_boton(boton: QPushButton, principal=False):
     boton.setFont(FUENTE_BOTON)
@@ -38,9 +50,49 @@ def aplicar_estilo_boton(boton: QPushButton, principal=False):
         QPushButton:hover {{
             background-color: {COLOR_ACENTO};
         }}
-    """
+        """
     )
 
+# ---------------------------------------------------------
+# ESTILO UNIVERSAL PARA CAMPOS (QLineEdit y QComboBox)
+# ---------------------------------------------------------
+# Este es el bloque que soluciona el problema de alturas
+# y evita que el texto quede cortado por arriba o por abajo.
+
+def aplicar_estilo_campo(widget):
+    """
+    Aplica estilo coherente a QLineEdit y QComboBox:
+    - Fuente uniforme
+    - Altura mínima suficiente
+    - Padding interno
+    - Coherencia visual en todo el formulario
+    """
+    widget.setFont(FUENTE_NORMAL)
+    widget.setMinimumHeight(30)      # altura perfecta para evitar cortes
+    widget.setContentsMargins(4, 4, 4, 4)
+
+    # Para QLineEdit añadimos un pequeño padding interno
+    if isinstance(widget, QLineEdit):
+        widget.setStyleSheet(
+            """
+            QLineEdit {
+                padding: 4px;
+            }
+            """
+        )
+
+    # Para QComboBox ajustamos padding y altura del desplegable
+    if isinstance(widget, QComboBox):
+        widget.setStyleSheet(
+            """
+            QComboBox {
+                padding: 4px;
+            }
+            QComboBox QAbstractItemView {
+                min-height: 28px;
+            }
+            """
+        )
 
 # ---------------------------------------------------------
 # PALETAS DE COLORES
@@ -79,6 +131,9 @@ PALETAS = {
     "Solarizada": PALETA_SOLARIZADA,
 }
 
+# ---------------------------------------------------------
+# GENERADOR DE STYLESHEET GLOBAL
+# ---------------------------------------------------------
 
 def generar_stylesheet(paleta):
     return f"""
