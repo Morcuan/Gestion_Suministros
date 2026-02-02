@@ -44,9 +44,8 @@ echo "📝 Añadiendo todos los cambios..."
 git add -A
 
 # Crear mensaje de commit limpio
-COMMIT_MSG="Nivelaccion manual, Visualizacion del formulario contrato nuevo corregida.
-Corrigiendo errores en foco de campos, tablas y vistas por nombre de campos.
-Creacion del DRU de facturas provisional. Ajustando db_init.py para correcciones en tablas y vistas.
+COMMIT_MSG="Nivelaccion manual, modificacion en .gitignore
+para excluir los *.tar.gz
  $(date '+%Y-%m-%d %H:%M')"
 
 echo "💾 Realizando commit: $COMMIT_MSG"

@@ -5,3 +5,6 @@ __pycache__/
 # Ignorar entornos virtuales (por si algún día creas uno dentro del proyecto)
 venv/
 .env/
+
+# Ignorar archivos comprimidos de copia
+*.tar.gz
