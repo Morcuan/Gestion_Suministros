@@ -161,6 +161,24 @@ class MainWindow(QMainWindow):
 
         return panel
 
+    def insertar_cp(self, cp, poblacion):
+        """
+        Inserta un código postal nuevo en la tabla cpostales.
+        """
+        try:
+            self.cursor.execute(
+                "INSERT INTO cpostales (codigo_postal, poblacion) VALUES (?, ?)",
+                (cp, poblacion)
+            )
+            self.conn.commit()
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Error al insertar código postal",
+                f"No se pudo insertar el código postal {cp}.\n\n{e}"
+            )
+
+
     # ---------------------------------------------------------
     # OPCIÓN: NUEVO CONTRATO (INTEGRACIÓN EN CONTENEDOR)
     # ---------------------------------------------------------

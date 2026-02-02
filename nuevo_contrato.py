@@ -123,8 +123,8 @@ class NuevoContrato(QWidget):
                 INSERT INTO contratos_energia
                 (id_contrato, ppunta, pvalle, pv_ppunta, pv_pvalle,
                  pv_conpunta, pv_conllano, pv_convalle,
-                 vertido, excedentes, pv_excedent)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 vertido, pv_excedent)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 id_contrato,
                 ener["ppunta"],
@@ -135,7 +135,6 @@ class NuevoContrato(QWidget):
                 ener["pv_conllano"],
                 ener["pv_convalle"],
                 1 if ener["vertido"] else 0,
-                ener["excedentes"],
                 ener["pv_excedent"]
             ))
 
@@ -171,6 +170,18 @@ class NuevoContrato(QWidget):
                 con.rollback()
                 con.close()
             QMessageBox.critical(self, "Error", f"No se pudo guardar el contrato:\n{e}")
+
+    def insertar_cp(self, cp, poblacion):
+        # Obtener la ventana principal real
+        w = self.window()
+
+        if hasattr(w, "insertar_cp"):
+            return w.insertar_cp(cp, poblacion)
+
+        raise RuntimeError("La ventana principal no tiene insertar_cp")
+
+
+
 
     # ------------------------------------------------------------
     #  Cierre del módulo

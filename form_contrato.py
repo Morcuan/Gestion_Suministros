@@ -1,14 +1,13 @@
 import re
 from datetime import date, datetime
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QComboBox,
     QDialog,
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
-    QLabel,
     QLineEdit,
     QMessageBox,
     QPushButton,
@@ -25,7 +24,7 @@ from estilo import aplicar_estilo_campo
 # ============================================================
 
 class AltaCodigoPostal(QDialog):
-    codigo_postal_creado = Signal(str)
+    codigo_postal_creado = Signal(str, str)
 
     def __init__(self, codigo_postal, parent=None):
         super().__init__(parent)
@@ -62,10 +61,9 @@ class AltaCodigoPostal(QDialog):
             QMessageBox.warning(self, "Atención", "Debe introducir la población.")
             return
 
-        self.codigo_postal_creado.emit(self.cp.text())
+        self.codigo_postal_creado.emit(self.cp.text(), self.poblacion.text())
+
         self.accept()
-
-
 
 # ============================================================
 #  Formulario principal de contrato
@@ -147,7 +145,6 @@ class FormContrato(QWidget):
         # ------------------------------------------------------------
         self.conectar_validaciones()
 
-
     # ============================================================
     #  BLOQUE IDENTIFICACIÓN
     # ============================================================
@@ -185,18 +182,16 @@ class FormContrato(QWidget):
         layout.addRow("Suplemento:", self.suplemento)
         layout.addRow("Compañía:", self.compania)
         layout.addRow("Código postal:", self.codigo_postal)
-        layout.addRow("Fecha inicio:", self.fec_inicio)
-        layout.addRow("Fecha final:", self.fec_final)
-        layout.addRow("Fecha anulación:", self.fec_anulacion)
+        layout.addRow("Fecha inicio (dd/mm/yyyy):", self.fec_inicio)
+        layout.addRow("Fecha final (dd/mm/yyyy):", self.fec_final)
+        layout.addRow("Fecha anulación (dd/mm/yyyy):", self.fec_anulacion)
         layout.addRow("Estado:", self.estado)
-        layout.addRow("Efecto suplemento:", self.efec_suple)
-        layout.addRow("Fin suplemento:", self.fin_suple)
+        layout.addRow("Efecto suplemento (dd/mm/yyyy):", self.efec_suple)
+        layout.addRow("Fin suplemento (dd/mm/yyyy):", self.fin_suple)
 
         box.setLayout(layout)
         box.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding)
         return box
-
-
 
     # ============================================================
     #  BLOQUE ENERGÍA
@@ -209,9 +204,11 @@ class FormContrato(QWidget):
         layout.setHorizontalSpacing(20)
         layout.setVerticalSpacing(6)
 
+        # Potencias contratadas (kWh)
         self.ppunta = QLineEdit()
         self.pvalle = QLineEdit()
 
+        # Precios (€/kWh)
         self.pv_ppunta = QLineEdit()
         self.pv_pvalle = QLineEdit()
 
@@ -222,25 +219,26 @@ class FormContrato(QWidget):
         self.vertido = QComboBox()
         self.vertido.addItems(["Sí", "No"])
 
-        self.excedentes = QLineEdit()
+        # Eliminado: self.excedentes
         self.pv_excedent = QLineEdit()
 
-        layout.addRow("Potencia punta:", self.ppunta)
-        layout.addRow("Potencia valle:", self.pvalle)
-        layout.addRow("PV potencia punta:", self.pv_ppunta)
-        layout.addRow("PV potencia valle:", self.pv_pvalle)
-        layout.addRow("PV consumo punta:", self.pv_conpunta)
-        layout.addRow("PV consumo llano:", self.pv_conllano)
-        layout.addRow("PV consumo valle:", self.pv_convalle)
+        # Etiquetas corregidas
+        layout.addRow("Potencia punta (kWh):", self.ppunta)
+        layout.addRow("Potencia valle (kWh):", self.pvalle)
+
+        layout.addRow("Potencia punta (€/kWh):", self.pv_ppunta)
+        layout.addRow("Potencia valle (€/kWh):", self.pv_pvalle)
+
+        layout.addRow("Consumo punta (€/kWh):", self.pv_conpunta)
+        layout.addRow("Consumo llano (€/kWh):", self.pv_conllano)
+        layout.addRow("Consumo valle (€/kWh):", self.pv_convalle)
+
         layout.addRow("Vertido:", self.vertido)
-        layout.addRow("Excedentes:", self.excedentes)
-        layout.addRow("PV excedente:", self.pv_excedent)
+        layout.addRow("Excedente (€/kWh):", self.pv_excedent)
 
         box.setLayout(layout)
         box.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding)
         return box
-
-
 
     # ============================================================
     #  BLOQUE GASTOS
@@ -270,8 +268,6 @@ class FormContrato(QWidget):
 
         return box
 
-
-
     # ============================================================
     #  VALIDACIONES PROGRESIVAS
     # ============================================================
@@ -279,9 +275,10 @@ class FormContrato(QWidget):
     def conectar_validaciones(self):
         widgets = [
             self.ncontrato, self.codigo_postal, self.fec_inicio, self.fec_final,
-            self.ppunta, self.pvalle, self.pv_ppunta, self.pv_pvalle,
+            self.ppunta, self.pvalle,
+            self.pv_ppunta, self.pv_pvalle,
             self.pv_conpunta, self.pv_conllano, self.pv_convalle,
-            self.excedentes, self.pv_excedent,
+            self.pv_excedent,   # Excedente precio
             self.bono_social, self.alq_contador, self.otros_gastos,
             self.i_electrico, self.iva
         ]
@@ -290,8 +287,6 @@ class FormContrato(QWidget):
             w.textChanged.connect(self.validar_formulario)
 
         self.vertido.currentIndexChanged.connect(self.validar_formulario)
-
-
 
     # ============================================================
     #  VALIDACIÓN PRINCIPAL
@@ -359,7 +354,8 @@ class FormContrato(QWidget):
                     return
 
                 dlg = AltaCodigoPostal(cp, self)
-                dlg.codigo_postal_creado.connect(self.parent().insertar_cp)
+                dlg.codigo_postal_creado.connect(self.parent().insertar_cp)   # Inserta en BD
+                dlg.codigo_postal_creado.connect(self.recibir_cp)             # Actualiza formulario
                 dlg.exec()
 
         self.guardar()
@@ -393,7 +389,6 @@ class FormContrato(QWidget):
                 "pv_conllano": self.to_float(self.pv_conllano.text()),
                 "pv_convalle": self.to_float(self.pv_convalle.text()),
                 "vertido": self.vertido.currentText() == "Sí",
-                "excedentes": self.to_float(self.excedentes.text()),
                 "pv_excedent": self.to_float(self.pv_excedent.text())
             },
             "gastos": {
@@ -412,6 +407,12 @@ class FormContrato(QWidget):
     # ============================================================
     #  FUNCIONES AUXILIARES
     # ============================================================
+
+    def recibir_cp(self, cp, poblacion):
+        self.codigo_postal.setText(cp)
+        self.codigo_postal.setStyleSheet("")
+        self.codigo_postal.setFocus()
+        self.validar_formulario()
 
     def ajustar_anchos(self):
         for w in self.findChildren(QLineEdit):
@@ -449,3 +450,41 @@ class FormContrato(QWidget):
 
     def cargar_datos(self):
         pass
+
+
+    # ============================================================
+    #  AJUSTE DE TABULACIÓN
+    # ============================================================
+
+    def showEvent(self, event):
+        super().showEvent(event)
+
+        # ORDEN COMPLETO DE TABULACIÓN (de arriba a abajo)
+        self.setTabOrder(self.ncontrato, self.compania)
+        self.setTabOrder(self.compania, self.codigo_postal)
+        self.setTabOrder(self.codigo_postal, self.fec_inicio)
+        self.setTabOrder(self.fec_inicio, self.fec_final)
+
+        # SALTO: desde Fecha final → Potencia punta (kWh)
+        self.setTabOrder(self.fec_final, self.ppunta)
+
+        # Continúa el orden natural en bloque Energía
+        self.setTabOrder(self.ppunta, self.pvalle)
+        self.setTabOrder(self.pvalle, self.pv_ppunta)
+        self.setTabOrder(self.pv_ppunta, self.pv_pvalle)
+        self.setTabOrder(self.pv_pvalle, self.pv_conpunta)
+        self.setTabOrder(self.pv_conpunta, self.pv_conllano)
+        self.setTabOrder(self.pv_conllano, self.pv_convalle)
+        self.setTabOrder(self.pv_convalle, self.vertido)
+        self.setTabOrder(self.vertido, self.pv_excedent)
+
+        # Bloque Gastos
+        self.setTabOrder(self.pv_excedent, self.bono_social)
+        self.setTabOrder(self.bono_social, self.alq_contador)
+        self.setTabOrder(self.alq_contador, self.otros_gastos)
+        self.setTabOrder(self.otros_gastos, self.i_electrico)
+        self.setTabOrder(self.i_electrico, self.iva)
+
+        # Botones finales
+        self.setTabOrder(self.iva, self.btn_guardar)
+        self.setTabOrder(self.btn_guardar, self.btn_cancelar)
