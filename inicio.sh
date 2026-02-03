@@ -21,19 +21,40 @@ NOMBRE="Gestion_Suministros_${FECHA}.tar.gz"
 # Ruta de la tarjeta SD (AJUSTA si es necesario)
 DESTINO="/media/antonio/SD"
 
+# Detectar si la SD está montada
+if mount | grep -q "$DESTINO"; then
+    SD_MONTADA=true
+    echo "💽 SD detectada en: $DESTINO"
+else
+    SD_MONTADA=false
+    echo "⚠️ No se detecta la SD montada en $DESTINO"
+fi
+
 # Crear backup excluyendo venv y __pycache__
 tar --exclude="venv" \
     --exclude="*/__pycache__" \
     -czf "$NOMBRE" .
 
 # Copiar a la SD si está montada
-if [ -d "$DESTINO" ]; then
+if [ "$SD_MONTADA" = true ]; then
     cp "$NOMBRE" "$DESTINO/"
     echo "🟢 Backup copiado a la SD: $DESTINO/$NOMBRE"
 else
-    echo "⚠️ No se encontró la tarjeta SD en $DESTINO"
-    echo "   El backup se queda en el directorio del proyecto."
+    echo "📦 Backup creado localmente: $NOMBRE"
 fi
+
+# Preguntar si borrar el archivo .tar.gz para evitar que Git lo detecte
+echo ""
+read -p "❓ ¿Quieres borrar el archivo temporal $NOMBRE para evitar que Git lo detecte? (s/n): " RESP
+
+if [ "$RESP" = "s" ] || [ "$RESP" = "S" ]; then
+    rm "$NOMBRE"
+    echo "🧹 Archivo temporal eliminado: $NOMBRE"
+else
+    echo "📦 Archivo conservado en el directorio del proyecto."
+    echo "⚠️ Recuerda borrarlo manualmente antes de hacer commits."
+fi
+echo ""
 
 # ============================
 #   🔄 FLUJO ORIGINAL

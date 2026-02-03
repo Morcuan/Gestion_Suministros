@@ -93,25 +93,57 @@ def crear_tabla_cpostales(cursor):
 
 
 # ---------------------------------------------------------
-# TABLAS FUTURAS (FACTURAS Y CONSUMOS)
+# TABLAS FACTURAS
 # ---------------------------------------------------------
-
-def crear_tabla_facturas(cursor):
-    cursor.execute("DROP TABLE IF EXISTS facturas;")
+def crear_tabla_factura_identificacion(cursor):
+    cursor.execute("DROP TABLE IF EXISTS factura_identificacion;")
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS facturas (
+        CREATE TABLE IF NOT EXISTS factura_identificacion (
             id_factura      INTEGER PRIMARY KEY AUTOINCREMENT,
             id_contrato     INTEGER NOT NULL,
-            fecha_factura   TEXT NOT NULL,
-            periodo_inicio  TEXT NOT NULL,
-            periodo_fin     TEXT NOT NULL,
-            dias_factura    REAL NOT NULL,
-            con_punta       REAL NOT NULL,
-            con_llano       REAL NOT NULL,
-            con_valle       REAL NOT NULL,
-            excedentes      REAL NOT NULL,
-            importe_total   REAL NOT NULL,
-            FOREIGN KEY (id_contrato) REFERENCES contratos_identificacion(id_contrato)
+            nfactura        TEXT NOT NULL,
+            inicio_factura  TEXT NOT NULL,
+            fin_factura     TEXT NOT NULL,
+            dias_factura    INTEGER NOT NULL,
+            fec_emision     TEXT NOT NULL,
+            FOREIGN KEY (id_contrato) REFERENCES contratos(id_contrato)
+        );
+    """)
+
+def crear_tabla_factura_energia(cursor):
+    cursor.execute("DROP TABLE IF EXISTS factura_energia;")
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS factura_energia (
+            id_factura        INTEGER PRIMARY KEY,
+            pot_imp_punta     REAL DEFAULT 0,
+            pot_imp_valle     REAL DEFAULT 0,
+            total_potencia    REAL NOT NULL,
+            con_punta         REAL DEFAULT 0,
+            imp_con_punta     REAL DEFAULT 0,
+            con_llano         REAL DEFAULT 0,
+            imp_con_llano     REAL DEFAULT 0,
+            con_valle         REAL DEFAULT 0,
+            imp_con_valle     REAL DEFAULT 0,
+            excedentes        REAL DEFAULT 0,
+            imp_excedentes    REAL DEFAULT 0,
+            FOREIGN KEY (id_factura) REFERENCES factura_identificacion(id_factura)
+        );
+    """)
+
+def crear_tabla_factura_asociados(cursor):
+    cursor.execute("DROP TABLE IF EXISTS factura_asociados;")
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS factura_asociados (
+            id_factura      INTEGER PRIMARY KEY,
+            imp_bono_social REAL NOT NULL,
+            imp_iee         REAL NOT NULL,
+            alq_equipos     REAL NOT NULL,
+            servicios       REAL DEFAULT 0,
+            iva             REAL NOT NULL,
+            dcto_saldos     REAL DEFAULT 0,
+            solar_cloud     REAL DEFAULT 0,
+            total_factura   REAL NOT NULL,
+            FOREIGN KEY (id_factura) REFERENCES factura_identificacion(id_factura)
         );
     """)
 
@@ -121,7 +153,7 @@ def crear_tabla_facturas(cursor):
 # ---------------------------------------------------------
 
 def crear_vista_contratos_completo(cursor):
-    cursor.execute("DROP VIEW IF EXISTS vw_contratos_completo;")
+    cursor.execute("DROP VIEW IF EXISTS vista_contratos;")
     cursor.execute("""
         CREATE VIEW vista_contratos AS
         SELECT
@@ -140,6 +172,22 @@ def crear_vista_contratos_completo(cursor):
         JOIN cpostales cp ON ci.codigo_postal = cp.codigo_postal;
     """)
 
+def crear_vista_ident_contrato(cursor):
+    cursor.execute("DROP VIEW IF EXISTS vista_ident_contrato;")
+    cursor.execute("""
+        CREATE VIEW IF NOT EXISTS vista_ident_contrato AS
+        SELECT
+            c.id_contrato,
+            c.ncontrato,
+            c.compania,
+            c.codigo_postal,
+            cp.poblacion
+        FROM contratos_identificacion c
+        LEFT JOIN cpostales cp
+                ON c.codigo_postal = cp.codigo_postal
+            WHERE c.estado = 'Activo';
+    """)
+
 
 # ---------------------------------------------------------
 # FUNCIÓN PRINCIPAL (RECIBE CURSOR EXTERNO)
@@ -149,8 +197,11 @@ def crear_tablas_y_vistas(cursor):
     crear_tabla_contratos_identificacion(cursor)
     crear_tabla_contratos_energia(cursor)
     crear_tabla_contratos_gastos(cursor)
-    crear_tabla_facturas(cursor)
+    crear_tabla_factura_identificacion(cursor)
+    crear_tabla_factura_energia(cursor)
+    crear_tabla_factura_asociados(cursor)
     crear_vista_contratos_completo(cursor)
+    crear_vista_ident_contrato(cursor)
 
 
 # ---------------------------------------------------------

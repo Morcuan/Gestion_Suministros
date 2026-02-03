@@ -44,9 +44,11 @@ echo "📝 Añadiendo todos los cambios..."
 git add -A
 
 # Crear mensaje de commit limpio
-COMMIT_MSG="Nivelaccion manual, modificacion completa de form_contrato para corregir
-etiquetas y error al insertar cp nuevo. Inicializada la bd con correcciones en tablas y
-nombre cod_postal por codigo_postal y en la vista_contratos. Nuevo contrato completo y funcionando.
+COMMIT_MSG="Nivelaccion manual, Modificacion de inicio.sh para controlar mejor las copias a SD y
+borrar comprimido despues. Modificacion de db_init.py para crear 3 tablas de facturas separadas
+para mas claridad y manejo. Creacion de facturas.py con la estructura de SQL conforme a las tres tablas.
+DRU facturas completado y renombrado. Modificacion de la BD almacen para la creacion de las tres tablas
+de facturas, la vista segun estas y borrado de la tabla unica de facturas.
  $(date '+%Y-%m-%d %H:%M')"
 
 echo "💾 Realizando commit: $COMMIT_MSG"
