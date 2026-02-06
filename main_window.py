@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
 
 import db_init
 from estilo import PALETAS, aplicar_estilo_boton, aplicar_estilo_panel_lateral
+from lista_contratos_factura import ListaContratosFactura
 from nuevo_contrato import NuevoContrato
 
 
@@ -85,12 +86,24 @@ class MainWindow(QMainWindow):
             self.crear_seccion_acordeon(
                 "🏠 Inicio",
                 [
-                    ("🏡 Pantalla de inicio",
-                     lambda: self.cargar_modulo(self.crear_pantalla_inicio(), "Pantalla de Inicio")),
-                    ("🎨 Paleta de colores",
-                     lambda: self.cargar_modulo(self.crear_pantalla_paleta(), "Paleta de colores")),
-                    ("ℹ️ Acerca de...",
-                     lambda: self.cargar_modulo(self.crear_pantalla_acerca(), "Acerca de...")),
+                    (
+                        "🏡 Pantalla de inicio",
+                        lambda: self.cargar_modulo(
+                            self.crear_pantalla_inicio(), "Pantalla de Inicio"
+                        ),
+                    ),
+                    (
+                        "🎨 Paleta de colores",
+                        lambda: self.cargar_modulo(
+                            self.crear_pantalla_paleta(), "Paleta de colores"
+                        ),
+                    ),
+                    (
+                        "ℹ️ Acerca de...",
+                        lambda: self.cargar_modulo(
+                            self.crear_pantalla_acerca(), "Acerca de..."
+                        ),
+                    ),
                 ],
             )
         )
@@ -100,14 +113,27 @@ class MainWindow(QMainWindow):
             self.crear_seccion_acordeon(
                 "📄 Contratos",
                 [
-                    ("➕ Nuevo contrato",
-                     lambda: self.abrir_nuevo_contrato()),
-                    ("🔍 Consulta",
-                     lambda: self.cargar_modulo(self.crear_placeholder("Consulta contratos"), "Consulta contratos")),
-                    ("✏️ Modificación",
-                     lambda: self.cargar_modulo(self.crear_placeholder("Modificar contrato"), "Modificar contrato")),
-                    ("❌ Anulación",
-                     lambda: self.cargar_modulo(self.crear_placeholder("Anular contrato"), "Anular contrato")),
+                    ("➕ Nuevo contrato", lambda: self.abrir_nuevo_contrato()),
+                    (
+                        "🔍 Consulta",
+                        lambda: self.cargar_modulo(
+                            self.crear_placeholder("Consulta contratos"),
+                            "Consulta contratos",
+                        ),
+                    ),
+                    (
+                        "✏️ Modificación",
+                        lambda: self.cargar_modulo(
+                            self.crear_placeholder("Modificar contrato"),
+                            "Modificar contrato",
+                        ),
+                    ),
+                    (
+                        "❌ Anulación",
+                        lambda: self.cargar_modulo(
+                            self.crear_placeholder("Anular contrato"), "Anular contrato"
+                        ),
+                    ),
                 ],
             )
         )
@@ -117,25 +143,48 @@ class MainWindow(QMainWindow):
             self.crear_seccion_acordeon(
                 "💡 Facturas",
                 [
-                    ("➕ Nueva factura",
-                     lambda: self.cargar_modulo(self.crear_placeholder("Nueva factura"), "Nueva factura")),
-                    ("🔍 Consulta",
-                     lambda: self.cargar_modulo(self.crear_placeholder("Consulta facturas"), "Consulta facturas")),
-                    ("✏️ Modificación",
-                     lambda: self.cargar_modulo(self.crear_placeholder("Modificar factura"), "Modificar factura")),
+                    (
+                        "➕ Nueva factura",
+                        lambda: self.cargar_modulo(
+                            ListaContratosFactura(parent=self), "Nueva factura"
+                        ),
+                    ),
+                    (
+                        "🔍 Consulta",
+                        lambda: self.cargar_modulo(
+                            self.crear_placeholder("Consulta facturas"),
+                            "Consulta facturas",
+                        ),
+                    ),
+                    (
+                        "✏️ Modificación",
+                        lambda: self.cargar_modulo(
+                            self.crear_placeholder("Modificar factura"),
+                            "Modificar factura",
+                        ),
+                    ),
                 ],
             )
         )
 
-        # --- Sección Consumos ---
+        # --- Sección Comparativas ---
         layout.addWidget(
             self.crear_seccion_acordeon(
-                "⚡ Consumos",
+                "⚡ Comparativas",
                 [
-                    ("➕ Nuevo consumo",
-                     lambda: self.cargar_modulo(self.crear_placeholder("Nuevo consumo"), "Nuevo consumo")),
-                    ("🔍 Consulta",
-                     lambda: self.cargar_modulo(self.crear_placeholder("Consulta consumos"), "Consulta consumos")),
+                    (
+                        "➕ Nueva comparativa",
+                        lambda: self.cargar_modulo(
+                            self.crear_placeholder("Nueva comparativa"),
+                            "Nueva conparativa",
+                        ),
+                    ),
+                    (
+                        "🔍 Otras",
+                        lambda: self.cargar_modulo(
+                            self.crear_placeholder("Otras"), "Consulta conparativa"
+                        ),
+                    ),
                 ],
             )
         )
@@ -145,8 +194,7 @@ class MainWindow(QMainWindow):
             self.crear_seccion_acordeon(
                 "🛠️ Sistema",
                 [
-                    ("🧱 Inicializar BD",
-                     self.opcion_inicializar_bd),
+                    ("🧱 Inicializar BD", self.opcion_inicializar_bd),
                 ],
             )
         )
@@ -168,16 +216,15 @@ class MainWindow(QMainWindow):
         try:
             self.cursor.execute(
                 "INSERT INTO cpostales (codigo_postal, poblacion) VALUES (?, ?)",
-                (cp, poblacion)
+                (cp, poblacion),
             )
             self.conn.commit()
         except Exception as e:
             QMessageBox.critical(
                 self,
                 "Error al insertar código postal",
-                f"No se pudo insertar el código postal {cp}.\n\n{e}"
+                f"No se pudo insertar el código postal {cp}.\n\n{e}",
             )
-
 
     # ---------------------------------------------------------
     # OPCIÓN: NUEVO CONTRATO (INTEGRACIÓN EN CONTENEDOR)
@@ -288,7 +335,7 @@ class MainWindow(QMainWindow):
             "<b>Gestion_suministros 2.0</b><br>"
             "Proyecto iniciado: <b>enero 2025</b><br>"
             "Programador: <b>Antonio Morales</b><br><br>"
-            "Aplicación para la gestión modular de contratos, facturas y consumos."
+            "Aplicación para la gestión modular de contratos, facturas y comparativas."
         )
         lbl.setWordWrap(True)
         l.addWidget(lbl)
@@ -321,4 +368,5 @@ class MainWindow(QMainWindow):
     # ---------------------------------------------------------
     def aplicar_paleta(self, paleta):
         from estilo import generar_stylesheet
+
         self.setStyleSheet(generar_stylesheet(paleta))

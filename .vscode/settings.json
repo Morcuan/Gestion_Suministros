@@ -1,17 +1,22 @@
 {
-    // --- Intérprete Python del proyecto ---
     "python.defaultInterpreterPath": "venv/bin/python",
-    // --- Ruff: linter moderno ---
+
+    // Ruff como linter y formateador
     "ruff.enable": true,
-    // --- Formateo automático ---
+    "editor.defaultFormatter": "charliermarsh.ruff",
+
+    // Formateo automático al guardar
     "editor.formatOnSave": true,
-    // --- Formateador por defecto: Black ---
-    "editor.defaultFormatter": "ms-python.black-formatter",
-    // --- Organizar imports con isort (integrado en Ruff) ---
+
+    // Desactivar Black como formateador
+    "python.formatting.provider": "none",
+
+    // Organizar imports (Ruff ya lo hace)
     "editor.codeActionsOnSave": {
         "source.organizeImports": "explicit"
     },
-    // --- Ajustes visuales útiles ---
+
+    // Ajustes visuales
     "files.trimTrailingWhitespace": true,
     "files.insertFinalNewline": true,
     "editor.renderWhitespace": "boundary",

@@ -1,3 +1,7 @@
+# ============================================================
+#  ruff.toml — Configuración de Ruff (linter + formateador)
+# ============================================================
+
 # Longitud máxima de línea
 line-length = 88
 
@@ -17,6 +21,9 @@ exclude = [
 [lint]
 # Reglas activas
 select = ["E", "F", "W", "I", "UP", "B", "C90"]
+
+# Reglas adicionales para controlar líneas en blanco
+extend-select = ["E3", "E4"]
 
 # Ignorar reglas que molestan demasiado
 ignore = ["E501"]

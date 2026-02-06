@@ -9,6 +9,7 @@ DB_PATH = "data/almacen.db"
 # FUNCIONES DE CREACIÓN DE TABLAS (MODULARIZADAS)
 # ---------------------------------------------------------
 
+
 def crear_tabla_contratos_identificacion(cursor):
     cursor.execute("DROP TABLE IF EXISTS contratos_identificacion;")
     cursor.execute("""
@@ -101,7 +102,7 @@ def crear_tabla_factura_identificacion(cursor):
         CREATE TABLE IF NOT EXISTS factura_identificacion (
             id_factura      INTEGER PRIMARY KEY AUTOINCREMENT,
             id_contrato     INTEGER NOT NULL,
-            nfactura        TEXT NOT NULL,
+            nfactura        TEXT NOT NULL UNIQUE,
             inicio_factura  TEXT NOT NULL,
             fin_factura     TEXT NOT NULL,
             dias_factura    INTEGER NOT NULL,
@@ -109,6 +110,7 @@ def crear_tabla_factura_identificacion(cursor):
             FOREIGN KEY (id_contrato) REFERENCES contratos(id_contrato)
         );
     """)
+
 
 def crear_tabla_factura_energia(cursor):
     cursor.execute("DROP TABLE IF EXISTS factura_energia;")
@@ -129,6 +131,7 @@ def crear_tabla_factura_energia(cursor):
             FOREIGN KEY (id_factura) REFERENCES factura_identificacion(id_factura)
         );
     """)
+
 
 def crear_tabla_factura_asociados(cursor):
     cursor.execute("DROP TABLE IF EXISTS factura_asociados;")
@@ -152,6 +155,7 @@ def crear_tabla_factura_asociados(cursor):
 # VISTAS
 # ---------------------------------------------------------
 
+
 def crear_vista_contratos_completo(cursor):
     cursor.execute("DROP VIEW IF EXISTS vista_contratos;")
     cursor.execute("""
@@ -172,26 +176,28 @@ def crear_vista_contratos_completo(cursor):
         JOIN cpostales cp ON ci.codigo_postal = cp.codigo_postal;
     """)
 
-def crear_vista_ident_contrato(cursor):
-    cursor.execute("DROP VIEW IF EXISTS vista_ident_contrato;")
+
+def crear_vista_contratos_facturacion(cursor):
+    cursor.execute("DROP VIEW IF EXISTS vista_contratos_identificacion;")
     cursor.execute("""
-        CREATE VIEW IF NOT EXISTS vista_ident_contrato AS
+        CREATE VIEW IF NOT EXISTS vista_contratos_facturacion AS
         SELECT
             c.id_contrato,
             c.ncontrato,
+            c.estado,
             c.compania,
             c.codigo_postal,
             cp.poblacion
         FROM contratos_identificacion c
         LEFT JOIN cpostales cp
-                ON c.codigo_postal = cp.codigo_postal
-            WHERE c.estado = 'Activo';
+                ON c.codigo_postal = cp.codigo_postal;
     """)
 
 
 # ---------------------------------------------------------
 # FUNCIÓN PRINCIPAL (RECIBE CURSOR EXTERNO)
 # ---------------------------------------------------------
+
 
 def crear_tablas_y_vistas(cursor):
     crear_tabla_contratos_identificacion(cursor)
@@ -201,7 +207,7 @@ def crear_tablas_y_vistas(cursor):
     crear_tabla_factura_energia(cursor)
     crear_tabla_factura_asociados(cursor)
     crear_vista_contratos_completo(cursor)
-    crear_vista_ident_contrato(cursor)
+    crear_vista_contratos_facturacion(cursor)
 
 
 # ---------------------------------------------------------
