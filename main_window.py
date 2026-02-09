@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
 )
 
 import db_init
+from consulta_contratos import ConsultaContratosWidget  # <--- AÑADIDO
 from estilo import PALETAS, aplicar_estilo_boton, aplicar_estilo_panel_lateral
 from lista_contratos_factura import ListaContratosFactura
 from nuevo_contrato import NuevoContrato
@@ -115,13 +116,6 @@ class MainWindow(QMainWindow):
                 [
                     ("➕ Nuevo contrato", lambda: self.abrir_nuevo_contrato()),
                     (
-                        "🔍 Consulta",
-                        lambda: self.cargar_modulo(
-                            self.crear_placeholder("Consulta contratos"),
-                            "Consulta contratos",
-                        ),
-                    ),
-                    (
                         "✏️ Modificación",
                         lambda: self.cargar_modulo(
                             self.crear_placeholder("Modificar contrato"),
@@ -150,17 +144,26 @@ class MainWindow(QMainWindow):
                         ),
                     ),
                     (
-                        "🔍 Consulta",
-                        lambda: self.cargar_modulo(
-                            self.crear_placeholder("Consulta facturas"),
-                            "Consulta facturas",
-                        ),
-                    ),
-                    (
                         "✏️ Modificación",
                         lambda: self.cargar_modulo(
                             self.crear_placeholder("Modificar factura"),
                             "Modificar factura",
+                        ),
+                    ),
+                ],
+            )
+        )
+
+        # --- Sección Consultas (única vía de consulta) ---
+        layout.addWidget(
+            self.crear_seccion_acordeon(
+                "🔍 Consultas",
+                [
+                    (
+                        "📄 Contratos",
+                        lambda: self.cargar_modulo(
+                            ConsultaContratosWidget(self.conn, parent=self),
+                            "Consulta contratos",
                         ),
                     ),
                 ],
@@ -176,13 +179,14 @@ class MainWindow(QMainWindow):
                         "➕ Nueva comparativa",
                         lambda: self.cargar_modulo(
                             self.crear_placeholder("Nueva comparativa"),
-                            "Nueva conparativa",
+                            "Nueva comparativa",
                         ),
                     ),
                     (
                         "🔍 Otras",
                         lambda: self.cargar_modulo(
-                            self.crear_placeholder("Otras"), "Consulta conparativa"
+                            self.crear_placeholder("Otras"),
+                            "Consulta comparativa",
                         ),
                     ),
                 ],

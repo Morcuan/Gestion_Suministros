@@ -1,16 +1,16 @@
 # estilo.py
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QColor, QFont
 from PySide6.QtWidgets import QComboBox, QLineEdit, QPushButton
 
 # ---------------------------------------------------------
 # PALETA BASE (DRU)
 # ---------------------------------------------------------
 
-COLOR_PRIMARIO = "#4A90E2"      # azul suave
-COLOR_SECUNDARIO = "#F0F0F0"    # gris claro
-COLOR_ACENTO = "#F5A623"        # naranja suave
-COLOR_ERROR = "#D0021B"         # rojo suave
-COLOR_TEXTO = "#333333"         # gris oscuro
+COLOR_PRIMARIO = "#4A90E2"  # azul suave
+COLOR_SECUNDARIO = "#F0F0F0"  # gris claro
+COLOR_ACENTO = "#F5A623"  # naranja suave
+COLOR_ERROR = "#D0021B"  # rojo suave
+COLOR_TEXTO = "#333333"  # gris oscuro
 
 # ---------------------------------------------------------
 # TIPOGRAFÍAS
@@ -24,6 +24,7 @@ FUENTE_BOTON = QFont("DejaVu Sans", 12)
 # ESTILO PANEL LATERAL
 # ---------------------------------------------------------
 
+
 def aplicar_estilo_panel_lateral(widget):
     widget.setStyleSheet(
         """
@@ -32,16 +33,18 @@ def aplicar_estilo_panel_lateral(widget):
         """
     )
 
+
 # ---------------------------------------------------------
 # ESTILO BOTONES
 # ---------------------------------------------------------
+
 
 def aplicar_estilo_boton(boton: QPushButton, principal=False):
     boton.setFont(FUENTE_BOTON)
     boton.setStyleSheet(
         f"""
         QPushButton {{
-            background-color: {'{0}'.format(COLOR_PRIMARIO) if principal else COLOR_SECUNDARIO};
+            background-color: {"{0}".format(COLOR_PRIMARIO) if principal else COLOR_SECUNDARIO};
             color: {COLOR_TEXTO};
             border-radius: 6px;
             padding: 6px 10px;
@@ -53,11 +56,13 @@ def aplicar_estilo_boton(boton: QPushButton, principal=False):
         """
     )
 
+
 # ---------------------------------------------------------
 # ESTILO UNIVERSAL PARA CAMPOS (QLineEdit y QComboBox)
 # ---------------------------------------------------------
 # Este es el bloque que soluciona el problema de alturas
 # y evita que el texto quede cortado por arriba o por abajo.
+
 
 def aplicar_estilo_campo(widget):
     """
@@ -68,7 +73,7 @@ def aplicar_estilo_campo(widget):
     - Coherencia visual en todo el formulario
     """
     widget.setFont(FUENTE_NORMAL)
-    widget.setMinimumHeight(30)      # altura perfecta para evitar cortes
+    widget.setMinimumHeight(30)  # altura perfecta para evitar cortes
     widget.setContentsMargins(4, 4, 4, 4)
 
     # Para QLineEdit añadimos un pequeño padding interno
@@ -93,6 +98,7 @@ def aplicar_estilo_campo(widget):
             }
             """
         )
+
 
 # ---------------------------------------------------------
 # PALETAS DE COLORES
@@ -135,26 +141,45 @@ PALETAS = {
 # GENERADOR DE STYLESHEET GLOBAL
 # ---------------------------------------------------------
 
+
 def generar_stylesheet(paleta):
     return f"""
         QWidget {{
-            background-color: {paleta['fondo']};
-            color: {paleta['texto']};
+            background-color: {paleta["fondo"]};
+            color: {paleta["texto"]};
         }}
 
         QScrollArea {{
-            background-color: {paleta['panel']};
+            background-color: {paleta["panel"]};
         }}
 
         QPushButton {{
-            background-color: {paleta['boton']};
-            color: {paleta['texto']};
+            background-color: {paleta["boton"]};
+            color: {paleta["texto"]};
             border-radius: 6px;
             padding: 6px 10px;
             text-align: left;
         }}
 
         QPushButton:hover {{
-            background-color: {paleta['acento']};
+            background-color: {paleta["acento"]};
         }}
     """
+
+
+def color_estado(estado):
+    estado = estado.upper().strip()
+    if estado == "ACTIVO":
+        return QColor("green")
+    if estado == "ANULADO":
+        return QColor("red")
+    return QColor(COLOR_TEXTO)
+
+
+def color_fila_estado(estado):
+    estado = estado.upper().strip()
+    if estado == "ACTIVO":
+        return QColor("darkgreen")
+    if estado == "ANULADO":
+        return QColor("darkred")
+    return QColor(COLOR_TEXTO)

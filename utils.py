@@ -32,3 +32,16 @@ def validar_fecha(fecha_ddmmyyyy):
         return True
     except:
         return False
+
+
+def a_ddmm(fecha_iso):
+    """
+    Convierte 'yyyy-mm-dd' → 'dd/mm/yyyy'.
+    """
+    if not fecha_iso:
+        return ""
+    try:
+        y, m, d = fecha_iso.split("-")
+        return f"{d}/{m}/{y}"
+    except:
+        return fecha_iso
