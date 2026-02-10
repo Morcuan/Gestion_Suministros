@@ -4,7 +4,7 @@ Lo dejo limpio, cohesionado y listo para trabajar.
 
 ---
 
-# 📘 **DRU — Módulo de Consultas Integradas (Versión 1.1)**  
+# 📘 **DRU — Módulo de Consultas Integradas (Versión 1.1)**
 *Revisado e integrado con las aclaraciones de Antonio*
 
 ---
@@ -15,12 +15,12 @@ El módulo de **Consultas Integradas** tiene como finalidad ofrecer una visión 
 
 La premisa fundamental es que:
 
-- Un **contrato** sin sus facturas asociadas está incompleto.  
-- Una **factura** sin su contrato de origen también está incompleta.  
+- Un **contrato** sin sus facturas asociadas está incompleto.
+- Una **factura** sin su contrato de origen también está incompleta.
 
 La navegación debe ser **escalonada y reversible**, permitiendo avanzar y retroceder entre niveles de forma ordenada:
 
-**Lista de contratos → Detalles del contrato → Lista de facturas → Detalles de factura**,  
+**Lista de contratos → Detalles del contrato → Lista de facturas → Detalles de factura**,
 y viceversa, siempre regresando por los mismos peldaños.
 
 ---
@@ -34,9 +34,9 @@ y viceversa, siempre regresando por los mismos peldaños.
 ### 2.2. Estructura conceptual
 El módulo se compone de cuatro niveles:
 
-1. **Lista de contratos**  
-2. **Detalles del contrato**  
-3. **Lista de facturas asociadas**  
+1. **Lista de contratos**
+2. **Detalles del contrato**
+3. **Lista de facturas asociadas**
 4. **Detalles de la factura**
 
 Cada nivel dispone de un botón **Cancelar** que devuelve al nivel inmediatamente anterior, garantizando un flujo claro y sin callejones sin salida.
@@ -46,38 +46,40 @@ Cada nivel dispone de un botón **Cancelar** que devuelve al nivel inmediatament
 ## 🔍 **3. Flujo de trabajo detallado**
 
 ### 3.1. Lista de contratos
-- Se reutilizará el módulo ya existente para la selección de contratos.  
+- Se reutilizará el módulo ya existente para la selección de contratos.
 - Diferencias respecto al flujo de captura de facturas:
-  - **Aceptar** → abre la **vista de detalles del contrato**.  
+  - **Aceptar** → abre la **vista de detalles del contrato**.
   - **Cancelar** → vuelve al menú general.
 
 ### 3.2. Vista de detalles del contrato
 - Esta ventana **debe reconstruirse**, ya que no existe en la versión 2.0 actual.
 - Se tomará como base la ventana de **creación de contrato**, reorganizando campos y añadiendo los JOINs necesarios para mostrar nombres en lugar de IDs.
+- Los datos saldrán de la vista llamada vista_contratos y se organizaran en tres apartados: Identificacion, Energia y "Gastos e Impuestos".
+- Las etiquetas de los campos a mostrar se definirán durante este desarrollo.
 - Botones:
-  - **Cancelar** → vuelve a la lista de contratos.  
+  - **Cancelar** → vuelve a la lista de contratos.
   - **Ver facturas** → abre la lista de facturas asociadas.
 
 ### 3.3. Lista de facturas del contrato
 - Se generará dinámicamente a partir del contrato seleccionado.
 - Campos mínimos:
-  - Número de factura  
-  - Fecha de emisión  
-  - Fecha de inicio  
-  - Fecha de fin  
-  - Importe total  
+  - Número de factura
+  - Fecha de emisión
+  - Fecha de inicio
+  - Fecha de fin
+  - Importe total
 - Botones:
-  - **Detalles factura** → abre la vista de detalles de la factura seleccionada.  
+  - **Detalles factura** → abre la vista de detalles de la factura seleccionada.
   - **Cancelar** → vuelve a la vista de detalles del contrato.
 
 ### 3.4. Vista de detalles de la factura
 - Nueva ventana a crear.
 - Se evaluará la recuperación de la ventana de **captura de factura** desarrollada en la versión del día 4 (rama *backup*), ya que su estructura y automatismos son adecuados para adaptarla como vista de detalles.
 - Debe mostrar:
-  - Datos generales  
-  - Periodos y consumos  
-  - Importes desglosados  
-  - Totales calculados  
+  - Datos generales
+  - Periodos y consumos
+  - Importes desglosados
+  - Totales calculados
 - Botón:
   - **Cancelar** → vuelve a la lista de facturas.
 
@@ -91,14 +93,14 @@ Cada nivel dispone de un botón **Cancelar** que devuelve al nivel inmediatament
 - La ventana de captura de factura previa puede servir como base para la vista de detalles.
 
 ### 4.2. Nuevas ventanas necesarias
-- **Lista de facturas asociadas**  
-- **Detalles de factura**  
+- **Lista de facturas asociadas**
+- **Detalles de factura**
 
 Ambas deben seguir el estilo visual del proyecto.
 
 ### 4.3. Navegación y control de ventanas
-- Cada ventana debe cerrarse al abrir la siguiente.  
-- El botón **Cancelar** siempre devuelve al nivel anterior.  
+- Cada ventana debe cerrarse al abrir la siguiente.
+- El botón **Cancelar** siempre devuelve al nivel anterior.
 - No debe existir ningún flujo que deje ventanas huérfanas o inaccesibles.
 
 ### 4.4. Integración en el marco general de ventanas
@@ -108,23 +110,23 @@ Este módulo debe integrarse **desde el inicio** en el marco general de ventanas
 
 ## 🧪 **5. Pruebas previstas**
 
-- Verificar carga correcta de la lista de contratos.  
-- Confirmar que la vista de detalles del contrato no se abre sin selección.  
-- Validar que la lista de facturas muestra solo las asociadas al contrato.  
-- Comprobar funcionamiento de todos los botones Cancelar.  
-- Revisar JOINs para mostrar nombres de compañía y población.  
-- Asegurar que no se producen cierres inesperados ni ventanas huérfanas.  
+- Verificar carga correcta de la lista de contratos.
+- Confirmar que la vista de detalles del contrato no se abre sin selección.
+- Validar que la lista de facturas muestra solo las asociadas al contrato.
+- Comprobar funcionamiento de todos los botones Cancelar.
+- Revisar JOINs para mostrar nombres de compañía y población.
+- Asegurar que no se producen cierres inesperados ni ventanas huérfanas.
 - Validar cálculos y totales en la vista de detalles de factura.
 
 ---
 
 ## 📌 **6. Pendientes identificados**
 
-- Reconstruir la vista de detalles del contrato.  
-- Recuperar y adaptar la ventana de captura de factura (rama backup).  
-- Crear la lista de facturas asociadas.  
-- Ajustar estética general al marco visual.  
-- Integrar sufijos y magnitudes desde `sufijos.py`.  
+- Reconstruir la vista de detalles del contrato.
+- Recuperar y adaptar la ventana de captura de factura (rama backup).
+- Crear la lista de facturas asociadas.
+- Ajustar estética general al marco visual.
+- Integrar sufijos y magnitudes desde `sufijos.py`.
 - Preparar datos de prueba para validar el flujo completo.
 
 ---

@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
 )
 
 from base_consulta import BaseConsulta
+from detalles_contrato import DetallesContratoWidget
 
 
 # =========================================================
@@ -133,10 +134,11 @@ class ConsultaContratosWidget(BaseConsulta):
         fila = items[0].row()
         ncontrato = self.tabla.item(fila, 0).text().strip()
 
-        # Aquí enlazaremos con la ventana de detalles
-        # cuando la implementemos en el siguiente paso.
-        self.mostrar_aviso(
-            "Detalles",
-            f"Has seleccionado el contrato {ncontrato}.\n"
-            "La ventana de detalles se implementará a continuación.",
-        )
+        # Obtener el MainWindow real
+        marco = self.window()
+
+        # Crear la vista de detalles
+        detalles = DetallesContratoWidget(self.conn, ncontrato, parent=marco)
+
+        # Cargarla en la zona de contenido
+        marco.cargar_modulo(detalles, "")

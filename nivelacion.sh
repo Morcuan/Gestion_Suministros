@@ -44,11 +44,8 @@ echo "📝 Añadiendo todos los cambios..."
 git add -A
 
 # Crear mensaje de commit limpio
-COMMIT_MSG="Nivelaccion manual, Inicio del desarrollo del modulo consultas integrado.
-Corregido main_window en cuanto a los menus adaptados a la consulta via unica.
-Añadidas funciones auxiliares a utils.py y estilo.py.
-Implementado base_consulta y consulta_contratos hasta la lista de contratos
-funcionando bien. $(date '+%Y-%m-%d %H:%M')"
+COMMIT_MSG="Nivelaccion manual, Modificado inicio.sh para las copias en ALMACEN.
+Creada la vista de detalles del contrato y la navegacion desde y hacia la lista de contratos. $(date '+%Y-%m-%d %H:%M')"
 
 echo "💾 Realizando commit: $COMMIT_MSG"
 git commit -m "$COMMIT_MSG"
