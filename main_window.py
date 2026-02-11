@@ -64,6 +64,7 @@ class MainWindow(QMainWindow):
 
         self.encabezado_modulo = QLabel("Pantalla de Inicio")
         self.encabezado_modulo.setStyleSheet("font-size: 18px; font-weight: bold;")
+        self.encabezado_modulo.hide()
         self.zona_contenido_layout.addWidget(self.encabezado_modulo)
 
         layout_principal.addWidget(self.zona_contenido, stretch=1)
@@ -364,7 +365,7 @@ class MainWindow(QMainWindow):
                 self.zona_contenido_layout.removeWidget(w)
                 w.deleteLater()
 
-        self.encabezado_modulo.setText(titulo)
+        # self.encabezado_modulo.setText(titulo)
         self.zona_contenido_layout.addWidget(widget, stretch=1)
 
     # ---------------------------------------------------------

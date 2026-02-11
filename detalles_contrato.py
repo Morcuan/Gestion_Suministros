@@ -17,6 +17,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from consulta_facturas import ConsultaFacturasWidget
+
 
 class DetallesContratoWidget(QWidget):
     """
@@ -31,20 +33,21 @@ class DetallesContratoWidget(QWidget):
         self.conn = conn
         self.ncontrato = ncontrato
 
-        self.setWindowTitle(f"Detalles del contrato")
+        # ❌ Ya no usamos títulos de ventana del sistema
+        # self.setWindowTitle("Detalles del contrato")
 
         layout = QVBoxLayout(self)
 
         # ---------------------------------------------------------
-        # TÍTULO
+        # TÍTULO LOCAL
         # ---------------------------------------------------------
-        titulo = QLabel(f"Detalles del contrato")
+        titulo = QLabel("Detalles del contrato")
         titulo.setFont(QFont("DejaVu Sans", 16, QFont.Bold))
         titulo.setAlignment(Qt.AlignCenter)
         layout.addWidget(titulo)
 
         # ---------------------------------------------------------
-        # SCROLL (por si hay pantallas pequeñas)
+        # SCROLL
         # ---------------------------------------------------------
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
@@ -55,7 +58,7 @@ class DetallesContratoWidget(QWidget):
         cuerpo = QVBoxLayout(contenedor)
 
         # ---------------------------------------------------------
-        # CARGAR DATOS DEL SUPLEMENTO ACTIVO
+        # CARGAR DATOS
         # ---------------------------------------------------------
         datos = self.cargar_datos()
 
@@ -91,9 +94,6 @@ class DetallesContratoWidget(QWidget):
             iva,
         ) = datos
 
-        # ---------------------------------------------------------
-        # BLOQUE IDENTIFICACIÓN
-        # ---------------------------------------------------------
         cuerpo.addWidget(
             self._crear_bloque_identificacion(
                 ncontrato,
@@ -110,9 +110,6 @@ class DetallesContratoWidget(QWidget):
             )
         )
 
-        # ---------------------------------------------------------
-        # BLOQUE ENERGÍA
-        # ---------------------------------------------------------
         cuerpo.addWidget(
             self._crear_bloque_energia(
                 ppunta,
@@ -127,9 +124,6 @@ class DetallesContratoWidget(QWidget):
             )
         )
 
-        # ---------------------------------------------------------
-        # BLOQUE GASTOS E IMPUESTOS
-        # ---------------------------------------------------------
         cuerpo.addWidget(
             self._crear_bloque_gastos(
                 bono_social, i_electrico, alq_contador, otros_gastos, iva
@@ -137,15 +131,16 @@ class DetallesContratoWidget(QWidget):
         )
 
         # ---------------------------------------------------------
-        # BOTONES
+        # BOTONES (orden coherente con el resto)
+        # Cerrar siempre a la derecha
         # ---------------------------------------------------------
         botones = QHBoxLayout()
-        self.btn_cerrar = QPushButton("Cerrar")
         self.btn_facturas = QPushButton("Ver facturas")
+        self.btn_cerrar = QPushButton("Cerrar")
 
-        botones.addWidget(self.btn_cerrar)
-        botones.addStretch()
         botones.addWidget(self.btn_facturas)
+        botones.addStretch()
+        botones.addWidget(self.btn_cerrar)
 
         layout.addLayout(botones)
 
@@ -187,22 +182,21 @@ class DetallesContratoWidget(QWidget):
         return cur.fetchone()
 
     # ============================================================
+    #   OBTENER ID_CONTRATO REAL
+    # ============================================================
+    def obtener_id_contrato(self):
+        cur = self.conn.cursor()
+        cur.execute(
+            "SELECT id_contrato FROM contratos_identificacion WHERE ncontrato = ? LIMIT 1;",
+            (self.ncontrato,),
+        )
+        fila = cur.fetchone()
+        return fila[0] if fila else None
+
+    # ============================================================
     #   BLOQUES DE DATOS
     # ============================================================
-    def _crear_bloque_identificacion(
-        self,
-        ncontrato,
-        suplemento,
-        estado,
-        compania,
-        cp,
-        poblacion,
-        fec_inicio,
-        fec_final,
-        efec_suple,
-        fin_suple,
-        fec_anulacion,
-    ):
+    def _crear_bloque_identificacion(self, *args):
         bloque = QWidget()
         grid = QGridLayout(bloque)
 
@@ -211,42 +205,29 @@ class DetallesContratoWidget(QWidget):
         grid.addWidget(titulo, 0, 0, 1, 2)
 
         etiquetas = [
-            ("Nº de contrato", ncontrato),
-            ("Nº de suplemento", suplemento),
-            ("Estado del contrato", estado),
-            ("Distribuidora", compania),
-            ("Cod. Postal", cp),
-            ("Población", poblacion),
-            ("Desde", fec_inicio),
-            ("Hasta", fec_final),
-            ("Dat. Válidos desde", efec_suple),
-            ("Dat. Válidos hasta", fin_suple),
-            ("Fec. Anulación", fec_anulacion),
+            ("Nº de contrato", args[0]),
+            ("Nº de suplemento", args[1]),
+            ("Estado del contrato", args[2]),
+            ("Distribuidora", args[3]),
+            ("Cod. Postal", args[4]),
+            ("Población", args[5]),
+            ("Desde", args[6]),
+            ("Hasta", args[7]),
+            ("Dat. Válidos desde", args[8]),
+            ("Dat. Válidos hasta", args[9]),
+            ("Fec. Anulación", args[10]),
         ]
 
         fila = 1
         for etiqueta, valor in etiquetas:
-            # Limpieza: si valor es None, vacío
             valor = "" if valor is None else valor
-
             grid.addWidget(QLabel(etiqueta + ":"), fila, 0)
             grid.addWidget(QLabel(str(valor)), fila, 1)
             fila += 1
 
         return bloque
 
-    def _crear_bloque_energia(
-        self,
-        ppunta,
-        pv_ppunta,
-        pvalle,
-        pv_pvalle,
-        pv_conpunta,
-        pv_conllano,
-        pv_convalle,
-        vertido,
-        pv_excedent,
-    ):
+    def _crear_bloque_energia(self, *args):
         bloque = QWidget()
         grid = QGridLayout(bloque)
 
@@ -255,15 +236,15 @@ class DetallesContratoWidget(QWidget):
         grid.addWidget(titulo, 0, 0, 1, 2)
 
         etiquetas = [
-            ("Pot. Punta (kWh)", ppunta),
-            ("€ kWh Punta", pv_ppunta),
-            ("Pot. Valle (kWh)", pvalle),
-            ("€ kWh Valle", pv_pvalle),
-            ("Cons. Punta (€)", pv_conpunta),
-            ("Cons. Llano (€)", pv_conllano),
-            ("Cons. Valle (€)", pv_convalle),
-            ("Aut. vertido", vertido),
-            ("kWh vertido (€)", pv_excedent),
+            ("Pot. Punta (kWh)", args[0]),
+            ("€ kWh Punta", args[1]),
+            ("Pot. Valle (kWh)", args[2]),
+            ("€ kWh Valle", args[3]),
+            ("Cons. Punta (€)", args[4]),
+            ("Cons. Llano (€)", args[5]),
+            ("Cons. Valle (€)", args[6]),
+            ("Aut. vertido", args[7]),
+            ("kWh vertido (€)", args[8]),
         ]
 
         fila = 1
@@ -274,9 +255,7 @@ class DetallesContratoWidget(QWidget):
 
         return bloque
 
-    def _crear_bloque_gastos(
-        self, bono_social, i_electrico, alq_contador, otros_gastos, iva
-    ):
+    def _crear_bloque_gastos(self, *args):
         bloque = QWidget()
         grid = QGridLayout(bloque)
 
@@ -285,11 +264,11 @@ class DetallesContratoWidget(QWidget):
         grid.addWidget(titulo, 0, 0, 1, 2)
 
         etiquetas = [
-            ("Bono Social (€)", bono_social),
-            ("Imp. Electricidad (%)", i_electrico),
-            ("Equip. de medida (€)", alq_contador),
-            ("Otros (€)", otros_gastos),
-            ("IVA (%)", iva),
+            ("Bono Social (€)", args[0]),
+            ("Imp. Electricidad (%)", args[1]),
+            ("Equip. de medida (€)", args[2]),
+            ("Otros (€)", args[3]),
+            ("IVA (%)", args[4]),
         ]
 
         fila = 1
@@ -311,5 +290,11 @@ class DetallesContratoWidget(QWidget):
         marco.cargar_modulo(lista, "Consulta contratos")
 
     def ver_facturas(self):
-        if self.parent():
-            self.parent().abrir_facturas(self.ncontrato)
+        idc = self.obtener_id_contrato()
+        if idc is None:
+            self.mostrar_aviso("Error", "No se pudo obtener el ID del contrato.")
+            return
+
+        marco = self.window()
+        vista = ConsultaFacturasWidget(self.conn, idc, parent=marco)
+        marco.cargar_modulo(vista, "Facturas del contrato")

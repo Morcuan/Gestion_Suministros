@@ -44,8 +44,10 @@ echo "📝 Añadiendo todos los cambios..."
 git add -A
 
 # Crear mensaje de commit limpio
-COMMIT_MSG="Nivelaccion manual, Modificado inicio.sh para las copias en ALMACEN.
-Creada la vista de detalles del contrato y la navegacion desde y hacia la lista de contratos. $(date '+%Y-%m-%d %H:%M')"
+COMMIT_MSG="Nivelaccion manual, Creada la ventana lista de detalles.
+Corregidos los modulos para adaptacion.
+Corregidos los botones de detalles contrato (al reves).
+Navegacion niveles 1-2 y 3 y viceversa correctos. $(date '+%Y-%m-%d %H:%M')"
 
 echo "💾 Realizando commit: $COMMIT_MSG"
 git commit -m "$COMMIT_MSG"
