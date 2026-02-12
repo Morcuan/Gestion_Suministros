@@ -113,7 +113,7 @@ class ConsultaFacturasWidget(BaseConsulta):
             FROM factura_identificacion fi
             JOIN factura_asociados fa ON fi.id_factura = fa.id_factura
             WHERE fi.id_contrato = ?
-            ORDER BY fi.fec_emision DESC;
+            ORDER BY fi.fec_emision ASC;
             """,
             (self.id_contrato,),
         )
@@ -135,7 +135,7 @@ class ConsultaFacturasWidget(BaseConsulta):
         self.tabla.resizeRowsToContents()
 
     # =====================================================
-    #   ABRIR DETALLES DE LA FACTURA (pendiente)
+    #   ABRIR DETALLES DE LA FACTURA
     # =====================================================
     def abrir_detalles(self):
         items = self.tabla.selectedItems()
@@ -146,7 +146,14 @@ class ConsultaFacturasWidget(BaseConsulta):
         fila = items[0].row()
         id_factura = self.tabla.item(fila, 0).data(Qt.UserRole)
 
-        self.mostrar_aviso("Info", f"Factura seleccionada: {id_factura}")
+        # Obtener el MainWindow real
+        marco = self.window()
+
+        from detalles_factura import DetallesFactura
+
+        detalles = DetallesFactura(self.conn, id_factura, parent=marco)
+
+        marco.cargar_modulo(detalles, "Detalles de la factura")
 
     def volver(self):
         from detalles_contrato import DetallesContratoWidget
