@@ -8,8 +8,6 @@ DB_PATH = "data/almacen.db"
 # ---------------------------------------------------------
 # FUNCIONES DE CREACIÓN DE TABLAS (MODULARIZADAS)
 # ---------------------------------------------------------
-
-
 def crear_tabla_contratos_identificacion(cursor):
     cursor.execute("DROP TABLE IF EXISTS contratos_identificacion;")
     cursor.execute("""
@@ -94,61 +92,36 @@ def crear_tabla_cpostales(cursor):
 
 
 # ---------------------------------------------------------
-# TABLAS FACTURAS
+# TABLA FACTURAS
 # ---------------------------------------------------------
-def crear_tabla_factura_identificacion(cursor):
-    cursor.execute("DROP TABLE IF EXISTS factura_identificacion;")
+def crear_tabla_facturas(cursor):
+    cursor.execute("DROP TABLE IF EXISTS facturas;")
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS factura_identificacion (
-            id_factura      INTEGER PRIMARY KEY AUTOINCREMENT,
-            id_contrato     INTEGER NOT NULL,
-            nfactura        TEXT NOT NULL UNIQUE,
-            inicio_factura  TEXT NOT NULL,
-            fin_factura     TEXT NOT NULL,
-            dias_factura    INTEGER NOT NULL,
-            fec_emision     TEXT NOT NULL,
-            FOREIGN KEY (id_contrato) REFERENCES contratos(id_contrato)
+        CREATE TABLE IF NOT EXISTS facturas (
+            id_contrato        INTEGER NOT NULL,
+            nfactura           TEXT NOT NULL,
+            inicio_factura     TEXT NOT NULL,
+            fin_factura        TEXT NOT NULL,
+            dias_factura       INTEGER NOT NULL,
+            fec_emision        TEXT NOT NULL,
+            consumo_punta      REAL,
+            consumo_llano      REAL,
+            consumo_valle      REAL,
+            excedentes         REAL,
+            importe_compensado REAL,
+            servicios          REAL,
+            dcto_servicios     REAL,
+            saldos_pendientes  REAL,
+            bat_virtual        REAL,
+            PRIMARY KEY (id_contrato, nfactura),
+            FOREIGN KEY (id_contrato) REFERENCES contratos_identificacion(id_contrato)
         );
-    """)
+        """)
 
-
-def crear_tabla_factura_energia(cursor):
-    cursor.execute("DROP TABLE IF EXISTS factura_energia;")
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS factura_energia (
-            id_factura        INTEGER PRIMARY KEY,
-            pot_imp_punta     REAL DEFAULT 0,
-            pot_imp_valle     REAL DEFAULT 0,
-            total_potencia    REAL NOT NULL,
-            con_punta         REAL DEFAULT 0,
-            imp_con_punta     REAL DEFAULT 0,
-            con_llano         REAL DEFAULT 0,
-            imp_con_llano     REAL DEFAULT 0,
-            con_valle         REAL DEFAULT 0,
-            imp_con_valle     REAL DEFAULT 0,
-            excedentes        REAL DEFAULT 0,
-            imp_excedentes    REAL DEFAULT 0,
-            FOREIGN KEY (id_factura) REFERENCES factura_identificacion(id_factura)
-        );
-    """)
-
-
-def crear_tabla_factura_asociados(cursor):
-    cursor.execute("DROP TABLE IF EXISTS factura_asociados;")
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS factura_asociados (
-            id_factura      INTEGER PRIMARY KEY,
-            imp_bono_social REAL NOT NULL,
-            imp_iee         REAL NOT NULL,
-            alq_equipos     REAL NOT NULL,
-            servicios       REAL DEFAULT 0,
-            iva             REAL NOT NULL,
-            dcto_saldos     REAL DEFAULT 0,
-            solar_cloud     REAL DEFAULT 0,
-            total_factura   REAL NOT NULL,
-            FOREIGN KEY (id_factura) REFERENCES factura_identificacion(id_factura)
-        );
-    """)
+        CREATE INDEX IF NOT EXISTS idx_facturas_fec_emision
+        ON facturas (fec_emision);
+        """)
 
 
 # ---------------------------------------------------------
@@ -203,9 +176,7 @@ def crear_tablas_y_vistas(cursor):
     crear_tabla_contratos_identificacion(cursor)
     crear_tabla_contratos_energia(cursor)
     crear_tabla_contratos_gastos(cursor)
-    crear_tabla_factura_identificacion(cursor)
-    crear_tabla_factura_energia(cursor)
-    crear_tabla_factura_asociados(cursor)
+    crear_tabla_facturas(cursor)
     crear_vista_contratos_completo(cursor)
     crear_vista_contratos_facturacion(cursor)
 

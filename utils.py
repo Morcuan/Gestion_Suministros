@@ -19,7 +19,7 @@ def dias_entre_fechas(inicio_ddmmyyyy, fin_ddmmyyyy):
     """
     d1 = datetime.strptime(inicio_ddmmyyyy, "%d/%m/%Y")
     d2 = datetime.strptime(fin_ddmmyyyy, "%d/%m/%Y")
-    return (d2 - d1).days + 1
+    return (d2 - d1).days
 
 
 def validar_fecha(fecha_ddmmyyyy):

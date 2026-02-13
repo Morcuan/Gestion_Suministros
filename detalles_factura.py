@@ -15,11 +15,12 @@ from PySide6.QtWidgets import (
 
 
 class DetallesFactura(QWidget):
-    def __init__(self, conn, id_factura, parent=None):
+    def __init__(self, conn, id_contrato, nfactura, parent=None):
         super().__init__(parent)
 
         self.conn = conn
-        self.id_factura = id_factura
+        self.id_contrato = id_contrato
+        self.nfactura = nfactura
 
         # Cargar datos desde la BD
         self.datos = self.cargar_datos_factura()
@@ -35,13 +36,26 @@ class DetallesFactura(QWidget):
 
         cursor.execute(
             """
-            SELECT *
-            FROM factura_identificacion fi
-            LEFT JOIN factura_energia fe ON fi.id_factura = fe.id_factura
-            LEFT JOIN factura_asociados fa ON fi.id_factura = fa.id_factura
-            WHERE fi.id_factura = ?
-        """,
-            (self.id_factura,),
+            SELECT
+                id_contrato,        -- 0
+                nfactura,           -- 1
+                inicio_factura,     -- 2
+                fin_factura,        -- 3
+                dias_factura,       -- 4
+                fec_emision,        -- 5
+                consumo_punta,      -- 6
+                consumo_llano,      -- 7
+                consumo_valle,      -- 8
+                excedentes,         -- 9
+                importe_compensado, -- 10  NUEVO
+                servicios,          -- 11
+                dcto_servicios,     -- 12
+                saldos_pendientes,  -- 13
+                bat_virtual         -- 14
+            FROM facturas
+            WHERE id_contrato = ? AND nfactura = ?
+            """,
+            (self.id_contrato, self.nfactura),
         )
 
         return cursor.fetchone()
@@ -55,10 +69,8 @@ class DetallesFactura(QWidget):
         layout.setSpacing(15)
 
         layout.addWidget(self.bloque_identificacion())
-        layout.addWidget(self.bloque_energia_consumida())
-        layout.addWidget(self.bloque_cargos_normativos())
-        layout.addWidget(self.bloque_servicios())
-        layout.addWidget(self.bloque_resto())
+        layout.addWidget(self.bloque_energia())
+        layout.addWidget(self.bloque_gastos())
 
         # Botones inferiores
         botones = QHBoxLayout()
@@ -82,90 +94,51 @@ class DetallesFactura(QWidget):
     # BLOQUE IDENTIFICACIÓN
     # ---------------------------------------------------------
     def bloque_identificacion(self):
-        grupo = QGroupBox("Identificación de la factura")
+        grupo = QGroupBox("Identificación")
         form = QFormLayout()
 
         d = self.datos
 
-        form.addRow("Número de factura:", QLabel(d[2]))
-        form.addRow("Inicio factura:", QLabel(d[3]))
-        form.addRow("Fin factura:", QLabel(d[4]))
-        form.addRow("Días facturados:", QLabel(str(d[5])))
-        form.addRow("Fecha emisión:", QLabel(d[6]))
+        form.addRow("Número de factura:", QLabel(str(d[1])))
+        form.addRow("Inicio factura:", QLabel(str(d[2])))
+        form.addRow("Fin factura:", QLabel(str(d[3])))
+        form.addRow("Días facturados:", QLabel(str(d[4])))
+        form.addRow("Fecha emisión:", QLabel(str(d[5])))
 
         grupo.setLayout(form)
         return grupo
 
     # ---------------------------------------------------------
-    # BLOQUE ENERGÍA CONSUMIDA (sin potencia)
+    # BLOQUE ENERGÍA
     # ---------------------------------------------------------
-    def bloque_energia_consumida(self):
-        grupo = QGroupBox("Energía consumida")
+    def bloque_energia(self):
+        grupo = QGroupBox("Energía")
         form = QFormLayout()
 
         d = self.datos
 
-        # factura_energia empieza en d[7]
-        # d[7] = id_factura (NO se usa)
-
-        form.addRow("Consumo punta (kWh):", QLabel(str(d[11])))
-        form.addRow("Importe consumo punta (€):", QLabel(str(d[12])))
-
-        form.addRow("Consumo llano (kWh):", QLabel(str(d[13])))
-        form.addRow("Importe consumo llano (€):", QLabel(str(d[14])))
-
-        form.addRow("Consumo valle (kWh):", QLabel(str(d[15])))
-        form.addRow("Importe consumo valle (€):", QLabel(str(d[16])))
-
-        form.addRow("Excedentes (kWh):", QLabel(str(d[17])))
-        form.addRow("Importe excedentes (€):", QLabel(str(d[18])))
+        form.addRow("Consumo punta (kWh):", QLabel(str(d[6])))
+        form.addRow("Consumo llano (kWh):", QLabel(str(d[7])))
+        form.addRow("Consumo valle (kWh):", QLabel(str(d[8])))
+        form.addRow("Excedentes (kWh):", QLabel(str(d[9])))
+        form.addRow("Importe compensado (€):", QLabel(str(d[10])))  # NUEVO
 
         grupo.setLayout(form)
         return grupo
 
     # ---------------------------------------------------------
-    # BLOQUE 1: CARGOS NORMATIVOS
+    # BLOQUE GASTOS Y DESCUENTOS
     # ---------------------------------------------------------
-    def bloque_cargos_normativos(self):
-        grupo = QGroupBox("Cargos normativos")
+    def bloque_gastos(self):
+        grupo = QGroupBox("Gastos y descuentos")
         form = QFormLayout()
 
         d = self.datos
 
-        form.addRow("Bono social:", QLabel(str(d[20])))
-        form.addRow("IEE:", QLabel(str(d[21])))
-
-        grupo.setLayout(form)
-        return grupo
-
-    # ---------------------------------------------------------
-    # BLOQUE 2: SERVICIOS Y OTROS
-    # ---------------------------------------------------------
-    def bloque_servicios(self):
-        grupo = QGroupBox("Servicios y otros")
-        form = QFormLayout()
-
-        d = self.datos
-
-        form.addRow("Alquiler equipos:", QLabel(str(d[22])))
-        form.addRow("Servicios:", QLabel(str(d[23])))
-
-        grupo.setLayout(form)
-        return grupo
-
-    # ---------------------------------------------------------
-    # BLOQUE 3: RESTO
-    # ---------------------------------------------------------
-    def bloque_resto(self):
-        grupo = QGroupBox("Resto")
-        form = QFormLayout()
-
-        d = self.datos
-
-        form.addRow("IVA:", QLabel(str(d[24])))
-        form.addRow("Descuento saldos:", QLabel(str(d[25])))
-        form.addRow("Solar cloud:", QLabel(str(d[26])))
-        form.addRow("Total factura:", QLabel(str(d[27])))
+        form.addRow("Servicios asociados (€):", QLabel(str(d[11])))
+        form.addRow("Dctos. servicios (€):", QLabel(str(d[12])))
+        form.addRow("Saldos pendientes (€):", QLabel(str(d[13])))
+        form.addRow("Batería virtual (€):", QLabel(str(d[14])))
 
         grupo.setLayout(form)
         return grupo
@@ -174,15 +147,30 @@ class DetallesFactura(QWidget):
     # ACCIONES
     # ---------------------------------------------------------
     def totalizar_factura(self):
-        # Pendiente de implementar
-        pass
+        # ---------------------------------------------------------
+        #  Módulo aún no implementado: totalizar_factura.py
+        #  Cuando esté listo, descomentar estas líneas:
+        # ---------------------------------------------------------
+
+        # from totalizar_factura import TotalizarFacturaWidget
+        # vista = TotalizarFacturaWidget(
+        #     self.conn, self.id_contrato, self.nfactura, parent=self.window()
+        # )
+        # marco = self.window()
+        # marco.cargar_modulo(vista, "Totalización de factura")
+
+        # Aviso temporal
+        from PySide6.QtWidgets import QMessageBox
+
+        QMessageBox.information(
+            self,
+            "Módulo no disponible",
+            "La totalización de factura aún no está implementada.",
+        )
 
     def volver_lista_facturas(self):
         from consulta_facturas import ConsultaFacturasWidget
 
-        d = self.datos
-        id_contrato = d[1]  # segundo campo del SELECT *
-
         marco = self.window()
-        vista = ConsultaFacturasWidget(self.conn, id_contrato, parent=marco)
+        vista = ConsultaFacturasWidget(self.conn, self.id_contrato, parent=marco)
         marco.cargar_modulo(vista, "Facturas del contrato")
