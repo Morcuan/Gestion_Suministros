@@ -13,6 +13,12 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from calculo import (
+    calcular_cargos_para_factura,
+    calcular_energia_para_factura,
+    obtener_datos_factura,
+)
+
 
 class DetallesFactura(QWidget):
     def __init__(self, conn, id_contrato, nfactura, parent=None):
@@ -147,26 +153,63 @@ class DetallesFactura(QWidget):
     # ACCIONES
     # ---------------------------------------------------------
     def totalizar_factura(self):
-        # ---------------------------------------------------------
-        #  Módulo aún no implementado: totalizar_factura.py
-        #  Cuando esté listo, descomentar estas líneas:
-        # ---------------------------------------------------------
 
-        # from totalizar_factura import TotalizarFacturaWidget
-        # vista = TotalizarFacturaWidget(
-        #     self.conn, self.id_contrato, self.nfactura, parent=self.window()
-        # )
-        # marco = self.window()
-        # marco.cargar_modulo(vista, "Totalización de factura")
+        nfactura = self.nfactura
+        if not nfactura:
+            from PySide6.QtWidgets import QMessageBox
 
-        # Aviso temporal
-        from PySide6.QtWidgets import QMessageBox
+            QMessageBox.warning(
+                self, "Sin selección", "No hay ninguna factura seleccionada."
+            )
+            return
 
-        QMessageBox.information(
-            self,
-            "Módulo no disponible",
-            "La totalización de factura aún no está implementada.",
-        )
+        print(f"\n=== TOTALIZANDO FACTURA {nfactura} ===")
+
+        cursor = self.conn.cursor()
+
+        try:
+            from calculo import (
+                calcular_cargos_para_factura,
+                calcular_energia_para_factura,
+                obtener_datos_factura,
+            )
+
+            # ---------------------------------------------------------
+            # 1) Cargar datos base desde la vista
+            # ---------------------------------------------------------
+            datos_base = obtener_datos_factura(cursor, nfactura)
+
+            # ---------------------------------------------------------
+            # 2) Calcular CARGOS (bono social)
+            # ---------------------------------------------------------
+            cargos_obj = calcular_cargos_para_factura(datos_base)
+            bono_social = cargos_obj.bono_social
+
+            print(
+                f"\n>>> TOTAL BLOQUE CARGOS PARA {nfactura}: {cargos_obj.total_cargos:.2f} €"
+            )
+
+            # ---------------------------------------------------------
+            # 3) Calcular ENERGÍA pasando el bono social
+            # ---------------------------------------------------------
+            energia_obj, datos = calcular_energia_para_factura(
+                cursor, nfactura, bono_social
+            )
+
+            print(
+                f"\n>>> TOTAL BLOQUE ENERGÍA PARA {nfactura}: {energia_obj.total_energia:.2f} €\n"
+            )
+
+        except Exception as e:
+            print(f"[ERROR] Fallo en el cálculo: {e}")
+            from PySide6.QtWidgets import QMessageBox
+
+            QMessageBox.critical(
+                self,
+                "Error en cálculo",
+                f"Se produjo un error durante el cálculo:\n{e}",
+            )
+            return
 
     def volver_lista_facturas(self):
         from consulta_facturas import ConsultaFacturasWidget

@@ -167,6 +167,65 @@ def crear_vista_contratos_facturacion(cursor):
     """)
 
 
+def crear_vista_v_datos_calculo(cursor):
+    cursor.execute("DROP VIEW IF EXISTS v_datos_calculo;")
+    cursor.execute("""
+        CREATE VIEW IF NOT EXISTS v_datos_calculo AS
+        SELECT
+            -- Factura
+            fa.id_contrato              AS id_contrato_base,
+            fa.nfactura,
+            fa.inicio_factura,
+            fa.fin_factura,
+            fa.dias_factura,
+            fa.consumo_punta,
+            fa.consumo_llano,
+            fa.consumo_valle,
+            fa.excedentes,
+            fa.servicios,
+            fa.dcto_servicios,
+            fa.saldos_pendientes,
+            fa.bat_virtual,
+
+            -- Suplemento correcto
+            ci.id_contrato              AS id_contrato_suplemento,
+            ci.ncontrato,
+            ci.suplemento,
+            ci.efec_suple,
+            ci.fin_suple,
+
+            -- Contratos energía
+            ce.ppunta,
+            ce.pv_ppunta,
+            ce.pvalle,
+            ce.pv_pvalle,
+            ce.pv_conpunta,
+            ce.pv_conllano,
+            ce.pv_convalle,
+            ce.pv_excedent,
+
+            -- Contratos gastos
+            cg.bono_social,
+            cg.alq_contador,
+            cg.otros_gastos,
+            cg.i_electrico,
+            cg.iva
+
+        FROM facturas fa
+        JOIN contratos_identificacion ci
+            ON ci.ncontrato = (
+                SELECT ncontrato
+                FROM contratos_identificacion
+                WHERE id_contrato = fa.id_contrato
+            )
+            AND fa.inicio_factura BETWEEN ci.efec_suple AND ci.fin_suple
+        JOIN contratos_energia ce
+            ON ce.id_contrato = ci.id_contrato
+        JOIN contratos_gastos cg
+            ON cg.id_contrato = ci.id_contrato;
+    """)
+
+
 # ---------------------------------------------------------
 # FUNCIÓN PRINCIPAL (RECIBE CURSOR EXTERNO)
 # ---------------------------------------------------------
@@ -179,6 +238,7 @@ def crear_tablas_y_vistas(cursor):
     crear_tabla_facturas(cursor)
     crear_vista_contratos_completo(cursor)
     crear_vista_contratos_facturacion(cursor)
+    crear_vista_v_datos_calculo(cursor)
 
 
 # ---------------------------------------------------------

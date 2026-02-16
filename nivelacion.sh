@@ -44,8 +44,15 @@ echo "📝 Añadiendo todos los cambios..."
 git add -A
 
 # Crear mensaje de commit limpio
-COMMIT_MSG="Nivelaccion manual, Pruebas de nueva arquitectura realizadas
-Funcionando el proceso completo sin errores. $(date '+%Y-%m-%d %H:%M')"
+COMMIT_MSG="Nivelaccion manual, Creacion del modulo calculo.py
+Creacion de vista v_datos_calculo
+Modificado bd.init para crear la vista
+Bloque ENERGÍA terminado y validado
+Bloque CARGOS funcionando perfecto
+calculo.py limpio, modular y estable
+detalles_factura.py sincronizado con el nuevo flujo
+Diferencia de 1 céntimo localizada y asumida como “tasa Iberdrola”
+Preparados para entrar mañana en Servicios / Descuentos / Saldos / Batería virtual $(date '+%Y-%m-%d %H:%M')"
 
 echo "💾 Realizando commit: $COMMIT_MSG"
 git commit -m "$COMMIT_MSG"
