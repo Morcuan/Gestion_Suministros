@@ -13,12 +13,6 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from calculo import (
-    calcular_cargos_para_factura,
-    calcular_energia_para_factura,
-    obtener_datos_factura,
-)
-
 
 class DetallesFactura(QWidget):
     def __init__(self, conn, id_contrato, nfactura, parent=None):
@@ -96,6 +90,35 @@ class DetallesFactura(QWidget):
 
         self.setLayout(layout)
 
+    def bloque_energia(self):
+        grupo = QGroupBox("Energía")
+        form = QFormLayout()
+
+        d = self.datos
+
+        form.addRow("Consumo punta (kWh):", QLabel(str(d[6])))
+        form.addRow("Consumo llano (kWh):", QLabel(str(d[7])))
+        form.addRow("Consumo valle (kWh):", QLabel(str(d[8])))
+        form.addRow("Excedentes (kWh):", QLabel(str(d[9])))
+        form.addRow("Importe compensado (€):", QLabel(str(d[10])))
+
+        grupo.setLayout(form)
+        return grupo
+
+    def bloque_gastos(self):
+        grupo = QGroupBox("Gastos y descuentos")
+        form = QFormLayout()
+
+        d = self.datos
+
+        form.addRow("Servicios asociados (€):", QLabel(str(d[11])))
+        form.addRow("Dctos. servicios (€):", QLabel(str(d[12])))
+        form.addRow("Saldos pendientes (€):", QLabel(str(d[13])))
+        form.addRow("Batería virtual (€):", QLabel(str(d[14])))
+
+        grupo.setLayout(form)
+        return grupo
+
     # ---------------------------------------------------------
     # BLOQUE IDENTIFICACIÓN
     # ---------------------------------------------------------
@@ -115,43 +138,9 @@ class DetallesFactura(QWidget):
         return grupo
 
     # ---------------------------------------------------------
-    # BLOQUE ENERGÍA
-    # ---------------------------------------------------------
-    def bloque_energia(self):
-        grupo = QGroupBox("Energía")
-        form = QFormLayout()
-
-        d = self.datos
-
-        form.addRow("Consumo punta (kWh):", QLabel(str(d[6])))
-        form.addRow("Consumo llano (kWh):", QLabel(str(d[7])))
-        form.addRow("Consumo valle (kWh):", QLabel(str(d[8])))
-        form.addRow("Excedentes (kWh):", QLabel(str(d[9])))
-        form.addRow("Importe compensado (€):", QLabel(str(d[10])))  # NUEVO
-
-        grupo.setLayout(form)
-        return grupo
-
-    # ---------------------------------------------------------
-    # BLOQUE GASTOS Y DESCUENTOS
-    # ---------------------------------------------------------
-    def bloque_gastos(self):
-        grupo = QGroupBox("Gastos y descuentos")
-        form = QFormLayout()
-
-        d = self.datos
-
-        form.addRow("Servicios asociados (€):", QLabel(str(d[11])))
-        form.addRow("Dctos. servicios (€):", QLabel(str(d[12])))
-        form.addRow("Saldos pendientes (€):", QLabel(str(d[13])))
-        form.addRow("Batería virtual (€):", QLabel(str(d[14])))
-
-        grupo.setLayout(form)
-        return grupo
-
-    # ---------------------------------------------------------
     # ACCIONES
     # ---------------------------------------------------------
+
     def totalizar_factura(self):
 
         nfactura = self.nfactura
@@ -169,8 +158,11 @@ class DetallesFactura(QWidget):
 
         try:
             from calculo import (
+                calcular_bono_solar_cloud,
                 calcular_cargos_para_factura,
                 calcular_energia_para_factura,
+                calcular_iva_para_factura,
+                calcular_servicios_para_factura,
                 obtener_datos_factura,
             )
 
@@ -186,7 +178,8 @@ class DetallesFactura(QWidget):
             bono_social = cargos_obj.bono_social
 
             print(
-                f"\n>>> TOTAL BLOQUE CARGOS PARA {nfactura}: {cargos_obj.total_cargos:.2f} €"
+                f"\n>>> TOTAL BLOQUE CARGOS PARA {nfactura}: "
+                f"{cargos_obj.total_cargos:.2f} €"
             )
 
             # ---------------------------------------------------------
@@ -197,7 +190,49 @@ class DetallesFactura(QWidget):
             )
 
             print(
-                f"\n>>> TOTAL BLOQUE ENERGÍA PARA {nfactura}: {energia_obj.total_energia:.2f} €\n"
+                f"\n>>> TOTAL BLOQUE ENERGÍA PARA {nfactura}: "
+                f"{energia_obj.total_energia:.2f} €"
+            )
+
+            # ---------------------------------------------------------
+            # 4) Calcular SERVICIOS Y OTROS
+            # ---------------------------------------------------------
+            servicios_obj = calcular_servicios_para_factura(datos_base)
+
+            print(
+                f"\n>>> TOTAL BLOQUE SERVICIOS Y OTROS PARA {nfactura}: "
+                f"{servicios_obj.total_servicios_otros:.2f} €"
+            )
+
+            # ---------------------------------------------------------
+            # 5) Calcular IVA (BLOQUE 4)
+            # ---------------------------------------------------------
+            iva_obj = calcular_iva_para_factura(
+                energia_obj.total_energia,
+                cargos_obj.total_cargos,
+                servicios_obj.total_servicios_otros,
+            )
+
+            print(f"\n>>> TOTAL BLOQUE IVA PARA {nfactura}: {iva_obj.cuota_iva:.2f} €")
+
+            # ---------------------------------------------------------
+            # 6) TOTAL FACTURA
+            # ---------------------------------------------------------
+            total_factura = iva_obj.total_con_iva
+
+            print(f"\n===== TOTAL FACTURA {nfactura}: {total_factura:.2f} € =====\n")
+
+            # ---------------------------------------------------------
+            # 6) Aplicar Bono Solar Cloud
+            # ---------------------------------------------------------
+            sobrante = energia_obj.sobrante_excedentes
+
+            total_final, aplicado_cloud, nuevo_saldo = calcular_bono_solar_cloud(
+                cursor, self.id_contrato, iva_obj.total_con_iva, sobrante
+            )
+
+            print(
+                f"\n>>> TOTAL FACTURA TRAS CLOUD PARA {nfactura}: {total_final:.2f} €"
             )
 
         except Exception as e:

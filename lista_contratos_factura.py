@@ -75,13 +75,11 @@ class ListaContratosFactura(QWidget):
         main = self.get_mainwindow()
         cursor = main.cursor
 
-        cursor.execute(
-            """
+        cursor.execute("""
             SELECT id_contrato, ncontrato, estado, compania, codigo_postal, poblacion
             FROM vista_contratos_facturacion
             ORDER BY ncontrato
-            """
-        )
+            """)
         datos = cursor.fetchall()
 
         self.tabla.setRowCount(len(datos))

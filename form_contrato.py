@@ -23,6 +23,7 @@ from estilo import aplicar_estilo_campo
 #  Ventana auxiliar para alta de códigos postales
 # ============================================================
 
+
 class AltaCodigoPostal(QDialog):
     codigo_postal_creado = Signal(str, str)
 
@@ -65,9 +66,11 @@ class AltaCodigoPostal(QDialog):
 
         self.accept()
 
+
 # ============================================================
 #  Formulario principal de contrato
 # ============================================================
+
 
 class FormContrato(QWidget):
     contrato_guardado = Signal(dict)
@@ -274,13 +277,23 @@ class FormContrato(QWidget):
 
     def conectar_validaciones(self):
         widgets = [
-            self.ncontrato, self.codigo_postal, self.fec_inicio, self.fec_final,
-            self.ppunta, self.pvalle,
-            self.pv_ppunta, self.pv_pvalle,
-            self.pv_conpunta, self.pv_conllano, self.pv_convalle,
-            self.pv_excedent,   # Excedente precio
-            self.bono_social, self.alq_contador, self.otros_gastos,
-            self.i_electrico, self.iva
+            self.ncontrato,
+            self.codigo_postal,
+            self.fec_inicio,
+            self.fec_final,
+            self.ppunta,
+            self.pvalle,
+            self.pv_ppunta,
+            self.pv_pvalle,
+            self.pv_conpunta,
+            self.pv_conllano,
+            self.pv_convalle,
+            self.pv_excedent,  # Excedente precio
+            self.bono_social,
+            self.alq_contador,
+            self.otros_gastos,
+            self.i_electrico,
+            self.iva,
         ]
 
         for w in widgets:
@@ -330,8 +343,6 @@ class FormContrato(QWidget):
 
         self.btn_guardar.setEnabled(True)
 
-
-
     # ============================================================
     #  FLUJO DE PRE-GUARDADO (CP inexistente)
     # ============================================================
@@ -345,7 +356,7 @@ class FormContrato(QWidget):
                     self,
                     "Código postal no encontrado",
                     f"El código postal {cp} no existe.\n¿Desea añadirlo ahora?",
-                    QMessageBox.Yes | QMessageBox.No
+                    QMessageBox.Yes | QMessageBox.No,
                 )
 
                 if r == QMessageBox.No:
@@ -354,13 +365,15 @@ class FormContrato(QWidget):
                     return
 
                 dlg = AltaCodigoPostal(cp, self)
-                dlg.codigo_postal_creado.connect(self.parent().insertar_cp)   # Inserta en BD
-                dlg.codigo_postal_creado.connect(self.recibir_cp)             # Actualiza formulario
+                dlg.codigo_postal_creado.connect(
+                    self.parent().insertar_cp
+                )  # Inserta en BD
+                dlg.codigo_postal_creado.connect(
+                    self.recibir_cp
+                )  # Actualiza formulario
                 dlg.exec()
 
         self.guardar()
-
-
 
     # ============================================================
     #  GUARDADO FINAL
@@ -378,7 +391,7 @@ class FormContrato(QWidget):
                 "fec_anulacion": None,
                 "estado": self.calcular_estado(),
                 "efec_suple": self.to_iso(self.fec_inicio.text()),
-                "fin_suple": self.to_iso(self.fec_final.text())
+                "fin_suple": self.to_iso(self.fec_final.text()),
             },
             "energia": {
                 "ppunta": self.to_float(self.ppunta.text()),
@@ -389,20 +402,18 @@ class FormContrato(QWidget):
                 "pv_conllano": self.to_float(self.pv_conllano.text()),
                 "pv_convalle": self.to_float(self.pv_convalle.text()),
                 "vertido": self.vertido.currentText() == "Sí",
-                "pv_excedent": self.to_float(self.pv_excedent.text())
+                "pv_excedent": self.to_float(self.pv_excedent.text()),
             },
             "gastos": {
                 "bono_social": self.to_float(self.bono_social.text()),
                 "alq_contador": self.to_float(self.alq_contador.text()),
                 "otros_gastos": self.to_float(self.otros_gastos.text()),
                 "i_electrico": self.to_float(self.i_electrico.text()),
-                "iva": self.to_float(self.iva.text())
-            }
+                "iva": self.to_float(self.iva.text()),
+            },
         }
 
         self.contrato_guardado.emit(datos)
-
-
 
     # ============================================================
     #  FUNCIONES AUXILIARES
@@ -450,7 +461,6 @@ class FormContrato(QWidget):
 
     def cargar_datos(self):
         pass
-
 
     # ============================================================
     #  AJUSTE DE TABULACIÓN

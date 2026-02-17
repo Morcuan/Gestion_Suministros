@@ -2,15 +2,6 @@
 # BLOQUE 1: ENERGIA
 # ---------------------------------------------------------
 class Energia:
-    """
-    Bloque 1.- ENERGIA
-    Incluye:
-    - Potencia facturada
-    - Energía consumida
-    - Excedentes
-    - Impuesto eléctrico (IEE)
-    """
-
     def __init__(self, datos: dict):
         self.datos = datos
 
@@ -19,6 +10,9 @@ class Energia:
         self.compensacion_excedentes = 0.0
         self.impuesto_electrico = 0.0
         self.total_energia = 0.0
+
+        # NUEVO: sobrante de excedentes para el Bono Solar Cloud
+        self.sobrante_excedentes = 0.0
 
     # ---------------------------------------------------------
     # POTENCIA
@@ -63,6 +57,16 @@ class Energia:
         self.compensacion_excedentes = round(compensacion, 2)
 
         print(f"[ENERGIA] Excedentes compensados: {self.compensacion_excedentes:.2f} €")
+
+        # Cálculo del sobrante de excedentes para el Bono Solar Cloud
+        self.sobrante_excedentes = round(
+            importe_excedentes - abs(self.compensacion_excedentes), 2
+        )
+
+        if self.sobrante_excedentes < 0:
+            self.sobrante_excedentes = 0.0
+
+        print(f"[ENERGIA] Sobrante excedentes: {self.sobrante_excedentes:.2f} €")
 
     # ---------------------------------------------------------
     # IMPUESTO ELÉCTRICO (IEE)
@@ -157,6 +161,135 @@ class CargosNormativos:
 
 
 # ---------------------------------------------------------
+# BLOQUE 3: SERVICIOS Y OTROS CONCEPTOS
+# ---------------------------------------------------------
+class ServiciosOtros:
+    """
+    Bloque 3.- SERVICIOS Y OTROS CONCEPTOS
+    Incluye:
+    - Alquiler de equipos de medida
+    - Servicios asociados (incluye descuentos)
+    """
+
+    def __init__(self, datos: dict):
+        self.datos = datos
+
+        self.equipos = 0.0
+        self.servicios = 0.0
+        self.total_servicios_otros = 0.0
+
+    # ---------------------------------------------------------
+    # ALQUILER DE EQUIPOS
+    # ---------------------------------------------------------
+    def calcular_equipos(self):
+        dias = self.datos["dias_factura"]
+        precio = self.datos["alq_contador"]
+
+        self.equipos = round(dias * precio, 2)
+
+        print(f"[SERVICIOS] Equipos (alq contador): {self.equipos:.2f} €")
+
+    # ---------------------------------------------------------
+    # SERVICIOS ASOCIADOS
+    # ---------------------------------------------------------
+    def calcular_servicios(self):
+        servicios = self.datos["servicios"]
+        dcto = self.datos["dcto_servicios"]  # viene en negativo
+
+        self.servicios = round(servicios + dcto, 2)
+
+        print(f"[SERVICIOS] Servicios asociados: {self.servicios:.2f} €")
+
+    # ---------------------------------------------------------
+    # TOTAL BLOQUE
+    # ---------------------------------------------------------
+    def calcular_bloque(self):
+        self.total_servicios_otros = round(self.equipos + self.servicios, 2)
+
+        print(
+            f"[SERVICIOS] TOTAL BLOQUE SERVICIOS Y OTROS: "
+            f"{self.total_servicios_otros:.2f} €"
+        )
+
+    # ---------------------------------------------------------
+    # ORQUESTADOR
+    # ---------------------------------------------------------
+    def calcular(self):
+        print("\n===== BLOQUE 3: SERVICIOS Y OTROS CONCEPTOS =====")
+        self.calcular_equipos()
+        self.calcular_servicios()
+        self.calcular_bloque()
+        return self
+
+
+# ---------------------------------------------------------
+# BLOQUE 4: IVA
+# ---------------------------------------------------------
+class IVA:
+    """
+    Bloque 4.- IVA
+    Incluye:
+    - Base imponible (suma de bloques 1, 2 y 3)
+    - Tipo de IVA aplicado
+    - Cuota resultante
+    """
+
+    def __init__(self, base_imponible: float, tipo_iva: float = 0.21):
+        self.base_imponible = round(base_imponible, 2)
+        self.tipo_iva = tipo_iva
+        self.cuota_iva = 0.0
+        self.total_con_iva = 0.0
+
+    # ---------------------------------------------------------
+    # CÁLCULO DEL IVA
+    # ---------------------------------------------------------
+    def calcular_iva(self):
+        self.cuota_iva = round(self.base_imponible * self.tipo_iva, 2)
+        self.total_con_iva = round(self.base_imponible + self.cuota_iva, 2)
+
+        print(f"[IVA] Base imponible: {self.base_imponible:.2f} €")
+        print(f"[IVA] Tipo aplicado: {int(self.tipo_iva * 100)} %")
+        print(f"[IVA] Cuota IVA: {self.cuota_iva:.2f} €")
+        print(f"[IVA] TOTAL BLOQUE IVA: {self.cuota_iva:.2f} €")
+
+    # ---------------------------------------------------------
+    # ORQUESTADOR
+    # ---------------------------------------------------------
+    def calcular(self):
+        print("\n===== BLOQUE 4: IVA =====")
+        self.calcular_iva()
+        return self
+
+
+# ---------------------------------------------------------
+# BONO SOLAR CLOUD
+# ---------------------------------------------------------
+
+
+def calcular_bono_solar_cloud(cursor, id_contrato, total_con_iva, sobrante_excedentes):
+    # 1) Leer saldo acumulado
+    saldo_tabla = obtener_saldo_cloud(cursor, id_contrato)
+
+    # 2) Aplicar saldo acumulado a la factura actual
+    aplicado = min(saldo_tabla, total_con_iva)
+    total_final = round(total_con_iva - aplicado, 2)
+
+    # 3) Calcular nuevo saldo acumulado
+    nuevo_saldo = round((saldo_tabla - aplicado) + sobrante_excedentes, 2)
+
+    # 4) Guardar nuevo saldo
+    guardar_saldo_cloud(cursor, id_contrato, nuevo_saldo)
+
+    # 5) Mostrar resultados en consola
+    print(f">>> SALDO CLOUD ANTERIOR: {saldo_tabla:.2f} €")
+    print(f">>> SALDO CLOUD APLICADO: {aplicado:.2f} €")
+    print(f">>> SOBRANTE EXCEDENTES MES: {sobrante_excedentes:.2f} €")
+    print(f">>> SALDO CLOUD NUEVO: {nuevo_saldo:.2f} €")
+
+    return total_final, aplicado, nuevo_saldo
+
+
+# ---------------------------------------------------------
 # FUNCIONES EXTERNAS PARA LLAMAR DESDE LA VENTANA
 # ---------------------------------------------------------
 
@@ -186,3 +319,37 @@ def calcular_energia_para_factura(cursor, nfactura: str, bono_social: float):
     energia = Energia(datos)
     energia.calcular(bono_social)
     return energia, datos
+
+
+def calcular_servicios_para_factura(datos: dict):
+    serv = ServiciosOtros(datos)
+    serv.calcular()
+    return serv
+
+
+def calcular_iva_para_factura(
+    total_energia: float, total_cargos: float, total_servicios: float
+):
+    base = round(total_energia + total_cargos + total_servicios, 2)
+    iva = IVA(base)
+    iva.calcular()
+    return iva
+
+
+def obtener_saldo_cloud(cursor, id_contrato):
+    cursor.execute(
+        "SELECT saldo FROM saldo_cloud WHERE id_contrato = ?", (id_contrato,)
+    )
+    row = cursor.fetchone()
+    return row[0] if row else 0.0
+
+
+def guardar_saldo_cloud(cursor, id_contrato, nuevo_saldo):
+    cursor.execute(
+        """
+        INSERT INTO saldo_cloud (id_contrato, saldo)
+        VALUES (?, ?)
+        ON CONFLICT(id_contrato) DO UPDATE SET saldo = excluded.saldo
+    """,
+        (id_contrato, nuevo_saldo),
+    )

@@ -26,12 +26,10 @@ FUENTE_BOTON = QFont("DejaVu Sans", 12)
 
 
 def aplicar_estilo_panel_lateral(widget):
-    widget.setStyleSheet(
-        """
+    widget.setStyleSheet("""
         background-color: #F7F7F7;
         border-right: 1px solid #CCCCCC;
-        """
-    )
+        """)
 
 
 # ---------------------------------------------------------
@@ -41,8 +39,7 @@ def aplicar_estilo_panel_lateral(widget):
 
 def aplicar_estilo_boton(boton: QPushButton, principal=False):
     boton.setFont(FUENTE_BOTON)
-    boton.setStyleSheet(
-        f"""
+    boton.setStyleSheet(f"""
         QPushButton {{
             background-color: {"{0}".format(COLOR_PRIMARIO) if principal else COLOR_SECUNDARIO};
             color: {COLOR_TEXTO};
@@ -53,8 +50,7 @@ def aplicar_estilo_boton(boton: QPushButton, principal=False):
         QPushButton:hover {{
             background-color: {COLOR_ACENTO};
         }}
-        """
-    )
+        """)
 
 
 # ---------------------------------------------------------
@@ -78,26 +74,22 @@ def aplicar_estilo_campo(widget):
 
     # Para QLineEdit añadimos un pequeño padding interno
     if isinstance(widget, QLineEdit):
-        widget.setStyleSheet(
-            """
+        widget.setStyleSheet("""
             QLineEdit {
                 padding: 4px;
             }
-            """
-        )
+            """)
 
     # Para QComboBox ajustamos padding y altura del desplegable
     if isinstance(widget, QComboBox):
-        widget.setStyleSheet(
-            """
+        widget.setStyleSheet("""
             QComboBox {
                 padding: 4px;
             }
             QComboBox QAbstractItemView {
                 min-height: 28px;
             }
-            """
-        )
+            """)
 
 
 # ---------------------------------------------------------

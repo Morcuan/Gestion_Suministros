@@ -11,6 +11,7 @@ class NuevoContrato(QWidget):
     Módulo funcional para dar de alta un contrato nuevo.
     Integrado en el contenedor central de MainWindow.
     """
+
     cerrado = Signal()
 
     def __init__(self, parent=None):
@@ -63,7 +64,9 @@ class NuevoContrato(QWidget):
                 self.form.compania.addItem(nombre)
 
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"No se pudieron cargar las compañías:\n{e}")
+            QMessageBox.critical(
+                self, "Error", f"No se pudieron cargar las compañías:\n{e}"
+            )
 
     # ------------------------------------------------------------
     #  Comprobación de existencia de CP
@@ -78,7 +81,9 @@ class NuevoContrato(QWidget):
             return existe
 
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Error comprobando código postal:\n{e}")
+            QMessageBox.critical(
+                self, "Error", f"Error comprobando código postal:\n{e}"
+            )
             return False
 
     # ------------------------------------------------------------
@@ -97,69 +102,76 @@ class NuevoContrato(QWidget):
             con.execute("BEGIN")
 
             # 1. Identificación
-            cur.execute("""
+            cur.execute(
+                """
                 INSERT INTO contratos_identificacion
                 (ncontrato, suplemento, compania, codigo_postal,
                  fec_inicio, fec_final, fec_anulacion, estado,
                  efec_suple, fin_suple)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                ident["ncontrato"],
-                ident["suplemento"],
-                ident["compania"],
-                ident["codigo_postal"],
-                ident["fec_inicio"],
-                ident["fec_final"],
-                ident["fec_anulacion"],
-                ident["estado"],
-                ident["efec_suple"],
-                ident["fin_suple"]
-            ))
+            """,
+                (
+                    ident["ncontrato"],
+                    ident["suplemento"],
+                    ident["compania"],
+                    ident["codigo_postal"],
+                    ident["fec_inicio"],
+                    ident["fec_final"],
+                    ident["fec_anulacion"],
+                    ident["estado"],
+                    ident["efec_suple"],
+                    ident["fin_suple"],
+                ),
+            )
 
             id_contrato = cur.lastrowid
 
             # 2. Energía
-            cur.execute("""
+            cur.execute(
+                """
                 INSERT INTO contratos_energia
                 (id_contrato, ppunta, pvalle, pv_ppunta, pv_pvalle,
                  pv_conpunta, pv_conllano, pv_convalle,
                  vertido, pv_excedent)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                id_contrato,
-                ener["ppunta"],
-                ener["pvalle"],
-                ener["pv_ppunta"],
-                ener["pv_pvalle"],
-                ener["pv_conpunta"],
-                ener["pv_conllano"],
-                ener["pv_convalle"],
-                1 if ener["vertido"] else 0,
-                ener["pv_excedent"]
-            ))
+            """,
+                (
+                    id_contrato,
+                    ener["ppunta"],
+                    ener["pvalle"],
+                    ener["pv_ppunta"],
+                    ener["pv_pvalle"],
+                    ener["pv_conpunta"],
+                    ener["pv_conllano"],
+                    ener["pv_convalle"],
+                    1 if ener["vertido"] else 0,
+                    ener["pv_excedent"],
+                ),
+            )
 
             # 3. Gastos
-            cur.execute("""
+            cur.execute(
+                """
                 INSERT INTO contratos_gastos
                 (id_contrato, bono_social, alq_contador, otros_gastos,
                  i_electrico, iva)
                 VALUES (?, ?, ?, ?, ?, ?)
-            """, (
-                id_contrato,
-                gas["bono_social"],
-                gas["alq_contador"],
-                gas["otros_gastos"],
-                gas["i_electrico"],
-                gas["iva"]
-            ))
+            """,
+                (
+                    id_contrato,
+                    gas["bono_social"],
+                    gas["alq_contador"],
+                    gas["otros_gastos"],
+                    gas["i_electrico"],
+                    gas["iva"],
+                ),
+            )
 
             con.commit()
             con.close()
 
             QMessageBox.information(
-                self,
-                "Contrato guardado",
-                "El contrato se ha guardado correctamente."
+                self, "Contrato guardado", "El contrato se ha guardado correctamente."
             )
 
             # 🔁 Tras guardar, cerramos el módulo → MainWindow volverá al inicio
@@ -179,9 +191,6 @@ class NuevoContrato(QWidget):
             return w.insertar_cp(cp, poblacion)
 
         raise RuntimeError("La ventana principal no tiene insertar_cp")
-
-
-
 
     # ------------------------------------------------------------
     #  Cierre del módulo

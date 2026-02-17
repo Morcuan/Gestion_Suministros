@@ -95,8 +95,7 @@ class ConsultaContratosWidget(BaseConsulta):
 
         cur = self.conn.cursor()
 
-        cur.execute(
-            """
+        cur.execute("""
             SELECT DISTINCT
                 ci.ncontrato,
                 ci.compania,
@@ -105,8 +104,7 @@ class ConsultaContratosWidget(BaseConsulta):
             FROM contratos_identificacion ci
             JOIN cpostales cp ON ci.codigo_postal = cp.codigo_postal
             ORDER BY ci.ncontrato;
-            """
-        )
+            """)
 
         datos = cur.fetchall()
 
