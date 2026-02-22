@@ -1,4 +1,10 @@
-# db_init.py — Versión modularizada y preparada para uso dual
+# --------------------------------------------#
+# Modulo: db_init.py                          #
+# Descripción: Inicialización de base de datos#
+# Autor: Antonio Morales                      #
+# Fecha: 2026-02-01                           #
+# --------------------------------------------#
+
 
 import sqlite3
 
@@ -8,6 +14,8 @@ DB_PATH = "data/almacen.db"
 # ---------------------------------------------------------
 # FUNCIONES DE CREACIÓN DE TABLAS (MODULARIZADAS)
 # ---------------------------------------------------------
+# Cada función se encarga de crear una tabla específica,
+# permitiendo una fácil modificación y mantenimiento.
 def crear_tabla_contratos_identificacion(cursor):
     cursor.execute("DROP TABLE IF EXISTS contratos_identificacion;")
     cursor.execute("""
@@ -124,6 +132,41 @@ def crear_tabla_facturas(cursor):
         """)
 
 
+def crear_tabla_factura_calculos(cursor):
+    cursor.execute("DROP TABLE IF EXISTS factura_calculos;")
+    cursor("""
+        CREATE TABLE IF NOT EXISTS factura_calculos (
+            id_calculo INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_factura INTEGER NOT NULL,
+            fecha_calculo TEXT NOT NULL,          -- formato ISO yyyy-mm-dd
+            version_motor TEXT NOT NULL,          -- ej: "1.0"
+            total_energia REAL NOT NULL,
+            total_cargos REAL NOT NULL,
+            total_servicios REAL NOT NULL,
+            total_iva REAL NOT NULL,
+            cloud_aplicado REAL NOT NULL,
+            cloud_sobrante REAL NOT NULL,
+            total_final REAL NOT NULL,
+            detalles_json TEXT NOT NULL,          -- JSON con todos los valores intermedios
+            FOREIGN KEY (id_factura) REFERENCES facturas(id)
+        );
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_factura_calculos_id_factura
+        ON factura_calculos (id_factura);
+    """)
+
+
+def crear_tabla_saldo_cloud(cursor):
+    cursor.execute("DROP TABLE IF EXISTS saldo_cloud;")
+    cursor("""
+        CREATE TABLE saldo_cloud (
+        id_contrato INTEGER PRIMARY KEY,
+        saldo REAL NOT NULL DEFAULT 0);
+    """)
+
+
 # ---------------------------------------------------------
 # VISTAS
 # ---------------------------------------------------------
@@ -236,6 +279,8 @@ def crear_tablas_y_vistas(cursor):
     crear_tabla_contratos_energia(cursor)
     crear_tabla_contratos_gastos(cursor)
     crear_tabla_facturas(cursor)
+    crear_tabla_factura_calculos(cursor)
+    crear_tabla_saldo_cloud(cursor)
     crear_vista_contratos_completo(cursor)
     crear_vista_contratos_facturacion(cursor)
     crear_vista_v_datos_calculo(cursor)

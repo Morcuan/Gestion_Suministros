@@ -24,6 +24,7 @@ from base_consulta import BaseConsulta
 #   LISTA DE FACTURAS DE UN CONTRATO
 # =========================================================
 class ConsultaFacturasWidget(BaseConsulta):
+    # init recibe la conexión a la base de datos y el id_contrato para mostrar sus facturas
     def __init__(self, conn, id_contrato, parent=None):
         super().__init__(parent)
 
@@ -94,6 +95,7 @@ class ConsultaFacturasWidget(BaseConsulta):
     # =====================================================
     #   CARGAR LISTA DE FACTURAS
     # =====================================================
+    # Consulta las facturas del contrato y las muestra en la tabla
     def cargar_facturas(self):
         cur = self.conn.cursor()
 
@@ -131,6 +133,8 @@ class ConsultaFacturasWidget(BaseConsulta):
     # =====================================================
     #   ABRIR DETALLES DE LA FACTURA
     # =====================================================
+    # Al hacer clic en "Detalles factura", se abre el módulo de detalles para la
+    # factura seleccionada
     def abrir_detalles(self):
         items = self.tabla.selectedItems()
         if not items:

@@ -1,8 +1,9 @@
-# ============================================================
-#  form_factura.py  (Modelo DRU actualizado)
-#  Captura de facturas para la tabla unificada "facturas"
-# ============================================================
-
+# -----------------------------------------     ---#
+# Modulo: form_factura.py                          #
+# Descripción: Formulario de factura de energía    #
+# Autor: Antonio Morales                           #
+# Fecha: 2026-02-09                                #
+# -------------------------------------------     -#
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
@@ -20,6 +21,7 @@ from PySide6.QtWidgets import (
 from utils import dias_entre_fechas, validar_fecha
 
 
+# conversión de texto a float con manejo de errores y etiquetas amigables
 def to_float(valor, etiqueta):
     """Convierte a float o lanza error con etiqueta amigable."""
     if valor.strip() == "":
@@ -30,7 +32,9 @@ def to_float(valor, etiqueta):
         raise ValueError(f"El campo '{etiqueta}' debe ser numérico.")
 
 
+# clase principal del formulario de factura
 class FormFactura(QWidget):
+    # inicialización del formulario con parámetros de contrato y compañía
     def __init__(self, parent=None, id_contrato=None, ncontrato=None, compania=None):
         super().__init__(parent)
 
@@ -167,7 +171,7 @@ class FormFactura(QWidget):
     # ============================================================
     #  LOCALIZAR MAINWINDOW REAL
     # ============================================================
-
+    # Este método sube por la jerarquía de widgets hasta encontrar el mainwindow real
     def get_mainwindow(self):
         w = self.parent()
         while w is not None and not hasattr(w, "cargar_modulo"):
@@ -177,7 +181,7 @@ class FormFactura(QWidget):
     # ============================================================
     #  AUTOCÁLCULO DE DÍAS
     # ============================================================
-
+    # Cada vez que se cambia la fecha final, se recalculan los días entre inicio y fin
     def autocalcular_dias(self):
         inicio = self.fec_inicio.text()
         fin = self.fec_final.text()
@@ -193,7 +197,8 @@ class FormFactura(QWidget):
     # ============================================================
     #  VALIDACIÓN DE DÍAS
     # ============================================================
-
+    # Antes de guardar, se comprueba que los días introducidos coinciden con los
+    # días entre las fechas
     def validar_dias(self):
         inicio = self.fec_inicio.text()
         fin = self.fec_final.text()
@@ -224,7 +229,8 @@ class FormFactura(QWidget):
     # ============================================================
     #  GUARDADO REAL
     # ============================================================
-
+    # Al hacer clic en guardar, se validan los datos y se inserta la factura en la
+    # base de datos
     def guardar_factura(self):
         if not self.validar_dias():
             return
@@ -306,7 +312,8 @@ class FormFactura(QWidget):
     # ============================================================
     #  LIMPIAR FORMULARIO
     # ============================================================
-
+    # Al hacer clic en "Otra factura", se limpian los campos para introducir
+    # una nueva factura
     def limpiar_formulario(self):
         for widget in self.findChildren(QLineEdit):
             widget.clear()
@@ -319,9 +326,10 @@ class FormFactura(QWidget):
     # ============================================================
     #  VOLVER A LA LISTA
     # ============================================================
-
+    # Al hacer clic en "Salir", se vuelve al módulo de lista de contratos
     def volver_lista(self):
         from lista_contratos_factura import ListaContratosFactura
 
         main = self.get_mainwindow()
+        main.cargar_modulo(ListaContratosFactura(parent=main), "Seleccionar contrato")
         main.cargar_modulo(ListaContratosFactura(parent=main), "Seleccionar contrato")

@@ -1,6 +1,9 @@
-# ============================================================
-#  lista_contratos_facturas.py  (VERSIÓN DRU CORREGIDA)
-# ============================================================
+# ------------------------------------------            --#
+# Modulo: lista_contratos_factura.py                    #
+# Descripción: Ventana para seleccionar contrato para nueva factura #
+# Autor: Antonio Morales                      #
+# Fecha: 2026-02-09                           #
+# --------------------------------------------#
 
 from PySide6.QtWidgets import (
     QHBoxLayout,

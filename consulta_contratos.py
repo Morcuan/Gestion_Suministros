@@ -25,6 +25,7 @@ from detalles_contrato import DetallesContratoWidget
 #   VENTANA PRINCIPAL: LISTA DE CONTRATOS
 # =========================================================
 class ConsultaContratosWidget(BaseConsulta):
+    # init con conexión a la base de datos y ventana padre
     def __init__(self, conn, parent=None):
         super().__init__(parent)
 
@@ -86,6 +87,8 @@ class ConsultaContratosWidget(BaseConsulta):
     # =====================================================
     #   CARGAR LISTA DE CONTRATOS
     # =====================================================
+    # Carga los contratos sin suplementos, una fila por contrato, igual
+    # que en la captura de facturas.
     def cargar_contratos(self):
         """
         Lista de contratos SIN suplementos.
@@ -122,6 +125,7 @@ class ConsultaContratosWidget(BaseConsulta):
     # =====================================================
     #   ABRIR DETALLES DEL CONTRATO
     # =====================================================
+    # Al hacer clic en "Detalles", se abre la vista de detalles del contrato seleccionado.
     def abrir_detalles(self):
         items = self.tabla.selectedItems()
         if not items:

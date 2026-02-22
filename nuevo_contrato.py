@@ -1,3 +1,18 @@
+# -------------------------------------------------------#
+# Modulo: nuevo_contrato.py                              #
+# Descripción: Es un módulo funcional que se integra en el contenedor
+# central de MainWindow. Permite dar de alta un contrato nuevo, gestionando
+# la inserción transaccional en la base de datos y la carga de compañías.
+# No es una ventana independiente, sino un widget que se muestra dentro del MainWindow.
+# El módulo se encarga de validar los datos, manejar errores y garantizar la integridad
+# de la información al insertar un nuevo contrato. Además, incluye
+# la funcionalidad para insertar un nuevo código postal si el usuario
+# lo necesita durante la creación del contrato.
+# Incluye validaciones y manejo de errores para garantizar la integridad de los datos.
+# Autor: Antonio Morales                                 #
+# Fecha: 2026-02-09                                      #
+# -------------------------------------------------------#
+
 import sqlite3
 
 from PySide6.QtCore import Signal
@@ -14,6 +29,7 @@ class NuevoContrato(QWidget):
 
     cerrado = Signal()
 
+    # init: se encarga de configurar el layout, cargar compañías y conectar señales
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -52,6 +68,7 @@ class NuevoContrato(QWidget):
     # ------------------------------------------------------------
     #  Cargar compañías desde la BD
     # ------------------------------------------------------------
+    # Carga las compañías en el combo del formulario. Si hay un error, muestra un mensaje.
     def cargar_companias(self):
         try:
             con = sqlite3.connect(self.db_path)
@@ -71,6 +88,8 @@ class NuevoContrato(QWidget):
     # ------------------------------------------------------------
     #  Comprobación de existencia de CP
     # ------------------------------------------------------------
+    # Comprueba si el código postal existe en la base de datos.
+    # Si hay un error, muestra un mensaje.
     def existe_cp(self, cp):
         try:
             con = sqlite3.connect(self.db_path)
@@ -89,6 +108,8 @@ class NuevoContrato(QWidget):
     # ------------------------------------------------------------
     #  Inserción transaccional del contrato
     # ------------------------------------------------------------
+    # Inserta un nuevo contrato en la base de datos de forma transaccional.
+    # Si hay un error, se revierte la transacción y se muestra un mensaje.
     def insertar_contrato(self, datos):
         ident = datos["identificacion"]
         ener = datos["energia"]
@@ -183,6 +204,7 @@ class NuevoContrato(QWidget):
                 con.close()
             QMessageBox.critical(self, "Error", f"No se pudo guardar el contrato:\n{e}")
 
+    # insertar_cp: se encarga de insertar un nuevo código postal en la base de datos.
     def insertar_cp(self, cp, poblacion):
         # Obtener la ventana principal real
         w = self.window()

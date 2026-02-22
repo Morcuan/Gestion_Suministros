@@ -1,3 +1,10 @@
+# --------------------------------------------------#
+# Modulo: main.py                                   #
+# Descripción: Punto de entrada de la aplicación    #
+# Autor: Antonio Morales                            #
+# Fecha: 2026-02-09                                 #
+# --------------------------------------------------#
+
 import sqlite3
 import sys
 
@@ -8,6 +15,7 @@ from main_window import MainWindow
 DB_PATH = "data/almacen.db"
 
 
+# Función principal
 def main():
     # Crear aplicación Qt
     app = QApplication(sys.argv)

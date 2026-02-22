@@ -1,3 +1,10 @@
+# ------------------------------------------              #
+# Modulo: lanzador.sh                                     #
+# Descripción: Lanzador del proyecto Gestion_Suministros  #
+# Autor: Antonio Morales                                  #
+# Fecha: 2026-02-09                                       #
+# --------------------------------------------------------#
+
 #!/usr/bin/env bash
 # Lanzador del proyecto Gestion_Suministros
 # Ejecutar desde la terminal integrada de VS Code dentro del proyecto

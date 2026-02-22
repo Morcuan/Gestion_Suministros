@@ -1,3 +1,11 @@
+# ------------------------------------------------#
+# Modulo: main_window.py                          #
+# Descripción: Ventana principal de la aplicación #
+# Autor: Antonio Morales                          #
+# Fecha: 2026-02-09                               #
+# ------------------------------------------------#
+
+
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QHBoxLayout,
@@ -17,7 +25,9 @@ from lista_contratos_factura import ListaContratosFactura
 from nuevo_contrato import NuevoContrato
 
 
+# class MainWindow(QMainWindow):
 class MainWindow(QMainWindow):
+    # init recibe la conexión y cursor de la BD desde main.py
     def __init__(self, conn, cursor):
         super().__init__()
 
@@ -28,7 +38,7 @@ class MainWindow(QMainWindow):
         self.cursor = cursor
 
         self.setWindowTitle("Gestion_suministros 2.0")
-        self.resize(950, 1000)
+        self.resize(1160, 950)
 
         # ---------------------------------------------------------
         # CONTENEDOR PRINCIPAL
@@ -75,6 +85,8 @@ class MainWindow(QMainWindow):
     # ---------------------------------------------------------
     # MENÚ LATERAL
     # ---------------------------------------------------------
+    # Cada sección del menú se crea con crear_seccion_acordeon, que recibe
+    # un título y una lista de opciones (texto y función a ejecutar)
     def crear_menu_lateral(self):
         panel = QWidget()
         layout = QVBoxLayout(panel)
@@ -155,39 +167,23 @@ class MainWindow(QMainWindow):
             )
         )
 
-        # --- Sección Consultas (única vía de consulta) ---
+        # --- Sección ANÁLISIS ---
         layout.addWidget(
             self.crear_seccion_acordeon(
-                "🔍 Consultas",
+                "📊 Análisis",
                 [
                     (
-                        "📄 Contratos",
+                        "🔎 Explorador de facturas",
                         lambda: self.cargar_modulo(
                             ConsultaContratosWidget(self.conn, parent=self),
-                            "Consulta contratos",
-                        ),
-                    ),
-                ],
-            )
-        )
-
-        # --- Sección Comparativas ---
-        layout.addWidget(
-            self.crear_seccion_acordeon(
-                "⚡ Comparativas",
-                [
-                    (
-                        "➕ Nueva comparativa",
-                        lambda: self.cargar_modulo(
-                            self.crear_placeholder("Nueva comparativa"),
-                            "Nueva comparativa",
+                            "Explorador de facturas",
                         ),
                     ),
                     (
-                        "🔍 Otras",
+                        "📈 Comparativas",
                         lambda: self.cargar_modulo(
-                            self.crear_placeholder("Otras"),
-                            "Consulta comparativa",
+                            self.crear_placeholder("Comparativas"),
+                            "Comparativas",
                         ),
                     ),
                 ],
@@ -214,6 +210,7 @@ class MainWindow(QMainWindow):
 
         return panel
 
+    # inserta un nuevo código postal en la tabla cpostales
     def insertar_cp(self, cp, poblacion):
         """
         Inserta un código postal nuevo en la tabla cpostales.
@@ -234,6 +231,7 @@ class MainWindow(QMainWindow):
     # ---------------------------------------------------------
     # OPCIÓN: NUEVO CONTRATO (INTEGRACIÓN EN CONTENEDOR)
     # ---------------------------------------------------------
+    # En lugar de abrir una ventana nueva, cargamos el módulo dentro de la zona de contenido
     def abrir_nuevo_contrato(self):
         modulo = NuevoContrato(parent=self)
         modulo.cerrado.connect(self.volver_inicio)
@@ -242,12 +240,16 @@ class MainWindow(QMainWindow):
     # ---------------------------------------------------------
     # VOLVER A PANTALLA DE INICIO
     # ---------------------------------------------------------
+    # Función para volver a la pantalla de inicio, se conecta a la señal
+    # 'cerrado' del módulo NuevoContrato
     def volver_inicio(self):
         self.cargar_modulo(self.crear_pantalla_inicio(), "Pantalla de Inicio")
 
     # ---------------------------------------------------------
     # OPCIÓN: INICIALIZAR BD
     # ---------------------------------------------------------
+    # Esta función muestra un mensaje de advertencia antes de ejecutar
+    # la inicialización de la base de datos.
     def opcion_inicializar_bd(self):
         self.cargar_modulo(QWidget(), "Inicialización BD")
 
@@ -275,6 +277,8 @@ class MainWindow(QMainWindow):
     # ---------------------------------------------------------
     # ACORDEÓN
     # ---------------------------------------------------------
+    # Esta función crea una sección de acordeón para el menú lateral.
+    # Recibe un título y una lista de opciones,
     def crear_seccion_acordeon(self, titulo, opciones):
         contenedor = QWidget()
         cont_layout = QVBoxLayout(contenedor)
@@ -301,6 +305,9 @@ class MainWindow(QMainWindow):
         cont_layout.addWidget(panel_opciones)
         return contenedor
 
+    # Esta función se encarga de mostrar u ocultar el panel de opciones del acordeón
+    # según el botón que se haya pulsado. Si se pulsa un botón de sección, se muestra
+    # su panel y se ocultan los demás.
     def toggle_acordeon(self, titulo):
         for nombre, (btn, panel) in self.secciones_acordeon.items():
             if nombre == titulo:
@@ -312,6 +319,9 @@ class MainWindow(QMainWindow):
     # ---------------------------------------------------------
     # PANTALLAS
     # ---------------------------------------------------------
+    # Estas funciones crean los widgets que se mostrarán en la zona de contenido al
+    # seleccionar cada opción del menú. Por ahora son pantallas de ejemplo,
+    # pero luego se reemplazarán por los módulos reales.
     def crear_pantalla_inicio(self):
         w = QWidget()
         l = QVBoxLayout(w)
@@ -357,6 +367,9 @@ class MainWindow(QMainWindow):
     # ---------------------------------------------------------
     # CARGA DE MÓDULOS
     # ---------------------------------------------------------
+    # Esta función se encarga de cargar un widget en la zona de contenido, eliminando
+    # el que estuviera antes (excepto el encabezado, que se mantiene). Recibe el widget
+    # a cargar y el título que se mostrará en el encabezado.
     def cargar_modulo(self, widget, titulo):
         for i in reversed(range(self.zona_contenido_layout.count())):
             item = self.zona_contenido_layout.itemAt(i)
@@ -374,4 +387,5 @@ class MainWindow(QMainWindow):
     def aplicar_paleta(self, paleta):
         from estilo import generar_stylesheet
 
+        self.setStyleSheet(generar_stylesheet(paleta))
         self.setStyleSheet(generar_stylesheet(paleta))

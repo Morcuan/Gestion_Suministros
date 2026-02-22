@@ -1,3 +1,11 @@
+# --------------------------------------------#
+# Modulo: form_contrato.py                    #
+# Descripción: Formulario de contrato         #
+# Autor: Antonio Morales                      #
+# Fecha: 2026-02-09                           #
+# --------------------------------------------#
+
+
 import re
 from datetime import date, datetime
 
@@ -24,9 +32,13 @@ from estilo import aplicar_estilo_campo
 # ============================================================
 
 
+# Esta ventana se muestra cuando el usuario introduce un código postal que no
+# existe en la base de datos.
 class AltaCodigoPostal(QDialog):
     codigo_postal_creado = Signal(str, str)
 
+    # El signal emite el código postal y la población introducida por el usuario,
+    # para que el formulario principal pueda actualizarse y la base de datos pueda insertarlo.
     def __init__(self, codigo_postal, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Alta de código postal")
@@ -57,6 +69,8 @@ class AltaCodigoPostal(QDialog):
 
         self.setLayout(v)
 
+    # El método guardar valida que se haya introducido una población y luego emite el
+    #   signal con el nuevo código postal y la población.
     def guardar(self):
         if not self.poblacion.text().strip():
             QMessageBox.warning(self, "Atención", "Debe introducir la población.")
@@ -72,6 +86,7 @@ class AltaCodigoPostal(QDialog):
 # ============================================================
 
 
+# El formulario de contrato se divide en tres bloques: Identificación, Energía y Gastos.
 class FormContrato(QWidget):
     contrato_guardado = Signal(dict)
     cancelado = Signal()
@@ -151,7 +166,8 @@ class FormContrato(QWidget):
     # ============================================================
     #  BLOQUE IDENTIFICACIÓN
     # ============================================================
-
+    # El bloque de identificación contiene los datos básicos del contrato,
+    # como número de contrato,
     def crear_bloque_identificacion(self):
         box = QGroupBox("Identificación")
         layout = QFormLayout()
@@ -199,7 +215,7 @@ class FormContrato(QWidget):
     # ============================================================
     #  BLOQUE ENERGÍA
     # ============================================================
-
+    # El bloque de energía contiene los datos relacionados con la potencia contratada,
     def crear_bloque_energia(self):
         box = QGroupBox("Energía")
         layout = QFormLayout()
@@ -246,7 +262,8 @@ class FormContrato(QWidget):
     # ============================================================
     #  BLOQUE GASTOS
     # ============================================================
-
+    # El bloque de gastos contiene los datos relacionados con los gastos
+    # adicionales del contrato,
     def crear_bloque_gastos(self):
         box = QGroupBox("Gastos")
         layout = QFormLayout()
@@ -274,7 +291,8 @@ class FormContrato(QWidget):
     # ============================================================
     #  VALIDACIONES PROGRESIVAS
     # ============================================================
-
+    # Las validaciones progresivas se activan cada vez que el usuario modifica un
+    # campo relevante,
     def conectar_validaciones(self):
         widgets = [
             self.ncontrato,
@@ -304,7 +322,8 @@ class FormContrato(QWidget):
     # ============================================================
     #  VALIDACIÓN PRINCIPAL
     # ============================================================
-
+    # La validación principal comprueba que los campos obligatorios estén completos
+    # y tengan el formato correcto.
     def validar_formulario(self):
         nc = self.ncontrato.text().strip().upper().replace(" ", "")
         self.ncontrato.setText(nc)
@@ -346,7 +365,7 @@ class FormContrato(QWidget):
     # ============================================================
     #  FLUJO DE PRE-GUARDADO (CP inexistente)
     # ============================================================
-
+    # Antes de guardar, se comprueba si el código postal existe en la base de datos.
     def pre_guardado(self):
         cp = self.codigo_postal.text()
 
@@ -378,7 +397,8 @@ class FormContrato(QWidget):
     # ============================================================
     #  GUARDADO FINAL
     # ============================================================
-
+    # Si el código postal es correcto o ya se ha dado de alta, se recopilan todos los datos
+    # del formulario en un diccionario y se emite el signal contrato_guardado con esos datos.
     def guardar(self):
         datos = {
             "identificacion": {
@@ -418,7 +438,7 @@ class FormContrato(QWidget):
     # ============================================================
     #  FUNCIONES AUXILIARES
     # ============================================================
-
+    # Funciones auxiliares para convertir formatos, calcular estado del contrato, etc.
     def recibir_cp(self, cp, poblacion):
         self.codigo_postal.setText(cp)
         self.codigo_postal.setStyleSheet("")
@@ -446,6 +466,8 @@ class FormContrato(QWidget):
             return 0.0
         return float(t.replace(",", "."))
 
+    # El estado del contrato se calcula en función de las fechas de inicio y finalización,
+    # comparándolas con la fecha actual.
     def calcular_estado(self):
         hoy = date.today()
         fi = datetime.strptime(self.to_iso(self.fec_inicio.text()), "%Y-%m-%d").date()
@@ -465,7 +487,8 @@ class FormContrato(QWidget):
     # ============================================================
     #  AJUSTE DE TABULACIÓN
     # ============================================================
-
+    # El orden de tabulación se ajusta para que siga un flujo lógico de entrada de datos,
+    # con saltos
     def showEvent(self, event):
         super().showEvent(event)
 

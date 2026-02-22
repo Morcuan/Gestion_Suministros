@@ -1,3 +1,10 @@
+# ---------------------------------------------#
+# Modulo: nivelacion.sh                        #
+# Descripción: Script de nivelación automática #
+# Autor: Antonio Morales                       #
+# Fecha: 2026-02-09                            #
+# ---------------------------------------------#
+
 #!/bin/bash
 # nivelacion.sh - Guarda automáticamente todos los cambios en la rama 'desarrollo'
 # ⚠️ Ejecutar SIEMPRE con: source nivelacion.sh

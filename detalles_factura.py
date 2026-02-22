@@ -1,6 +1,9 @@
-# detalles_factura.py
-# Ventana de detalles de factura (modo solo lectura)
-# Proyecto: Gestion_suministros / Consultas
+# --------------------------------------    ------#
+# Modulo: detalles_factura.py                     #
+# Descripción: Detalles de factura (solo lectura) #
+# Autor: Antonio Morales                          #
+# Fecha: 2026-02-09                               #
+# ----------------------------------    ----------#
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
@@ -14,7 +17,9 @@ from PySide6.QtWidgets import (
 )
 
 
+# class DetallesFactura(QWidget):
 class DetallesFactura(QWidget):
+    # init recibe conexión, id_contrato y nfactura para cargar datos
     def __init__(self, conn, id_contrato, nfactura, parent=None):
         super().__init__(parent)
 
@@ -31,6 +36,7 @@ class DetallesFactura(QWidget):
     # ---------------------------------------------------------
     # CARGA DE DATOS
     # ---------------------------------------------------------
+    # Carga los datos de la factura desde la base de datos y los devuelve como tupla
     def cargar_datos_factura(self):
         cursor = self.conn.cursor()
 
@@ -63,6 +69,7 @@ class DetallesFactura(QWidget):
     # ---------------------------------------------------------
     # INTERFAZ
     # ---------------------------------------------------------
+    # Construye la interfaz con los datos cargados y los botones de acción
     def init_ui(self):
         layout = QVBoxLayout()
         layout.setContentsMargins(20, 20, 20, 20)
@@ -76,7 +83,7 @@ class DetallesFactura(QWidget):
         botones = QHBoxLayout()
         botones.setContentsMargins(0, 20, 0, 0)
 
-        btn_totalizar = QPushButton("Totalizar factura")
+        btn_totalizar = QPushButton("Analizar factura")
         btn_totalizar.clicked.connect(self.totalizar_factura)
 
         btn_cerrar = QPushButton("Cerrar")
@@ -90,6 +97,7 @@ class DetallesFactura(QWidget):
 
         self.setLayout(layout)
 
+    # bloque energía muestra consumo punta, llano, valle, excedentes e importe compensado
     def bloque_energia(self):
         grupo = QGroupBox("Energía")
         form = QFormLayout()
@@ -105,6 +113,7 @@ class DetallesFactura(QWidget):
         grupo.setLayout(form)
         return grupo
 
+    # bloque gastos muestra servicios, descuentos, saldos pendientes y batería virtual
     def bloque_gastos(self):
         grupo = QGroupBox("Gastos y descuentos")
         form = QFormLayout()
@@ -122,6 +131,8 @@ class DetallesFactura(QWidget):
     # ---------------------------------------------------------
     # BLOQUE IDENTIFICACIÓN
     # ---------------------------------------------------------
+    # bloque identificación muestra número de factura, periodo facturado, días y
+    # fecha de emisión
     def bloque_identificacion(self):
         grupo = QGroupBox("Identificación")
         form = QFormLayout()
@@ -137,10 +148,11 @@ class DetallesFactura(QWidget):
         grupo.setLayout(form)
         return grupo
 
-    # ---------------------------------------------------------
+    # -------------------------------------------------
     # ACCIONES
-    # ---------------------------------------------------------
-
+    # -------------------------------------------------
+    # totalizar_factura realiza el cálculo completo de la factura, muestra el resultado
+    # y guarda el cálculo en la base de datos para futuras consultas
     def totalizar_factura(self):
 
         nfactura = self.nfactura
@@ -151,8 +163,6 @@ class DetallesFactura(QWidget):
                 self, "Sin selección", "No hay ninguna factura seleccionada."
             )
             return
-
-        print(f"\n=== TOTALIZANDO FACTURA {nfactura} ===")
 
         cursor = self.conn.cursor()
 
@@ -167,6 +177,34 @@ class DetallesFactura(QWidget):
             )
 
             # ---------------------------------------------------------
+            # 0) Comprobar si la factura ya está calculada
+            # ---------------------------------------------------------
+            cursor.execute(
+                """
+                SELECT total_final, detalles_json
+                FROM factura_calculos
+                WHERE id_factura = ?
+            """,
+                (self.nfactura,),
+            )
+            row = cursor.fetchone()
+
+            if row:
+                total_guardado = row[0]
+                detalles_json = row[1]
+
+                # ABRIR VENTANA RESUMEN
+                from resumen_factura import ResumenFactura
+
+                marco = self.window()  # MainWindow
+                vista = ResumenFactura(
+                    self.conn, self.nfactura, self.id_contrato, parent=marco
+                )
+                marco.cargar_modulo(vista, "Resumen factura")
+
+                return
+
+            # ---------------------------------------------------------
             # 1) Cargar datos base desde la vista
             # ---------------------------------------------------------
             datos_base = obtener_datos_factura(cursor, nfactura)
@@ -177,11 +215,6 @@ class DetallesFactura(QWidget):
             cargos_obj = calcular_cargos_para_factura(datos_base)
             bono_social = cargos_obj.bono_social
 
-            print(
-                f"\n>>> TOTAL BLOQUE CARGOS PARA {nfactura}: "
-                f"{cargos_obj.total_cargos:.2f} €"
-            )
-
             # ---------------------------------------------------------
             # 3) Calcular ENERGÍA pasando el bono social
             # ---------------------------------------------------------
@@ -189,20 +222,10 @@ class DetallesFactura(QWidget):
                 cursor, nfactura, bono_social
             )
 
-            print(
-                f"\n>>> TOTAL BLOQUE ENERGÍA PARA {nfactura}: "
-                f"{energia_obj.total_energia:.2f} €"
-            )
-
             # ---------------------------------------------------------
             # 4) Calcular SERVICIOS Y OTROS
             # ---------------------------------------------------------
             servicios_obj = calcular_servicios_para_factura(datos_base)
-
-            print(
-                f"\n>>> TOTAL BLOQUE SERVICIOS Y OTROS PARA {nfactura}: "
-                f"{servicios_obj.total_servicios_otros:.2f} €"
-            )
 
             # ---------------------------------------------------------
             # 5) Calcular IVA (BLOQUE 4)
@@ -213,14 +236,10 @@ class DetallesFactura(QWidget):
                 servicios_obj.total_servicios_otros,
             )
 
-            print(f"\n>>> TOTAL BLOQUE IVA PARA {nfactura}: {iva_obj.cuota_iva:.2f} €")
-
             # ---------------------------------------------------------
             # 6) TOTAL FACTURA
             # ---------------------------------------------------------
             total_factura = iva_obj.total_con_iva
-
-            print(f"\n===== TOTAL FACTURA {nfactura}: {total_factura:.2f} € =====\n")
 
             # ---------------------------------------------------------
             # 6) Aplicar Bono Solar Cloud
@@ -231,9 +250,50 @@ class DetallesFactura(QWidget):
                 cursor, self.id_contrato, iva_obj.total_con_iva, sobrante
             )
 
-            print(
-                f"\n>>> TOTAL FACTURA TRAS CLOUD PARA {nfactura}: {total_final:.2f} €"
+            # ---------------------------------------------------------
+            # 7) Generar JSON del cálculo
+            # ---------------------------------------------------------
+            from calculo import generar_json_calculo, guardar_calculo_factura
+
+            detalles_json = generar_json_calculo(
+                energia_obj,
+                cargos_obj,
+                servicios_obj,
+                iva_obj,
+                aplicado_cloud,
+                nuevo_saldo,
+                datos_base,
             )
+
+            # ---------------------------------------------------------
+            # 8) Guardar cálculo en la tabla factura_calculos
+            # ---------------------------------------------------------
+            guardar_calculo_factura(
+                cursor,
+                self.nfactura,
+                "1.0",
+                energia_obj,
+                cargos_obj,
+                servicios_obj,
+                iva_obj,
+                aplicado_cloud,
+                nuevo_saldo,
+                detalles_json,
+            )
+
+            self.conn.commit()
+
+            # ABRIR VENTANA RESUMEN
+
+            from resumen_factura import ResumenFactura
+
+            marco = self.window()  # MainWindow
+            vista = ResumenFactura(
+                self.conn, self.nfactura, self.id_contrato, parent=marco
+            )
+            marco.cargar_modulo(vista, "Resumen factura")
+
+            return
 
         except Exception as e:
             print(f"[ERROR] Fallo en el cálculo: {e}")
@@ -246,9 +306,11 @@ class DetallesFactura(QWidget):
             )
             return
 
+    # volver_lista_facturas cierra esta vista y vuelve a la lista de facturas del contrato
     def volver_lista_facturas(self):
         from consulta_facturas import ConsultaFacturasWidget
 
         marco = self.window()
         vista = ConsultaFacturasWidget(self.conn, self.id_contrato, parent=marco)
+        marco.cargar_modulo(vista, "Facturas del contrato")
         marco.cargar_modulo(vista, "Facturas del contrato")

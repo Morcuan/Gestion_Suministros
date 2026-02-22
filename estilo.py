@@ -1,3 +1,10 @@
+# --------------------------------------------#
+# Modulo: estilo_contratos.py                 #
+# Descripción: Estilo para ventana contratos  #
+# Autor: Antonio Morales                      #
+# Fecha: 2026-02-09                           #
+# --------------------------------------------#
+
 # estilo.py
 from PySide6.QtGui import QColor, QFont
 from PySide6.QtWidgets import QComboBox, QLineEdit, QPushButton

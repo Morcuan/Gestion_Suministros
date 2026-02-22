@@ -1,3 +1,10 @@
+#                                                         #
+# Modulo: inicio.sh                                       #
+# Descripción: Inicialización del entorno de trabajo      #
+# Autor: Antonio Morales                                  #
+# Fecha: 2026-02-09                                       #
+# ------------------------------------            --------#
+
 #!/bin/bash
 # inicio.sh - Activa el entorno virtual, actualiza la rama de trabajo y crea backup diario
 # ⚠️ Ejecutar SIEMPRE con: source inicio.sh

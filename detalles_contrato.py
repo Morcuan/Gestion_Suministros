@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
 from consulta_facturas import ConsultaFacturasWidget
 
 
+# class DetallesContratoWidget(QDialog):
 class DetallesContratoWidget(QWidget):
     """
     Vista de detalles del contrato según DRU.
@@ -27,6 +28,7 @@ class DetallesContratoWidget(QWidget):
     Consulta filtrada por suplemento activo.
     """
 
+    # init con parámetros mínimos (conn y ncontrato)
     def __init__(self, conn, ncontrato, parent=None):
         super().__init__(parent)
 
@@ -151,6 +153,8 @@ class DetallesContratoWidget(QWidget):
     # ============================================================
     #   CONSULTA SQL: SUPLEMENTO ACTIVO
     # ============================================================
+    # Consulta que une las tres tablas (identificación, energía, gastos) y filtra
+    # por suplemento activo
     def cargar_datos(self):
         cur = self.conn.cursor()
 
@@ -184,6 +188,8 @@ class DetallesContratoWidget(QWidget):
     # ============================================================
     #   OBTENER ID_CONTRATO REAL
     # ============================================================
+    # Necesario para cargar las facturas del contrato, ya que la consulta de
+    # facturas se hace por id_contrato
     def obtener_id_contrato(self):
         cur = self.conn.cursor()
         cur.execute(
@@ -196,6 +202,7 @@ class DetallesContratoWidget(QWidget):
     # ============================================================
     #   BLOQUES DE DATOS
     # ============================================================
+    # Cada bloque es un QWidget con un QGridLayout, con título y filas de etiqueta-valor
     def _crear_bloque_identificacion(self, *args):
         bloque = QWidget()
         grid = QGridLayout(bloque)
@@ -227,6 +234,8 @@ class DetallesContratoWidget(QWidget):
 
         return bloque
 
+    # código repetitivo, pero es más claro y fácil de mantener que una
+    # función genérica con índices
     def _crear_bloque_energia(self, *args):
         bloque = QWidget()
         grid = QGridLayout(bloque)
@@ -255,6 +264,8 @@ class DetallesContratoWidget(QWidget):
 
         return bloque
 
+    # código repetitivo, pero es más claro y fácil de mantener que una
+    # función genérica con índices
     def _crear_bloque_gastos(self, *args):
         bloque = QWidget()
         grid = QGridLayout(bloque)
@@ -289,6 +300,7 @@ class DetallesContratoWidget(QWidget):
         lista = ConsultaContratosWidget(self.conn, parent=marco)
         marco.cargar_modulo(lista, "Consulta contratos")
 
+    # ver facturas del contrato, pasando el id_contrato a la vista de facturas
     def ver_facturas(self):
         idc = self.obtener_id_contrato()
         if idc is None:
