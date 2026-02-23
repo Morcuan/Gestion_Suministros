@@ -506,6 +506,9 @@ def generar_json_calculo(
         },
     }
 
+    # 👉 AÑADIDO AQUÍ, EN EL SITIO CORRECTO
+    detalles["total_final"] = iva_obj.total_con_iva - aplicado_cloud
+
     return json.dumps(detalles, ensure_ascii=False, indent=2)
 
 

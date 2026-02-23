@@ -167,14 +167,19 @@ class DetallesFactura(QWidget):
         cursor = self.conn.cursor()
 
         try:
+            import json
+
             from calculo import (
                 calcular_bono_solar_cloud,
                 calcular_cargos_para_factura,
                 calcular_energia_para_factura,
                 calcular_iva_para_factura,
                 calcular_servicios_para_factura,
+                generar_json_calculo,
+                guardar_calculo_factura,
                 obtener_datos_factura,
             )
+            from ventana_detalle_json import VentanaDetalleJSON
 
             # ---------------------------------------------------------
             # 0) Comprobar si la factura ya está calculada
@@ -193,14 +198,18 @@ class DetallesFactura(QWidget):
                 total_guardado = row[0]
                 detalles_json = row[1]
 
-                # ABRIR VENTANA RESUMEN
-                from resumen_factura import ResumenFactura
+                # Abrir directamente la ventana de análisis detallado
+                detalles_dict = json.loads(detalles_json)
 
                 marco = self.window()  # MainWindow
-                vista = ResumenFactura(
-                    self.conn, self.nfactura, self.id_contrato, parent=marco
+                vista = VentanaDetalleJSON(
+                    self.conn,
+                    self.id_contrato,
+                    self.nfactura,
+                    detalles_dict,
+                    parent=marco,
                 )
-                marco.cargar_modulo(vista, "Resumen factura")
+                marco.cargar_modulo(vista, "Análisis de factura")
 
                 return
 
@@ -253,8 +262,6 @@ class DetallesFactura(QWidget):
             # ---------------------------------------------------------
             # 7) Generar JSON del cálculo
             # ---------------------------------------------------------
-            from calculo import generar_json_calculo, guardar_calculo_factura
-
             detalles_json = generar_json_calculo(
                 energia_obj,
                 cargos_obj,
@@ -283,15 +290,22 @@ class DetallesFactura(QWidget):
 
             self.conn.commit()
 
-            # ABRIR VENTANA RESUMEN
+            # ---------------------------------------------------------
+            # 9) Abrir ventana de análisis detallado
+            # ---------------------------------------------------------
+            detalles_dict = json.loads(detalles_json)
 
-            from resumen_factura import ResumenFactura
+            from ventana_detalle_json import VentanaDetalleJSON
 
             marco = self.window()  # MainWindow
-            vista = ResumenFactura(
-                self.conn, self.nfactura, self.id_contrato, parent=marco
+            vista = VentanaDetalleJSON(
+                self.conn,
+                self.id_contrato,
+                self.nfactura,
+                detalles_dict,
+                parent=marco,
             )
-            marco.cargar_modulo(vista, "Resumen factura")
+            marco.cargar_modulo(vista, "Análisis de factura")
 
             return
 

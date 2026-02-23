@@ -1,130 +1,205 @@
 # --------------------------------------------#
-# Modulo: ventana_detalle_json.py                          #
-# Descripción: Ventana de detalle de JSON de factura #
+# Modulo: ventana_detalle_json.py             #
+# Descripción: Ventana de detalle de cálculo  #
 # Autor: Antonio Morales                      #
-# Fecha: 2026-02-09                           #
+# Fecha: 2026-02-09 (revisado flujo DRU)      #
 # --------------------------------------------#
 
-# -*- coding: utf-8 -*-
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import (
-    QFormLayout,
-    QGroupBox,
-    QLabel,
-    QPushButton,
-    QScrollArea,
-    QVBoxLayout,
-    QWidget,
-)
+from PySide6.QtWidgets import QHBoxLayout, QPushButton, QTextEdit, QVBoxLayout, QWidget
 
 
-# Ventana de detalle para mostrar el JSON de cada bloque (energía, cargos, servicios, IVA)
 class VentanaDetalleJSON(QWidget):
-    # init con datos del bloque, clave para identificar
-    # el bloque y días para mostrar en el título
-    def __init__(self, datos_bloque, clave, dias, parent=None):
+    """
+    Ventana de análisis detallado de la factura.
+    Muestra TODOS los bloques de cálculo en texto plano,
+    con títulos en negrita y líneas separadoras.
+    """
+
+    def __init__(self, conn, id_contrato, nfactura, detalles_dict, parent=None):
         super().__init__(parent)
 
-        # Tamaño de letra para TODO el subformulario
-        self.setStyleSheet("font-size: 16px;")
+        self.conn = conn
+        self.id_contrato = id_contrato
+        self.nfactura = nfactura
+        self.detalles = detalles_dict
 
-        self.datos = datos_bloque
-        self.clave = clave
-        self.dias = dias
+        self.init_ui()
 
-        # --- CONTENEDOR INTERNO PARA EVITAR QUE EL PANEL DERECHO SE ESTIRE ---
-        contenedor = QWidget()
-        layout = QVBoxLayout(contenedor)
+    def init_ui(self):
+        layout = QVBoxLayout()
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(15)
 
-        # --- TU CÓDIGO TAL CUAL ---
-        if clave == "energia":
-            layout.addWidget(self.bloque_energia(self.datos))
-        elif clave == "cargos":
-            layout.addWidget(self.bloque_generico("CARGOS NORMATIVOS", self.datos))
-        elif clave == "servicios":
-            layout.addWidget(self.bloque_generico("SERVICIOS Y OTROS", self.datos))
-        elif clave == "iva":
-            layout.addWidget(self.bloque_generico("IVA", self.datos))
+        # Texto de detalles
+        self.texto = QTextEdit()
+        self.texto.setReadOnly(True)
+        self.texto.setAcceptRichText(True)
+        self.texto.setStyleSheet("font-size: 16px;")
+
+        contenido = self.generar_texto_detalle()
+        self.texto.setHtml(contenido)
+
+        layout.addWidget(self.texto)
+
+        # Botón Cerrar
+        botones = QHBoxLayout()
+        botones.addStretch()
 
         btn_cerrar = QPushButton("Cerrar")
-        btn_cerrar.clicked.connect(self.cerrar_subformulario)
-        layout.addWidget(btn_cerrar, alignment=Qt.AlignRight)
+        btn_cerrar.clicked.connect(self.cerrar_y_volver_detalle_factura)
 
-        # --- SCROLL PARA QUE EL SUBFORMULARIO NO SE DESCUELGUE ---
-        scroll = QScrollArea()
-        scroll.setWidget(contenedor)
-        scroll.setWidgetResizable(True)
+        botones.addWidget(btn_cerrar)
+        layout.addLayout(botones)
 
-        # --- LAYOUT FINAL ---
-        layout_principal = QVBoxLayout(self)
-        layout_principal.addWidget(scroll)
-        self.setLayout(layout_principal)
+        self.setLayout(layout)
 
     # ---------------------------------------------------------
-    # BLOQUES
+    # GENERACIÓN DEL TEXTO
     # ---------------------------------------------------------
-    # Bloque específico para energía, con estructura de periodos y totales
-    def bloque_energia(self, energia):
-        grupo = QGroupBox("DETALLE DE ENERGÍA")
-        form = QFormLayout()
+    def generar_texto_detalle(self) -> str:
+        """
+        Genera el texto HTML simple con títulos en negrita y
+        líneas separadoras para todos los bloques del cálculo.
+        Se asume que self.detalles es el dict devuelto por generar_json_calculo.
+        """
 
-        # --- POTENCIA ---
-        pot = energia.get("potencia", {})
+        partes = []
+
+        # Helper para separadores
+        def sep():
+            partes.append("----------------------------------------<br>")
+
+        # POTENCIA / ENERGÍA / EXCEDENTES
+
+        # ---------------------------------------------------------
+        # POTENCIA
+        # ---------------------------------------------------------
+        pot = self.detalles.get("potencia", {})
         if pot:
-            form.addRow(QLabel("<b>POTENCIA</b>"))
+            sep()
+            partes.append("<b>POTENCIA</b><br>")
+            sep()
+
             periodos = pot.get("periodos", {})
             for periodo, datos in periodos.items():
-                form.addRow(f"  {periodo}:", QLabel(""))
-                for k, v in datos.items():
-                    form.addRow(f"    {k}:", QLabel(str(v)))
-            form.addRow("Total potencia:", QLabel(str(pot.get("total", ""))))
+                kW = datos.get("kW", "")
+                precio = datos.get("precio_unitario", "")
+                importe = datos.get("importe", "")
+                partes.append(
+                    f"&nbsp;&nbsp;{periodo} → "
+                    f"kW: {kW} | Pvp kW: {precio} | Importe: {importe}<br>"
+                )
 
-        # --- CONSUMO ---
-        con = energia.get("consumo", {})
+            if "total" in pot:
+                partes.append(f"Total potencia: {pot.get('total', '')}<br>")
+
+        # ---------------------------------------------------------
+        # CONSUMO
+        # ---------------------------------------------------------
+        con = self.detalles.get("consumo", {})
         if con:
-            form.addRow(QLabel("<b>CONSUMO</b>"))
+            sep()
+            partes.append("<b>CONSUMO</b><br>")
+            sep()
+
             periodos = con.get("periodos", {})
             for periodo, datos in periodos.items():
-                form.addRow(f"  {periodo}:", QLabel(""))
-                for k, v in datos.items():
-                    form.addRow(f"    {k}:", QLabel(str(v)))
-            form.addRow("Total consumo:", QLabel(str(con.get("total", ""))))
+                kWh = datos.get("kWh", "")
+                precio = datos.get("precio_unitario", "")
+                importe = datos.get("importe", "")
+                partes.append(
+                    f"&nbsp;&nbsp;{periodo} → "
+                    f"kWh: {kWh} | Pvp kWh: {precio} | Importe: {importe}<br>"
+                )
 
-        # --- EXCEDENTES ---
-        exc = energia.get("excedentes", {})
+            if "total" in con:
+                partes.append(f"Total consumo: {con.get('total', '')}<br>")
+
+        # ---------------------------------------------------------
+        # EXCEDENTES
+        # ---------------------------------------------------------
+        exc = self.detalles.get("excedentes", {})
         if exc:
-            form.addRow(QLabel("<b>EXCEDENTES</b>"))
+            sep()
+            partes.append("<b>EXCEDENTES</b><br>")
+            sep()
+
             for k, v in exc.items():
-                form.addRow(f"{k}:", QLabel(str(v)))
+                etiqueta = "A Bat. Virtual" if k == "sobrante" else k
+                partes.append(f"{etiqueta}: {v}<br>")
 
-        grupo.setLayout(form)
-        return grupo
+        # CARGOS NORMATIVOS
+        cargos = self.detalles.get("cargos", {})
+        if cargos:
+            sep()
+            partes.append("<b>CARGOS NORMATIVOS</b><br>")
+            sep()
+            for k, v in cargos.items():
+                partes.append(f"{k}: {v}<br>")
 
-    # Bloque genérico para cargos, servicios e IVA, con estructura simple de clave-valor
-    def bloque_generico(self, titulo, datos):
-        grupo = QGroupBox(titulo)
-        form = QFormLayout()
+        # SERVICIOS Y OTROS
+        servicios = self.detalles.get("servicios", {})
+        if servicios:
+            sep()
+            partes.append("<b>SERVICIOS Y OTROS</b><br>")
+            sep()
+            for k, v in servicios.items():
+                partes.append(f"{k}: {v}<br>")
 
-        for clave, valor in datos.items():
-            form.addRow(f"{clave}:", QLabel(str(valor)))
+        # IVA
+        iva = self.detalles.get("iva", {})
+        if iva:
+            sep()
+            partes.append("<b>IVA</b><br>")
+            sep()
+            for k, v in iva.items():
+                partes.append(f"{k}: {v}<br>")
 
-        grupo.setLayout(form)
-        return grupo
+        # BONO SOLAR CLOUD / APLICADO CLOUD
+        cloud = self.detalles.get("bono_solar_cloud", {})
+        if not cloud:
+            # según cómo lo guardes, puede que venga como 'aplicado_cloud' o similar
+            cloud = self.detalles.get("aplicado_cloud", {})
+
+        if cloud:
+            sep()
+            partes.append("<b>BONO SOLAR CLOUD</b><br>")
+            sep()
+            for k, v in cloud.items():
+                partes.append(f"{etiqueta}: {v}<br>")
+
+        # TOTAL FINAL
+        total_final = self.detalles.get("total_final", None)
+        if total_final is not None:
+            sep()
+            partes.append("<b>TOTAL FINAL</b><br>")
+            sep()
+            partes.append(f"Total factura: {total_final}<br>")
+
+        # Por si quieres incluir algún bloque extra del JSON:
+        otros = self.detalles.get("otros", {})
+        if otros:
+            sep()
+            partes.append("<b>OTROS</b><br>")
+            sep()
+            for k, v in otros.items():
+                partes.append(f"{k}: {v}<br>")
+
+        return "".join(partes) if partes else "No hay detalles de cálculo disponibles."
 
     # ---------------------------------------------------------
-    # BOTÓN CERRAR
+    # NAVEGACIÓN
     # ---------------------------------------------------------
-    # def cerrar_subformulario(self):
-    #    parent = self.parent()
-    #    if hasattr(parent, "cargar_detalle"):
-    #       parent.cargar_detalle(parent.panel_detalle)
+    def cerrar_y_volver_detalle_factura(self):
+        """
+        Cierra esta ventana y vuelve a DetallesFactura,
+        siguiendo el flujo lineal definido en el DRU.
+        """
+        from detalles_factura import DetallesFactura
 
-    # def cerrar_subformulario(self):
-    #    self.setParent(None)
-    #    self.deleteLater()
-
-    def cerrar_subformulario(self):
-        parent = self.parent().parent()  # subimos hasta ResumenFactura
-        if hasattr(parent, "limpiar_detalle"):
-            parent.limpiar_detalle()
-            parent.limpiar_detalle()
+        marco = self.window()  # MainWindow
+        vista = DetallesFactura(
+            self.conn, self.id_contrato, self.nfactura, parent=marco
+        )
+        marco.cargar_modulo(vista, "Detalles de factura")

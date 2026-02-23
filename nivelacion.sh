@@ -51,10 +51,10 @@ echo "📝 Añadiendo todos los cambios..."
 git add -A
 
 # Crear mensaje de commit limpio
-COMMIT_MSG="Nivelaccion manual, Implementado motor completo de facturación
-con cálculo de excedentes, sobrante y Bono Solar Cloud.
-Totalización validada contra factura real.
-Módulos de contratos y facturas alineados y operativos...
+COMMIT_MSG="Nivelaccion manual, Terminada y operativa la funcionalidad
+analisis de factura en los modulos detalle_factura y ventana_detalle_json.
+Modificado tambien calculo.py para que incorpore el total final de la factura,
+en el json de salida, ademas de corregir algunos errores menores
 y varias cosas mas... $(date '+%Y-%m-%d %H:%M')"
 
 echo "💾 Realizando commit: $COMMIT_MSG"
