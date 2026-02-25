@@ -178,19 +178,18 @@ def crear_vista_contratos_completo(cursor):
     cursor.execute("""
         CREATE VIEW vista_contratos AS
         SELECT
-            ci.ncontrato, ci.suplemento, ci.estado, ci.compania,
-            ci.codigo_postal, cp.poblacion,
-            ci.fec_inicio, ci.fec_final, ci.efec_suple, ci.fin_suple,
-            ci.fec_anulacion,
+            ci.id_contrato, ci.ncontrato, ci.suplemento,
+            ci.estado, ci.compania, ci.codigo_postal,
+            cp.poblacion, ci.fec_inicio, ci.fec_final,
+            ci.efec_suple, ci.fin_suple, ci.fec_anulacion,
             ce.ppunta, ce.pv_ppunta, ce.pvalle, ce.pv_pvalle,
             ce.pv_conpunta, ce.pv_conllano, ce.pv_convalle,
-            ce.vertido, ce.pv_excedent,
-            cg.bono_social, cg.alq_contador, cg.otros_gastos,
-            cg.i_electrico, cg.iva
-        FROM contratos_identificacion ci
-        JOIN contratos_energia ce ON ci.id_contrato = ce.id_contrato
-        JOIN contratos_gastos cg ON ci.id_contrato = cg.id_contrato
-        JOIN cpostales cp ON ci.codigo_postal = cp.codigo_postal;
+            ce.vertido, ce.pv_excedent, cg.bono_social,
+            cg.alq_contador, cg.otros_gastos, cg.i_electrico, cg.iva
+            FROM contratos_identificacion ci
+            JOIN contratos_energia ce ON ci.id_contrato = ce.id_contrato
+            JOIN contratos_gastos cg ON ci.id_contrato = cg.id_contrato
+            JOIN cpostales cp ON ci.codigo_postal = cp.codigo_postal;
     """)
 
 

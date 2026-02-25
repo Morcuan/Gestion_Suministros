@@ -1,8 +1,8 @@
 # --------------------------------------------#
-# Modulo: lista_contratos_modificar.py        #
+# Modulo: lista_contratos_modificar.py
 # Descripción: Selección de contrato a modificar
 # Autor: Antonio Morales + Copilot
-# Fecha: 2026-02-24
+# Fecha: 2026-02-24 (actualizado)
 # --------------------------------------------#
 
 from PySide6.QtWidgets import (
@@ -23,12 +23,13 @@ from db import (
     obtener_suplemento_vigente,
 )
 from form_modificacion import FormModificacionContrato
+from lista_contratos import obtener_lista_contratos
 
 
 class ListaContratosModificar(QWidget):
     """
     Lista de contratos para seleccionar uno y modificarlo.
-    Basado en lista_contratos_factura.py para mantener coherencia.
+    Ahora utiliza obtener_lista_contratos() para garantizar coherencia.
     """
 
     def __init__(self, parent=None):
@@ -67,31 +68,58 @@ class ListaContratosModificar(QWidget):
         self.cargar_contratos()
 
     # ============================================================
-    #  CARGA DE CONTRATOS
+    #  CARGA DE CONTRATOS (USANDO obtener_lista_contratos)
     # ============================================================
     def cargar_contratos(self):
-        cur = self.conn.cursor()
-
-        cur.execute(
-            """
-            SELECT ncontrato, suplemento, compania, fec_inicio, fec_final, estado
-            FROM vista_contratos
-            ORDER BY ncontrato, suplemento DESC
-            """
+        lista = obtener_lista_contratos(
+            self.conn,
+            solo_activos=False,  # Mostrar todos los estados
+            solo_ultimo_suplemento=True,  # Solo el último suplemento
+            incluir_anulados=True,  # Incluir contratos anulados
         )
 
-        rows = cur.fetchall()
-        self.tabla.setRowCount(len(rows))
+        self.tabla.setRowCount(len(lista))
 
-        for i, row in enumerate(rows):
-            for j, value in enumerate(row):
+        for i, row in enumerate(lista):
+            (
+                id_contrato,
+                ncontrato,
+                suplemento,
+                estado,
+                compania,
+                codigo_postal,
+                poblacion,
+                fec_inicio,
+                fec_final,
+                efec_suple,
+                fin_suple,
+                fec_anulacion,
+                ppunta,
+                pv_ppunta,
+                pvalle,
+                pv_pvalle,
+                pv_conpunta,
+                pv_conllano,
+                pv_convalle,
+                vertido,
+                pv_excedent,
+                bono_social,
+                alq_contador,
+                otros_gastos,
+                i_electrico,
+                iva,
+            ) = row
+
+            datos = [ncontrato, suplemento, compania, fec_inicio, fec_final, estado]
+
+            for j, value in enumerate(datos):
                 self.tabla.setItem(i, j, QTableWidgetItem(str(value)))
 
         self.tabla.resizeColumnsToContents()
         self.tabla.horizontalHeader().setStretchLastSection(True)
 
     # ============================================================
-    #  OBTENER MAINWINDOW REAL (IGUAL QUE EN lista_contratos_factura)
+    #  OBTENER MAINWINDOW REAL
     # ============================================================
     def get_mainwindow(self):
         w = self.parent()
@@ -116,18 +144,14 @@ class ListaContratosModificar(QWidget):
             return
 
         main = self.get_mainwindow()
-        main.lista_modificacion = self  # ← GUARDAMOS LA INSTANCIA REAL
+        main.lista_modificacion = self
 
-        print("CREANDO FORMULARIO...")
         form = FormModificacionContrato(datos, parent=main)
-        print("FORMULARIO CREADO:", form)
 
-        # Conectar señales
         form.actualizar_vigente.connect(self.actualizar_vigente)
         form.crear_suplemento.connect(self.crear_suplemento)
         form.cancelado.connect(main.lista_modificacion.cancelar_modificacion)
 
-        # Cargar en zona de contenido del MainWindow
         main.cargar_modulo(form, f"Modificar contrato {ncontrato}")
 
     # ============================================================
@@ -152,15 +176,13 @@ class ListaContratosModificar(QWidget):
         self.cargar_contratos()
 
     # ============================================================
-    #  BOTON CANCELAR - VOLVER A LISTA DE CONTRATOS
+    #  BOTON CANCELAR
     # ============================================================
     def cancelar_modificacion(self):
-        print("CANCELAR_MODIFICACION EN:", self)
         main = self.get_mainwindow()
         if main is None:
-            print("ERROR: get_mainwindow devolvió None")
             return
 
-        self.setParent(main)  # ← ESTA ES LA CLAVE
+        self.setParent(main)
         main.cargar_modulo(self, "Modificar contrato")
-        self.show()  # Aseguramos que se muestre la lista de contratos nuevamente
+        self.show()
