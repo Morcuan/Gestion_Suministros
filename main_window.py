@@ -22,6 +22,8 @@ import db_init
 from consulta_contratos import ConsultaContratosWidget  # <--- AÑADIDO
 from estilo import PALETAS, aplicar_estilo_boton, aplicar_estilo_panel_lateral
 from lista_contratos_factura import ListaContratosFactura
+from lista_contratos_modificar import ListaContratosModificar
+from modulo_recalculo import ModuloRecalculo
 from nuevo_contrato import NuevoContrato
 
 
@@ -131,7 +133,7 @@ class MainWindow(QMainWindow):
                     (
                         "✏️ Modificación",
                         lambda: self.cargar_modulo(
-                            self.crear_placeholder("Modificar contrato"),
+                            ListaContratosModificar(parent=self),
                             "Modificar contrato",
                         ),
                     ),
@@ -189,7 +191,21 @@ class MainWindow(QMainWindow):
                 ],
             )
         )
-
+        # --- Sección Utilidades ---
+        layout.addWidget(
+            self.crear_seccion_acordeon(
+                "🛠️ Utilidades",
+                [
+                    (
+                        "♻️ Recalcular facturas pdtes",
+                        lambda: self.cargar_modulo(
+                            ModuloRecalculo(parent=self),
+                            "Recalcular facturas pendientes",
+                        ),
+                    ),
+                ],
+            )
+        )
         # --- Sección Sistema ---
         layout.addWidget(
             self.crear_seccion_acordeon(
@@ -376,7 +392,8 @@ class MainWindow(QMainWindow):
             w = item.widget()
             if w is not None and w is not self.encabezado_modulo:
                 self.zona_contenido_layout.removeWidget(w)
-                w.deleteLater()
+                w.hide()
+            #   w.setParent(None)
 
         # self.encabezado_modulo.setText(titulo)
         self.zona_contenido_layout.addWidget(widget, stretch=1)
@@ -387,5 +404,6 @@ class MainWindow(QMainWindow):
     def aplicar_paleta(self, paleta):
         from estilo import generar_stylesheet
 
+        self.setStyleSheet(generar_stylesheet(paleta))
         self.setStyleSheet(generar_stylesheet(paleta))
         self.setStyleSheet(generar_stylesheet(paleta))

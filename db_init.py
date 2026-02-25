@@ -121,6 +121,7 @@ def crear_tabla_facturas(cursor):
             dcto_servicios     REAL,
             saldos_pendientes  REAL,
             bat_virtual        REAL,
+            recalcular         INTEGER NOT NULL DEFAULT 0,  -- 0 = no recalcular, 1 = recalcular
             PRIMARY KEY (id_contrato, nfactura),
             FOREIGN KEY (id_contrato) REFERENCES contratos_identificacion(id_contrato)
         );

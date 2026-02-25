@@ -52,10 +52,9 @@ git add -A
 
 # Crear mensaje de commit limpio
 COMMIT_MSG="Nivelaccion manual, Terminada y operativa la funcionalidad
-analisis de factura en los modulos detalle_factura y ventana_detalle_json.
-Modificado tambien calculo.py para que incorpore el total final de la factura,
-en el json de salida, ademas de corregir algunos errores menores
-y varias cosas mas... $(date '+%Y-%m-%d %H:%M')"
+de modificacion de contrato mediante suplemento. Recalculo de facturas
+guardadas (en funcion del suplemento si es necesario) funcionando. Todo
+probado y consolidado. $(date '+%Y-%m-%d %H:%M')"
 
 echo "💾 Realizando commit: $COMMIT_MSG"
 git commit -m "$COMMIT_MSG"
