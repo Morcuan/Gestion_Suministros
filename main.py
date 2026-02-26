@@ -4,7 +4,10 @@
 # Autor: Antonio Morales                            #
 # Fecha: 2026-02-09                                 #
 # --------------------------------------------------#
+# Este módulo contiene la función principal que inicia la aplicación,
+# establece la conexión a la base de datos y muestra la ventana principal.
 
+# Importaciones necesarias
 import sqlite3
 import sys
 

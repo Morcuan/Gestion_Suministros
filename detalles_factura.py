@@ -4,6 +4,12 @@
 # Autor: Antonio Morales                          #
 # Fecha: 2026-02-09                               #
 # ----------------------------------    ----------#
+# Esta vista muestra los detalles de una factura seleccionada, con datos cargados desde la base de datos.
+# Permite analizar la factura con un cálculo completo y ver el desglose detallado.
+
+# ---------------------------------------------------------
+# IMPORTACIONES
+# ---------------------------------------------------------
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
@@ -16,8 +22,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+# ---------------------------------------------------------
+# CLASE PRINCIPAL
+# ---------------------------------------------------------
 
-# class DetallesFactura(QWidget):
+
 class DetallesFactura(QWidget):
     # init recibe conexión, id_contrato y nfactura para cargar datos
     def __init__(self, conn, id_contrato, nfactura, parent=None):

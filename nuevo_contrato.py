@@ -13,6 +13,9 @@
 # Fecha: 2026-02-09                                      #
 # -------------------------------------------------------#
 
+# ------------------------------------------------------------
+#  IMPORTACIONES
+# ------------------------------------------------------------
 import sqlite3
 
 from PySide6.QtCore import Signal
@@ -21,6 +24,9 @@ from PySide6.QtWidgets import QMessageBox, QSizePolicy, QVBoxLayout, QWidget
 from form_contrato import FormContrato
 
 
+# ------------------------------------------------------------
+#  CLASE PRINCIPAL DEL MÓDULO
+# ------------------------------------------------------------
 class NuevoContrato(QWidget):
     """
     Módulo funcional para dar de alta un contrato nuevo.
@@ -219,4 +225,6 @@ class NuevoContrato(QWidget):
     # ------------------------------------------------------------
     def cerrar(self):
         # No cerramos ventana (no es independiente), solo avisamos al MainWindow
+        self.cerrado.emit()
+        self.cerrado.emit()
         self.cerrado.emit()

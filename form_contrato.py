@@ -4,11 +4,15 @@
 # Autor: Antonio Morales                      #
 # Fecha: 2026-02-09                           #
 # --------------------------------------------#
+# Este módulo define el formulario de contrato, dividido en tres bloques: Identificación, Energía y Gastos.
+# Incluye validaciones progresivas, un flujo de pre-guardado para códigos postales inexistentes,
+# y una ventana auxiliar para dar de alta nuevos códigos postales.
 
-
+# Importaciones necesarias
 import re
 from datetime import date, datetime
 
+# PySide6 para la interfaz gráfica
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QComboBox,

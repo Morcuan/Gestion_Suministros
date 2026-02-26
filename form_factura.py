@@ -4,7 +4,19 @@
 # Autor: Antonio Morales                           #
 # Fecha: 2026-02-09                                #
 # -------------------------------------------     -#
+# Este módulo define la clase FormFactura, que es un formulario para introducir los datos de una factura de energía.
+# El formulario se divide en tres bloques: identificación, energía y gastos/descuentos.
+# El bloque de identificación incluye campos para el número de factura, fechas de inicio y fin,
+# días facturados y fecha de emisión. El bloque de energía incluye campos para el consumo en punta,
+# llano y valle, excedentes e importe compensado. El bloque de gastos/descuentos incluye
+# campos para servicios asociados, descuentos, saldos pendientes y batería virtual.
+# El formulario tiene validaciones para asegurar que los datos introducidos son correctos,
+# como el formato de fechas y la coherencia entre los días facturados y las fechas.
+# Al guardar la factura, se insera un nuevo registro en la base de datos con los datos
+# introducidos. También hay opciones para limpiar el formulario para introducir
+# otra factura o para volver a la lista de contratos.
 
+# Importaciones necesarias para la interfaz gráfica y manejo de datos
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QGridLayout,

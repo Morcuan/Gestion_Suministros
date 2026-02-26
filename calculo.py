@@ -4,8 +4,18 @@
 # Autor: Antonio Morales                      #
 # Fecha: 2026-02-09                           #
 # --------------------------------------------#
+# Este módulo contiene la lógica de cálculo de las facturas de energía, organizada
+# en clases para cada bloque de la factura (energía, cargos normativos, servicios y
+# otros conceptos, IVA) y funciones para orquestar el cálculo completo de la factura,
+# incluyendo el Bono Solar Cloud. Cada bloque tiene su propia clase con métodos específicos
+# para calcular los conceptos dentro del bloque, y un método orquestador para realizar el
+# cálculo completo del bloque. Las funciones externas permiten calcular cada bloque de la
+# factura a partir de los datos obtenidos de la base de datos, y generar el JSON
+# con los detalles del cálculo para su almacenamiento y visualización.
 
-
+# ------------------------------------------------------------
+# IMPORTACIONES
+# ------------------------------------------------------------
 import json
 
 # ---------------------------------------------------------
@@ -20,6 +30,10 @@ import json
 # bonificación por bono social)
 
 
+# El bloque de energía se calcula en una clase dedicada, que recibe el diccionario
+# completo de datos para facilitar el acceso a los datos necesarios para cada cálculo,
+# y tiene métodos específicos para calcular cada concepto dentro del bloque, así como
+# un método orquestador para realizar el cálculo completo del bloque de energía.
 class Energia:
     # init recibe el diccionario completo de datos para facilitar cálculos posteriores
     def __init__(self, datos: dict):

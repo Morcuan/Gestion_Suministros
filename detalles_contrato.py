@@ -5,6 +5,12 @@
 #  Fecha: 2026-02-10                                           #
 # ----------------------------------------------------------- #
 
+# Esta vista muestra los detalles del contrato según DRU, con tres bloques de información:
+# Identificación, Energía, Gastos e Impuestos.
+# La consulta se filtra por suplemento activo, usando la vista vista_contratos.
+# Se accede desde la consulta de contratos, pasando el número de contrato.
+# Desde esta vista se puede acceder a las facturas del contrato, pasando el id_contrato a la vista de facturas.
+
 from PySide6.QtCore import QDate, Qt
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (

@@ -4,6 +4,7 @@
 # Autor: Antonio Morales                      #
 # Fecha: 2026-02-09                           #
 # --------------------------------------------#
+# Este módulo contiene funciones de utilidad para el manejo de fechas y otros aspectos comunes del proyecto.
 
 from datetime import datetime
 

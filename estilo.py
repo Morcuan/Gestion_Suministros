@@ -4,8 +4,10 @@
 # Autor: Antonio Morales                      #
 # Fecha: 2026-02-09                           #
 # --------------------------------------------#
+# Este módulo define los estilos visuales para la ventana de contratos,
+# incluyendo colores, fuentes y estilos de widgets.
 
-# estilo.py
+# Importaciones necesarias
 from PySide6.QtGui import QColor, QFont
 from PySide6.QtWidgets import QComboBox, QLineEdit, QPushButton
 

@@ -51,11 +51,8 @@ echo "📝 Añadiendo todos los cambios..."
 git add -A
 
 # Crear mensaje de commit limpio
-COMMIT_MSG="Nivelaccion manual,
-✔ Vista unificada vista_contratos
-✔ Función unificada lista_contratos
-✔ Primer módulo adaptado lista_contratos_modificar
-✔ Arquitectura limpia para continuar mañana. $(date '+%Y-%m-%d %H:%M')"
+COMMIT_MSG="Nivelaccion manual, identacion y extension de comentarios
+de cada modulo. $(date '+%Y-%m-%d %H:%M')"
 
 echo "💾 Realizando commit: $COMMIT_MSG"
 git commit -m "$COMMIT_MSG"

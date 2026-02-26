@@ -4,6 +4,17 @@
 # Autor: Antonio Morales                      #
 # Fecha: 2026-02-09                           #
 # --------------------------------------------#
+# Esta vista muestra la lista de contratos sin suplementos, una fila por contrato, igual
+# que en la captura de facturas. Desde esta vista se puede acceder a los detalles del
+# contrato, que muestra la información según DRU, con tres bloques de información:
+# Identificación, Energía, Gastos e Impuestos. La consulta se filtra por
+# suplemento activo, usando la vista vista_contratos. Se accede desde el menú de consulta
+# de contratos, y desde esta vista se puede acceder a las facturas del contrato, pasando
+# el id_contrato a la vista de facturas.
+
+# ------------------------------------------------------------
+# IMPORTACIONES
+# ------------------------------------------------------------
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont

@@ -4,7 +4,12 @@
 # Autor: Antonio Morales + Copilot            #
 # Fecha: 2026-02-24                           #
 # --------------------------------------------#
+# Este módulo define el formulario de modificación de contrato/suplemento.
+# Permite detectar cambios económicos vs administrativos, validar fechas
+# y emitir señales diferenciadas según el tipo de cambio.
 
+
+# IMPORTACIONES
 import copy
 import re
 from datetime import date, datetime
@@ -27,6 +32,9 @@ from PySide6.QtWidgets import (
 from estilo import aplicar_estilo_campo
 
 
+# ------------------------------------------------------------
+# CLASE PRINCIPAL
+# ------------------------------------------------------------
 class FormModificacionContrato(QWidget):
     """
     Formulario de modificación de contrato / suplemento.
@@ -578,4 +586,6 @@ class FormModificacionContrato(QWidget):
         self.setTabOrder(self.i_electrico, self.iva)
 
         self.setTabOrder(self.iva, self.btn_guardar)
+        self.setTabOrder(self.btn_guardar, self.btn_cancelar)
+        self.setTabOrder(self.btn_guardar, self.btn_cancelar)
         self.setTabOrder(self.btn_guardar, self.btn_cancelar)

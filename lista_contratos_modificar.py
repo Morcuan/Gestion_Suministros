@@ -4,7 +4,12 @@
 # Autor: Antonio Morales + Copilot
 # Fecha: 2026-02-24 (actualizado)
 # --------------------------------------------#
+# Este módulo muestra una lista de contratos (usando obtener_lista_contratos)
+# y permite seleccionar uno para modificarlo. Al hacer clic en "Modificar contrato",
+# se abre el formulario de modificación (FormModificacionContrato) con los datos del contrato seleccionado.
+# Se han agregado mejoras para garantizar que se muestren los datos correctos y se manejen los estados de los contratos.
 
+# Importamos los módulos necesarios de PySide6 para la interfaz gráfica.
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
@@ -16,6 +21,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+# Importamos funciones de db.py para manejar la base de datos y el formulario de modificación.
 from db import (
     actualizar_suplemento_vigente,
     crear_suplemento_nuevo,
@@ -26,12 +32,18 @@ from form_modificacion import FormModificacionContrato
 from lista_contratos import obtener_lista_contratos
 
 
+# ============================================================
+#  CLASE PRINCIPAL: ListaContratosModificar
+# ============================================================
 class ListaContratosModificar(QWidget):
     """
     Lista de contratos para seleccionar uno y modificarlo.
     Ahora utiliza obtener_lista_contratos() para garantizar coherencia.
     """
 
+    # ============================================================
+    #  INICIALIZACIÓN
+    # ============================================================
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -40,9 +52,9 @@ class ListaContratosModificar(QWidget):
 
         # Tabla
         self.tabla = QTableWidget()
-        self.tabla.setColumnCount(6)
+        self.tabla.setColumnCount(7)
         self.tabla.setHorizontalHeaderLabels(
-            ["Nº contrato", "Supl.", "Compañía", "Inicio", "Fin", "Estado"]
+            ["Nº contrato", "Supl.", "Compañía", "C.P.", "Inicio", "Efecto", "Estado"]
         )
 
         # Botones
@@ -110,7 +122,15 @@ class ListaContratosModificar(QWidget):
                 iva,
             ) = row
 
-            datos = [ncontrato, suplemento, compania, fec_inicio, fec_final, estado]
+            datos = [
+                ncontrato,
+                suplemento,
+                compania,
+                codigo_postal,
+                fec_inicio,
+                efec_suple,
+                estado,
+            ]
 
             for j, value in enumerate(datos):
                 self.tabla.setItem(i, j, QTableWidgetItem(str(value)))
@@ -185,4 +205,6 @@ class ListaContratosModificar(QWidget):
 
         self.setParent(main)
         main.cargar_modulo(self, "Modificar contrato")
+        self.show()
+        self.show()
         self.show()

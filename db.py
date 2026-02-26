@@ -5,6 +5,12 @@
 # Fecha: 2026-02-24                           #
 # --------------------------------------------#
 
+# Este módulo contiene funciones para interactuar con la base de datos SQLite
+# que almacena la información de contratos, suplementos, energía, gastos y facturas.
+
+# ============================================================
+#  IMPORTACIONES
+# ============================================================
 import sqlite3
 from datetime import datetime, timedelta
 

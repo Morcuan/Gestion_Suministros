@@ -4,11 +4,21 @@
 # Autor: Antonio Morales                      #
 # Fecha: 2026-02-09 (revisado flujo DRU)      #
 # --------------------------------------------#
+# Esta ventana muestra el análisis detallado de la factura,
+# con TODOS los bloques de cálculo en texto plano,
+# con títulos en negrita y líneas separadoras.
 
+
+# ---------------------------------------------------------
+# IMPORTACIONES
+# ---------------------------------------------------------
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QHBoxLayout, QPushButton, QTextEdit, QVBoxLayout, QWidget
 
 
+# ---------------------------------------------------------
+# CLASE PRINCIPAL
+# ---------------------------------------------------------
 class VentanaDetalleJSON(QWidget):
     """
     Ventana de análisis detallado de la factura.
@@ -16,6 +26,9 @@ class VentanaDetalleJSON(QWidget):
     con títulos en negrita y líneas separadoras.
     """
 
+    # ---------------------------------------------------------
+    # INICIALIZACIÓN
+    # ---------------------------------------------------------
     def __init__(self, conn, id_contrato, nfactura, detalles_dict, parent=None):
         super().__init__(parent)
 
@@ -26,6 +39,9 @@ class VentanaDetalleJSON(QWidget):
 
         self.init_ui()
 
+    # ---------------------------------------------------------
+    # INTERFAZ GRÁFICA
+    # ---------------------------------------------------------
     def init_ui(self):
         layout = QVBoxLayout()
         layout.setContentsMargins(20, 20, 20, 20)
@@ -202,4 +218,6 @@ class VentanaDetalleJSON(QWidget):
         vista = DetallesFactura(
             self.conn, self.id_contrato, self.nfactura, parent=marco
         )
+        marco.cargar_modulo(vista, "Detalles de factura")
+        marco.cargar_modulo(vista, "Detalles de factura")
         marco.cargar_modulo(vista, "Detalles de factura")

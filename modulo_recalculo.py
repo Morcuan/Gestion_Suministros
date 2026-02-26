@@ -4,7 +4,14 @@
 # Autor: Antonio Morales + Copilot            #
 # Fecha: 2026-02-24                           #
 # --------------------------------------------#
+# Este módulo permite listar las facturas que tienen el flag "recalcular" activo,
+# recalcularlas individualmente o en lote, y guardar los nuevos cálculos en la tabla
+# "factura_calculos". Al finalizar el recálculo, se limpia el flag "recalcular"
+# para evitar recálculos futuros innecesarios.
 
+# ============================================================
+#  IMPORTACIONES
+# ============================================================
 import json
 import sqlite3
 

@@ -5,7 +5,9 @@
 # Fecha: 2026-02-01                           #
 # --------------------------------------------#
 
-
+# ------------------------------------------------------------
+# IMPORTACIONES
+# ------------------------------------------------------------
 import sqlite3
 
 DB_PATH = "data/almacen.db"
@@ -34,6 +36,11 @@ def crear_tabla_contratos_identificacion(cursor):
             FOREIGN KEY (codigo_postal)   REFERENCES cpostales(codigo_postal)
         );
     """)
+
+
+# ---------------------------------------------------------
+# Las tablas de energía y gastos se separan para facilitar la gestión de datos específicos
+# y permitir una posible extensión futura (por ejemplo, si se añaden nuevos conceptos de energía o gastos).
 
 
 def crear_tabla_contratos_energia(cursor):
@@ -133,6 +140,9 @@ def crear_tabla_facturas(cursor):
         """)
 
 
+# ---------------------------------------------------------
+# TABLA DE CÁLCULOS DE FACTURAS
+# ---------------------------------------------------------
 def crear_tabla_factura_calculos(cursor):
     cursor.execute("DROP TABLE IF EXISTS factura_calculos;")
     cursor("""
@@ -159,6 +169,9 @@ def crear_tabla_factura_calculos(cursor):
     """)
 
 
+# ---------------------------------------------------------
+# TABLA DE SALDO CLOUD
+# ---------------------------------------------------------
 def crear_tabla_saldo_cloud(cursor):
     cursor.execute("DROP TABLE IF EXISTS saldo_cloud;")
     cursor("""
@@ -173,6 +186,9 @@ def crear_tabla_saldo_cloud(cursor):
 # ---------------------------------------------------------
 
 
+# Las vistas se crean para facilitar las consultas en la aplicación,
+# proporcionando una capa de abstracción sobre las tablas subyacentes
+# y permitiendo consultas más simples y eficientes desde la aplicación.
 def crear_vista_contratos_completo(cursor):
     cursor.execute("DROP VIEW IF EXISTS vista_contratos;")
     cursor.execute("""
@@ -193,6 +209,10 @@ def crear_vista_contratos_completo(cursor):
     """)
 
 
+# ---------------------------------------------------------
+# La vista de contratos para facturación se crea para optimizar las consultas específicas
+# que se realizan en el proceso de facturación, proporcionando solo los campos necesarios
+# para ese proceso y evitando la sobrecarga de datos innecesarios en ese contexto.
 def crear_vista_contratos_facturacion(cursor):
     cursor.execute("DROP VIEW IF EXISTS vista_contratos_identificacion;")
     cursor.execute("""
@@ -210,6 +230,11 @@ def crear_vista_contratos_facturacion(cursor):
     """)
 
 
+# ---------------------------------------------------------
+# La vista de datos para cálculo se crea para facilitar el proceso de cálculo de facturas,
+# proporcionando una estructura de datos unificada que reúne toda la información relevante
+# de contratos y facturas en un solo lugar, lo que simplifica las consultas y cálculos posteriores
+# en la aplicación.
 def crear_vista_v_datos_calculo(cursor):
     cursor.execute("DROP VIEW IF EXISTS v_datos_calculo;")
     cursor.execute("""
@@ -274,6 +299,10 @@ def crear_vista_v_datos_calculo(cursor):
 # ---------------------------------------------------------
 
 
+# La función principal de este módulo es `crear_tablas_y_vistas`, que recibe un cursor de base de datos
+# y ejecuta todas las funciones de creación de tablas y vistas. Esto permite una inicialización
+# flexible, ya sea desde un script autónomo o desde la aplicación principal, sin necesidad de
+# modificar el código de creación de tablas cada vez.
 def crear_tablas_y_vistas(cursor):
     crear_tabla_contratos_identificacion(cursor)
     crear_tabla_contratos_energia(cursor)

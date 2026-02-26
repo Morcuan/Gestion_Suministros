@@ -4,8 +4,10 @@
 # Autor: Antonio Morales                          #
 # Fecha: 2026-02-09                               #
 # ------------------------------------------------#
+# Esta clase define la ventana principal de la aplicación, que contiene el menú lateral
+# y la zona de contenido donde se cargarán los diferentes módulos según la opción seleccionada.
 
-
+# Importaciones necesarias
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QHBoxLayout,

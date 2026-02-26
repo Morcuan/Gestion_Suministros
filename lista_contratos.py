@@ -5,13 +5,19 @@
 # Autor: Antonio Morales
 # Fecha: 26/02/2026
 # ---------//-----------------------------------------
+# Función para obtener la lista de contratos desde la base de datos
+# Parámetros:
+# - conn: conexión a la base de datos
+# - solo_activos: si True, solo devuelve contratos activos
+# - solo_ultimo_suplemento: si True, solo devuelve el último suplemento de cada contrato
+# - incluir_anulados: si False, excluye contratos anulados
+# - ncontrato: si se proporciona, filtra por número de contrato específico
 
-
+# Devuelve una lista de tuplas con los datos de los contratos
 def obtener_lista_contratos(
     conn,
     solo_activos=False,
     solo_ultimo_suplemento=True,
-    excluir_anulados=False,
     incluir_anulados=True,
     ncontrato=None,
 ):
@@ -42,31 +48,30 @@ def obtener_lista_contratos(
 
     params = []
 
+    # Filtrar por número de contrato si se proporciona
     if ncontrato is not None:
         query += " AND ncontrato = ?"
         params.append(ncontrato)
-
+    # Filtrar por estado si solo_activos es True
     if solo_activos:
         query += " AND estado = 'Activo'"
-
-    if excluir_anulados:
-        query += " AND fec_anulacion IS NULL"
-
+    # Excluir contratos anulados si incluir_anulados es False
     if not incluir_anulados:
         query += " AND fec_anulacion IS NULL"
 
-    query += " ORDER BY ncontrato, suplemento"
-
+    # Orden correcto: suplemento DESC para que el primero sea el último
+    query += " ORDER BY ncontrato, suplemento DESC"
+    # Ejecutar la consulta
     cursor.execute(query, params)
     registros = cursor.fetchall()
 
+    # Si solo queremos el último suplemento, filtramos los resultados
     if solo_ultimo_suplemento:
         ultimos = {}
         for r in registros:
-            id_contrato = r[0]
-            suplemento = r[2]
-            if id_contrato not in ultimos or suplemento > ultimos[id_contrato][2]:
-                ultimos[id_contrato] = r
+            ncontrato = r[1]  # ESTA es la clave correcta
+            if ncontrato not in ultimos:
+                ultimos[ncontrato] = r
         registros = list(ultimos.values())
-
+    # Devolvemos la lista de contratos
     return registros

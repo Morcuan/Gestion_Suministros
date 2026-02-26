@@ -6,11 +6,23 @@
 # Fecha: 2026-02-09                           #
 # --------------------------------------------#
 
+# Esta clase base proporciona una fuente por defecto, eliminación automática al cerrar
+# y un método estándar para mostrar avisos. Las ventanas de consulta específicas
+# (contratos, facturas, consumos) heredan de esta clase para mantener una
+# interfaz consistente y reducir código repetitivo.
+
+
+# ------------------------------------------------------------
+# IMPORTACIONES
+# ------------------------------------------------------------
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QMessageBox, QWidget
 
 
+# ------------------------------------------------------------
+# CLASE BASE DE CONSULTA
+# ------------------------------------------------------------
 class BaseConsulta(QWidget):
     """
     Clase base ligera para ventanas de consulta.
@@ -20,6 +32,9 @@ class BaseConsulta(QWidget):
       - Método estándar de avisos
     """
 
+    # ---------------------------------------------------------
+    # INICIALIZACIÓN
+    # ---------------------------------------------------------
     def __init__(self, parent=None):
         super().__init__(parent)
 
