@@ -1,24 +1,53 @@
 {
-    "python.defaultInterpreterPath": "venv/bin/python",
+    // ===== ZOOM GENERAL =====
+    "window.zoomLevel": 1.25,
 
-    // Ruff como linter y formateador
-    "ruff.enable": true,
-    "editor.defaultFormatter": "charliermarsh.ruff",
-
-    // Formateo automático al guardar
+    // ===== FORMATEADOR =====
+    "editor.defaultFormatter": "ms-python.black-formatter",
     "editor.formatOnSave": true,
 
-    // Desactivar Black como formateador
-    "python.formatting.provider": "none",
+    // ===== BLACK =====
+    "black-formatter.args": [
+        "--line-length=88"
+    ],
 
-    // Organizar imports (Ruff ya lo hace)
-    "editor.codeActionsOnSave": {
-        "source.organizeImports": "explicit"
-    },
+    // ===== RUFF (NUEVO LSP NATIVO) =====
+    "ruff.enable": true,
+    "ruff.lint.enable": true,
+    "ruff.lint.select": ["E", "F", "W", "I"],
+    "ruff.lint.ignore": ["E501"],
+    "ruff.format.enable": false,
+    "ruff.organizeImports": true,
 
-    // Ajustes visuales
+    // ===== PYTHON / PYLANCE =====
+    "python.analysis.typeCheckingMode": "basic",
+    "python.linting.enabled": false,
+
+    // Rutas adicionales para que Pylance encuentre PySide6
+    "python.analysis.extraPaths": [
+        "/usr/lib/python3/dist-packages",
+        "/usr/lib/python3/dist-packages/PySide6"
+    ],
+
+    // ===== TERMINAL =====
+    "terminal.integrated.fontSize": 14,
+
+    // ===== CALIDAD DE VIDA =====
+    "errorLens.enabled": true,
+    "errorLens.fontWeight": "normal",
+    "errorLens.fontStyleItalic": false,
+    "errorLens.margin": "4px",
+
+    // ===== ARCHIVOS =====
     "files.trimTrailingWhitespace": true,
     "files.insertFinalNewline": true,
+
+    // ===== ESTÉTICA =====
+    "workbench.iconTheme": "material-icon-theme",
+
+    // ===== EDITOR =====
+    "editor.fontSize": 14,
+    "editor.minimap.enabled": false,
     "editor.renderWhitespace": "boundary",
     "editor.tabSize": 4,
     "editor.detectIndentation": false

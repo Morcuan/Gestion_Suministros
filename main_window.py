@@ -21,10 +21,11 @@ from PySide6.QtWidgets import (
 )
 
 import db_init
-from consulta_contratos import ConsultaContratosWidget  # <--- AÑADIDO
 from estilo import PALETAS, aplicar_estilo_boton, aplicar_estilo_panel_lateral
+from lista_analisis_factura import ListaAnalisisFactura
 from lista_contratos_factura import ListaContratosFactura
 from lista_contratos_modificar import ListaContratosModificar
+from lista_contratos_historia import ListaContratosHistoria(parent=self)
 from modulo_recalculo import ModuloRecalculo
 from nuevo_contrato import NuevoContrato
 
@@ -177,9 +178,16 @@ class MainWindow(QMainWindow):
                 "📊 Análisis",
                 [
                     (
+                        "🔎 Explorador de contratos",
+                        lambda: self.cargar_modulo(
+                            ListaContratosHistoria(parent=self),
+                            "Explorador de facturas",
+                        ),  # type: ignore
+                    ),
+                    (
                         "🔎 Explorador de facturas",
                         lambda: self.cargar_modulo(
-                            ConsultaContratosWidget(self.conn, parent=self),
+                            ListaAnalisisFactura(parent=self),
                             "Explorador de facturas",
                         ),
                     ),
