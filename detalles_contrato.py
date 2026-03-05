@@ -5,12 +5,6 @@
 #  Fecha: 2026-02-10                                           #
 # ----------------------------------------------------------- #
 
-# Esta vista muestra los detalles del contrato según DRU, con tres bloques de información:
-# Identificación, Energía, Gastos e Impuestos.
-# La consulta se filtra por suplemento activo, usando la vista vista_contratos.
-# Se accede desde la consulta de contratos, pasando el número de contrato.
-# Desde esta vista se puede acceder a las facturas del contrato, pasando el id_contrato a la vista de facturas.
-
 from PySide6.QtCore import QDate, Qt
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
@@ -26,23 +20,22 @@ from PySide6.QtWidgets import (
 from consulta_facturas import ConsultaFacturasWidget
 
 
-# class DetallesContratoWidget(QDialog):
 class DetallesContratoWidget(QWidget):
     """
     Vista de detalles del contrato según DRU.
     Tres bloques: Identificación, Energía, Gastos e Impuestos.
-    Consulta filtrada por suplemento activo.
+    Consulta filtrada por suplemento activo o por suplemento específico.
     """
 
-    # init con parámetros mínimos (conn y ncontrato)
-    def __init__(self, conn, ncontrato, parent=None):
+    def __init__(
+        self, conn, ncontrato, suplemento=None, parent=None, mostrar_botones=True
+    ):
         super().__init__(parent)
 
         self.conn = conn
         self.ncontrato = ncontrato
-
-        # ❌ Ya no usamos títulos de ventana del sistema
-        # self.setWindowTitle("Detalles del contrato")
+        self.suplemento = suplemento
+        self.mostrar_botones = mostrar_botones
 
         layout = QVBoxLayout(self)
 
@@ -139,33 +132,63 @@ class DetallesContratoWidget(QWidget):
         )
 
         # ---------------------------------------------------------
-        # BOTONES (orden coherente con el resto)
-        # Cerrar siempre a la derecha
+        # BOTONES (solo si se permite mostrarlos)
         # ---------------------------------------------------------
-        botones = QHBoxLayout()
-        self.btn_facturas = QPushButton("Ver facturas")
-        self.btn_cerrar = QPushButton("Cerrar")
+        if self.mostrar_botones:
+            botones = QHBoxLayout()
+            self.btn_facturas = QPushButton("Ver facturas")
+            self.btn_cerrar = QPushButton("Cerrar")
 
-        botones.addWidget(self.btn_facturas)
-        botones.addStretch()
-        botones.addWidget(self.btn_cerrar)
+            botones.addWidget(self.btn_facturas)
+            botones.addStretch()
+            botones.addWidget(self.btn_cerrar)
 
-        layout.addLayout(botones)
+            layout.addLayout(botones)
 
-        # Eventos
-        self.btn_cerrar.clicked.connect(self.volver)
-        self.btn_facturas.clicked.connect(self.ver_facturas)
+            # Eventos
+            self.btn_cerrar.clicked.connect(self.volver)
+            self.btn_facturas.clicked.connect(self.ver_facturas)
 
     # ============================================================
-    #   CONSULTA SQL: SUPLEMENTO ACTIVO
+    #   CONSULTA SQL: SUPLEMENTO ACTIVO O HISTÓRICO
     # ============================================================
-    # Consulta que une las tres tablas (identificación, energía, gastos) y filtra
-    # por suplemento activo
     def cargar_datos(self):
         cur = self.conn.cursor()
 
-        hoy = QDate.currentDate().toString("yyyy-MM-dd")
+        # ---------------------------------------------
+        # CASO 1: SIN suplemento → comportamiento original
+        # ---------------------------------------------
+        if self.suplemento is None:
+            hoy = QDate.currentDate().toString("yyyy-MM-dd")
 
+            cur.execute(
+                """
+                SELECT
+                    ci.ncontrato, ci.suplemento, ci.estado, ci.compania,
+                    ci.codigo_postal, cp.poblacion,
+                    ci.fec_inicio, ci.fec_final, ci.efec_suple, ci.fin_suple,
+                    ci.fec_anulacion,
+                    ce.ppunta, ce.pv_ppunta, ce.pvalle, ce.pv_pvalle,
+                    ce.pv_conpunta, ce.pv_conllano, ce.pv_convalle,
+                    ce.vertido, ce.pv_excedent,
+                    cg.bono_social, cg.alq_contador, cg.otros_gastos,
+                    cg.i_electrico, cg.iva
+                FROM contratos_identificacion ci
+                JOIN contratos_energia ce ON ci.id_contrato = ce.id_contrato
+                JOIN contratos_gastos cg ON ci.id_contrato = cg.id_contrato
+                JOIN cpostales cp ON ci.codigo_postal = cp.codigo_postal
+                WHERE ci.ncontrato = ?
+                  AND date(?) BETWEEN date(ci.efec_suple) AND date(ci.fin_suple)
+                LIMIT 1;
+                """,
+                (self.ncontrato, hoy),
+            )
+
+            return cur.fetchone()
+
+        # ---------------------------------------------
+        # CASO 2: Con suplemento → consulta histórica exacta
+        # ---------------------------------------------
         cur.execute(
             """
             SELECT
@@ -183,10 +206,10 @@ class DetallesContratoWidget(QWidget):
             JOIN contratos_gastos cg ON ci.id_contrato = cg.id_contrato
             JOIN cpostales cp ON ci.codigo_postal = cp.codigo_postal
             WHERE ci.ncontrato = ?
-              AND date(?) BETWEEN date(ci.efec_suple) AND date(ci.fin_suple)
+              AND ci.suplemento = ?
             LIMIT 1;
             """,
-            (self.ncontrato, hoy),
+            (self.ncontrato, self.suplemento),
         )
 
         return cur.fetchone()
@@ -194,8 +217,6 @@ class DetallesContratoWidget(QWidget):
     # ============================================================
     #   OBTENER ID_CONTRATO REAL
     # ============================================================
-    # Necesario para cargar las facturas del contrato, ya que la consulta de
-    # facturas se hace por id_contrato
     def obtener_id_contrato(self):
         cur = self.conn.cursor()
         cur.execute(
@@ -208,7 +229,6 @@ class DetallesContratoWidget(QWidget):
     # ============================================================
     #   BLOQUES DE DATOS
     # ============================================================
-    # Cada bloque es un QWidget con un QGridLayout, con título y filas de etiqueta-valor
     def _crear_bloque_identificacion(self, *args):
         bloque = QWidget()
         grid = QGridLayout(bloque)
@@ -240,8 +260,6 @@ class DetallesContratoWidget(QWidget):
 
         return bloque
 
-    # código repetitivo, pero es más claro y fácil de mantener que una
-    # función genérica con índices
     def _crear_bloque_energia(self, *args):
         bloque = QWidget()
         grid = QGridLayout(bloque)
@@ -270,8 +288,6 @@ class DetallesContratoWidget(QWidget):
 
         return bloque
 
-    # código repetitivo, pero es más claro y fácil de mantener que una
-    # función genérica con índices
     def _crear_bloque_gastos(self, *args):
         bloque = QWidget()
         grid = QGridLayout(bloque)
@@ -306,7 +322,6 @@ class DetallesContratoWidget(QWidget):
         lista = ConsultaContratosWidget(self.conn, parent=marco)
         marco.cargar_modulo(lista, "Consulta contratos")
 
-    # ver facturas del contrato, pasando el id_contrato a la vista de facturas
     def ver_facturas(self):
         idc = self.obtener_id_contrato()
         if idc is None:

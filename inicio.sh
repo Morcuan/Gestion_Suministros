@@ -4,8 +4,12 @@
 
 echo "📁 Proyecto: Gestion_Suministros"
 
-# Ir al proyecto
-cd ~/Desarrollo/Gestion_Suministros || {
+# ============================
+#   📌 IR SIEMPRE AL DIRECTORIO DEL PROYECTO
+# ============================
+
+PROYECTO="$HOME/Desarrollo/Gestion_Suministros"
+cd "$PROYECTO" || {
     echo "❌ No se pudo acceder al directorio del proyecto."
     return
 }
@@ -13,6 +17,7 @@ cd ~/Desarrollo/Gestion_Suministros || {
 # ============================
 #   📦 BACKUP AUTOMÁTICO
 # ============================
+
 echo "🗂️ Creando copia de seguridad diaria..."
 
 FECHA=$(date +"%d%m%y")
@@ -20,18 +25,27 @@ NOMBRE="Gestion_Suministros_${FECHA}.tar.gz"
 
 DESTINO="/media/antoniom/ALMACEN/Proyecto_20"
 
+# Comprobar si la SD está montada
 if mount | grep -q "$DESTINO"; then
     echo "💽 SD detectada en: $DESTINO"
 else
     echo "⚠️ No se detecta la SD montada en $DESTINO"
+    echo "⏳ Esperando 3 segundos por si acaba de montarse..."
+    sleep 3
 fi
 
+# Crear backup SIEMPRE en el directorio del proyecto
 tar --exclude="venv" \
     --exclude="*/__pycache__" \
     -czf "$NOMBRE" .
 
-cp "$NOMBRE" "$DESTINO/" 2>/dev/null && \
-    echo "🟢 Backup copiado a la SD ALMACEN: $DESTINO/$NOMBRE"
+# Intentar copiar a la SD
+if cp "$NOMBRE" "$DESTINO/" 2>/dev/null; then
+    echo "🟢 Backup copiado a la SD: $DESTINO/$NOMBRE"
+else
+    echo "❌ Error al copiar el backup a la SD"
+    echo "   (Puede no estar montada o no tener permisos)"
+fi
 
 echo ""
 read -p "❓ ¿Quieres borrar el archivo temporal $NOMBRE para evitar que Git lo detecte? (s/n): " RESP
@@ -45,7 +59,7 @@ fi
 echo ""
 
 # ============================
-#   🔄 FLUJO ORIGINAL
+#   🔄 FLUJO GIT
 # ============================
 
 echo "🌐 Comprobando conexión a GitHub..."
@@ -74,9 +88,8 @@ git status
 #   🐍 ACTIVAR ENTORNO VIRTUAL
 # ============================
 
-VENV_PATH="$HOME/Desarrollo/Gestion_Suministros/venv/bin/activate"
+VENV_PATH="$PROYECTO/venv/bin/activate"
 
-# Solo activar si NO está ya activo
 if [[ -z "$VIRTUAL_ENV" ]]; then
     if [ -f "$VENV_PATH" ]; then
         echo "🟢 Activando entorno virtual..."

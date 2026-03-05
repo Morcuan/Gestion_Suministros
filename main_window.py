@@ -24,8 +24,8 @@ import db_init
 from estilo import PALETAS, aplicar_estilo_boton, aplicar_estilo_panel_lateral
 from lista_analisis_factura import ListaAnalisisFactura
 from lista_contratos_factura import ListaContratosFactura
+from lista_contratos_historia import ListaContratosHistoria
 from lista_contratos_modificar import ListaContratosModificar
-from lista_contratos_historia import ListaContratosHistoria(parent=self)
 from modulo_recalculo import ModuloRecalculo
 from nuevo_contrato import NuevoContrato
 
@@ -178,11 +178,11 @@ class MainWindow(QMainWindow):
                 "📊 Análisis",
                 [
                     (
-                        "🔎 Explorador de contratos",
+                        "🔎 Histórico de contratos",
                         lambda: self.cargar_modulo(
                             ListaContratosHistoria(parent=self),
-                            "Explorador de facturas",
-                        ),  # type: ignore
+                            "Histórico contratos",
+                        ),
                     ),
                     (
                         "🔎 Explorador de facturas",
@@ -201,6 +201,7 @@ class MainWindow(QMainWindow):
                 ],
             )
         )
+
         # --- Sección Utilidades ---
         layout.addWidget(
             self.crear_seccion_acordeon(
