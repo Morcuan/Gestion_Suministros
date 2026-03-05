@@ -74,8 +74,7 @@ fi
 
 # 2) Commit si hay algo en staging
 if [ $HAY_CAMBIOS_STAGING -eq 1 ]; then
-    COMMIT_MSG="Nivelaccion manual: Rama historico de contratos terminada a falta de
-    pequeños ajustes de informacion en la lista de suplementos.$(date '+%Y-%m-%d %H:%M')"
+    COMMIT_MSG="Nivelaccion manual: Anulacion de contrato terminada y probada.$(date '+%Y-%m-%d %H:%M')"
     echo "💾 Realizando commit: $COMMIT_MSG"
     git commit -m "$COMMIT_MSG"
     HAY_COMMITS_PENDIENTES=1

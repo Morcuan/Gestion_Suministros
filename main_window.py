@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
 import db_init
 from estilo import PALETAS, aplicar_estilo_boton, aplicar_estilo_panel_lateral
 from lista_analisis_factura import ListaAnalisisFactura
+from lista_contratos_anulacion import ListaContratosAnulacion
 from lista_contratos_factura import ListaContratosFactura
 from lista_contratos_historia import ListaContratosHistoria
 from lista_contratos_modificar import ListaContratosModificar
@@ -128,6 +129,7 @@ class MainWindow(QMainWindow):
         )
 
         # --- Sección Contratos ---
+
         layout.addWidget(
             self.crear_seccion_acordeon(
                 "📄 Contratos",
@@ -142,9 +144,7 @@ class MainWindow(QMainWindow):
                     ),
                     (
                         "❌ Anulación",
-                        lambda: self.cargar_modulo(
-                            self.crear_placeholder("Anular contrato"), "Anular contrato"
-                        ),
+                        lambda: self.abrir_anulacion_contrato(),
                     ),
                 ],
             )
@@ -418,3 +418,8 @@ class MainWindow(QMainWindow):
         self.setStyleSheet(generar_stylesheet(paleta))
         self.setStyleSheet(generar_stylesheet(paleta))
         self.setStyleSheet(generar_stylesheet(paleta))
+
+    # método para anulación de contrato
+    def abrir_anulacion_contrato(self):
+        widget = ListaContratosAnulacion(parent=self)
+        self.cargar_modulo(widget, "Anulación de contrato")
