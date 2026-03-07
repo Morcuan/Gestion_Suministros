@@ -27,6 +27,7 @@ from lista_contratos_anulacion import ListaContratosAnulacion
 from lista_contratos_factura import ListaContratosFactura
 from lista_contratos_historia import ListaContratosHistoria
 from lista_contratos_modificar import ListaContratosModificar
+from lista_contratos_rectificar import ListaContratosRectificar
 from modulo_recalculo import ModuloRecalculo
 from nuevo_contrato import NuevoContrato
 
@@ -162,10 +163,10 @@ class MainWindow(QMainWindow):
                         ),
                     ),
                     (
-                        "✏️ Modificación",
+                        "✏️ Rectif. factura",
                         lambda: self.cargar_modulo(
-                            self.crear_placeholder("Modificar factura"),
-                            "Modificar factura",
+                            ListaContratosRectificar(parent=self, conn=self.conn),
+                            "Rectificar factura",
                         ),
                     ),
                 ],
