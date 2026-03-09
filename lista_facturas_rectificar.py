@@ -29,11 +29,6 @@ ESTADO_RECTIFICADORA = "Rectificadora"
 #  FUNCIÓN: OBTENER FACTURAS POR ncontrato (NO por id_contrato)
 # ============================================================
 def obtener_facturas_para_rectificar(conn: sqlite3.Connection, ncontrato: str):
-    """
-    Devuelve las facturas asociadas al contrato real (ncontrato),
-    independientemente del suplemento al que pertenecen.
-    """
-
     sql = """
         SELECT
             f.id_contrato,
@@ -54,10 +49,10 @@ def obtener_facturas_para_rectificar(conn: sqlite3.Connection, ncontrato: str):
     for row in rows:
         facturas.append(
             {
-                "id_contrato": row[0],  # suplemento al que pertenecía en su momento
+                "id_contrato": row[0],
                 "nfactura": row[1],
                 "fecha": row[2],
-                "importe_total": 0.0,  # placeholder
+                "importe_total": 0.0,
                 "estado": row[3],
                 "rectifica_a": row[4],
             }
@@ -80,6 +75,15 @@ class ListaFacturasRectificarController:
         self._configurar_signals()
         self.cargar_facturas()
 
+    # --------------------------------------------------------
+    # LOCALIZAR MAINWINDOW REAL (versión correcta para controladores)
+    # --------------------------------------------------------
+    def get_mainwindow(self):
+        w = self.ui.parent()
+        while w is not None and not hasattr(w, "cargar_modulo"):
+            w = w.parent()
+        return w
+
     def _configurar_signals(self):
         self.ui.botonRectificar.clicked.connect(self.on_rectificar_clicked)
         self.ui.botonCancelar.clicked.connect(self.on_cancelar_clicked)
@@ -87,7 +91,6 @@ class ListaFacturasRectificarController:
     def cargar_facturas(self):
         self.facturas = obtener_facturas_para_rectificar(self.conn, self.ncontrato)
         print("DEBUG → Cargando facturas para ncontrato =", self.ncontrato)
-
         self._poblar_tabla()
 
     def _poblar_tabla(self):
@@ -136,14 +139,18 @@ class ListaFacturasRectificarController:
             )
             return
 
-        # Abrir formulario de rectificación
-        from form_factura_rectificar import abrir_form_factura_rectificar
+        # ---------------------------------------------------------
+        # ABRIR FORMULARIO DE RECTIFICACIÓN (Pantalla C)
+        # ---------------------------------------------------------
+        from form_factura_rectificar import FormFacturaRectificar
 
-        abrir_form_factura_rectificar(
-            self.conn,
-            factura["id_contrato"],  # suplemento original
-            factura["nfactura"],
-            self._on_rectificacion_guardada,
+        main = self.get_mainwindow()
+
+        main.cargar_modulo(
+            FormFacturaRectificar(
+                parent=main, ncontrato=self.ncontrato, nfactura=factura["nfactura"]
+            ),
+            "Rectificar factura",
         )
 
     def _on_rectificacion_guardada(self):
@@ -165,12 +172,10 @@ class ListaFacturasRectificar(QWidget):
 
         self.setWindowTitle(f"Facturas del contrato {ncontrato}")
 
-        # --- Layout principal ---
         layout = QVBoxLayout(self)
 
         layout.addWidget(QLabel(f"Facturas del contrato {ncontrato}:"))
 
-        # --- Tabla ---
         self.tablaFacturas = QTableWidget()
         self.tablaFacturas.setColumnCount(5)
         self.tablaFacturas.setHorizontalHeaderLabels(
@@ -178,7 +183,6 @@ class ListaFacturasRectificar(QWidget):
         )
         layout.addWidget(self.tablaFacturas)
 
-        # --- Botones ---
         botones = QHBoxLayout()
         self.botonRectificar = QPushButton("Rectificar factura")
         self.botonCancelar = QPushButton("Cerrar")
@@ -189,7 +193,7 @@ class ListaFacturasRectificar(QWidget):
 
         layout.addLayout(botones)
 
-        # --- Crear controlador ---
+        # Crear controlador
         self.controller = ListaFacturasRectificarController(
             conn=self.conn, ncontrato=self.ncontrato, ui=self
         )
