@@ -4,19 +4,7 @@
 # Autor: Antonio Morales                           #
 # Fecha: 2026-02-09                                #
 # -------------------------------------------     -#
-# Este módulo define la clase FormFactura, que es un formulario para introducir los datos de una factura de energía.
-# El formulario se divide en tres bloques: identificación, energía y gastos/descuentos.
-# El bloque de identificación incluye campos para el número de factura, fechas de inicio y fin,
-# días facturados y fecha de emisión. El bloque de energía incluye campos para el consumo en punta,
-# llano y valle, excedentes e importe compensado. El bloque de gastos/descuentos incluye
-# campos para servicios asociados, descuentos, saldos pendientes y batería virtual.
-# El formulario tiene validaciones para asegurar que los datos introducidos son correctos,
-# como el formato de fechas y la coherencia entre los días facturados y las fechas.
-# Al guardar la factura, se insera un nuevo registro en la base de datos con los datos
-# introducidos. También hay opciones para limpiar el formulario para introducir
-# otra factura o para volver a la lista de contratos.
 
-# Importaciones necesarias para la interfaz gráfica y manejo de datos
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QGridLayout,
@@ -33,7 +21,6 @@ from PySide6.QtWidgets import (
 from utils import dias_entre_fechas, validar_fecha
 
 
-# conversión de texto a float con manejo de errores y etiquetas amigables
 def to_float(valor, etiqueta):
     """Convierte a float o lanza error con etiqueta amigable."""
     if valor.strip() == "":
@@ -44,9 +31,8 @@ def to_float(valor, etiqueta):
         raise ValueError(f"El campo '{etiqueta}' debe ser numérico.")
 
 
-# clase principal del formulario de factura
 class FormFactura(QWidget):
-    # inicialización del formulario con parámetros de contrato y compañía
+
     def __init__(self, parent=None, id_contrato=None, ncontrato=None, compania=None):
         super().__init__(parent)
 
@@ -60,19 +46,14 @@ class FormFactura(QWidget):
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(15)
 
-        # ============================================================
-        #  TÍTULO SUPERIOR
-        # ============================================================
-
         titulo = QLabel(f"Contrato nº: {self.ncontrato}")
         titulo.setAlignment(Qt.AlignCenter)
         titulo.setStyleSheet("font-size: 16px; font-weight: bold;")
         layout.addWidget(titulo)
 
-        # ============================================================
-        #  BLOQUE 1: IDENTIFICACIÓN
-        # ============================================================
-
+        # ---------------------------------------------------------
+        # BLOQUE 1: IDENTIFICACIÓN
+        # ---------------------------------------------------------
         self.nfactura = QLineEdit()
         self.fec_inicio = QLineEdit()
         self.fec_final = QLineEdit()
@@ -101,15 +82,14 @@ class FormFactura(QWidget):
 
         self.fec_final.textChanged.connect(self.autocalcular_dias)
 
-        # ============================================================
-        #  BLOQUE 2: ENERGÍA
-        # ============================================================
-
+        # ---------------------------------------------------------
+        # BLOQUE 2: ENERGÍA
+        # ---------------------------------------------------------
         self.con_punta = QLineEdit()
         self.con_llano = QLineEdit()
         self.con_valle = QLineEdit()
         self.excedentes = QLineEdit()
-        self.importe_compensado = QLineEdit()  # NUEVO CAMPO
+        self.importe_compensado = QLineEdit()
 
         ene_layout = QGridLayout()
         ene_layout.addWidget(QLabel("Consumo punta (kWh):"), 0, 0)
@@ -131,10 +111,9 @@ class FormFactura(QWidget):
         grupo_energia.setLayout(ene_layout)
         layout.addWidget(grupo_energia)
 
-        # ============================================================
-        #  BLOQUE 3: GASTOS Y DESCUENTOS
-        # ============================================================
-
+        # ---------------------------------------------------------
+        # BLOQUE 3: GASTOS Y DESCUENTOS
+        # ---------------------------------------------------------
         self.servicios = QLineEdit()
         self.dcto_servicios = QLineEdit()
         self.saldos = QLineEdit()
@@ -157,10 +136,9 @@ class FormFactura(QWidget):
         grupo_gastos.setLayout(gas_layout)
         layout.addWidget(grupo_gastos)
 
-        # ============================================================
-        #  BOTONES
-        # ============================================================
-
+        # ---------------------------------------------------------
+        # BOTONES
+        # ---------------------------------------------------------
         botones = QHBoxLayout()
         self.btn_guardar = QPushButton("Grabar factura")
         self.btn_otra = QPushButton("Otra factura")
@@ -180,20 +158,18 @@ class FormFactura(QWidget):
         self.btn_otra.clicked.connect(self.limpiar_formulario)
         self.btn_salir.clicked.connect(self.volver_lista)
 
-    # ============================================================
-    #  LOCALIZAR MAINWINDOW REAL
-    # ============================================================
-    # Este método sube por la jerarquía de widgets hasta encontrar el mainwindow real
+    # ---------------------------------------------------------
+    # LOCALIZAR MAINWINDOW
+    # ---------------------------------------------------------
     def get_mainwindow(self):
         w = self.parent()
         while w is not None and not hasattr(w, "cargar_modulo"):
             w = w.parent()
         return w
 
-    # ============================================================
-    #  AUTOCÁLCULO DE DÍAS
-    # ============================================================
-    # Cada vez que se cambia la fecha final, se recalculan los días entre inicio y fin
+    # ---------------------------------------------------------
+    # AUTOCÁLCULO DE DÍAS
+    # ---------------------------------------------------------
     def autocalcular_dias(self):
         inicio = self.fec_inicio.text()
         fin = self.fec_final.text()
@@ -206,11 +182,9 @@ class FormFactura(QWidget):
             except:
                 pass
 
-    # ============================================================
-    #  VALIDACIÓN DE DÍAS
-    # ============================================================
-    # Antes de guardar, se comprueba que los días introducidos coinciden con los
-    # días entre las fechas
+    # ---------------------------------------------------------
+    # VALIDACIÓN DE DÍAS
+    # ---------------------------------------------------------
     def validar_dias(self):
         inicio = self.fec_inicio.text()
         fin = self.fec_final.text()
@@ -238,11 +212,9 @@ class FormFactura(QWidget):
         self.dias.setStyleSheet("")
         return True
 
-    # ============================================================
-    #  GUARDADO REAL
-    # ============================================================
-    # Al hacer clic en guardar, se validan los datos y se inserta la factura en la
-    # base de datos
+    # ---------------------------------------------------------
+    # GUARDADO REAL
+    # ---------------------------------------------------------
     def guardar_factura(self):
         if not self.validar_dias():
             return
@@ -273,16 +245,16 @@ class FormFactura(QWidget):
             cursor.execute(
                 """
                 INSERT INTO facturas (
-                    id_contrato, nfactura, inicio_factura, fin_factura,
+                    nfactura, inicio_factura, fin_factura,
                     dias_factura, fec_emision,
                     consumo_punta, consumo_llano, consumo_valle,
                     excedentes, importe_compensado,
-                    servicios, dcto_servicios, saldos_pendientes, bat_virtual
+                    servicios, dcto_servicios, saldos_pendientes, bat_virtual,
+                    ncontrato, suplemento
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
-                    self.id_contrato,
                     self.nfactura.text(),
                     iso(self.fec_inicio.text()),
                     iso(self.fec_final.text()),
@@ -297,6 +269,8 @@ class FormFactura(QWidget):
                     dcto,
                     saldos,
                     bat,
+                    self.ncontrato,
+                    0,  # suplemento por defecto
                 ),
             )
 
@@ -321,11 +295,9 @@ class FormFactura(QWidget):
 
             QMessageBox.critical(self, "Error", str(e))
 
-    # ============================================================
-    #  LIMPIAR FORMULARIO
-    # ============================================================
-    # Al hacer clic en "Otra factura", se limpian los campos para introducir
-    # una nueva factura
+    # ---------------------------------------------------------
+    # LIMPIAR FORMULARIO
+    # ---------------------------------------------------------
     def limpiar_formulario(self):
         for widget in self.findChildren(QLineEdit):
             widget.clear()
@@ -335,10 +307,9 @@ class FormFactura(QWidget):
         self.btn_otra.setEnabled(False)
         self.nfactura.setFocus()
 
-    # ============================================================
-    #  VOLVER A LA LISTA
-    # ============================================================
-    # Al hacer clic en "Salir", se vuelve al módulo de lista de contratos
+    # ---------------------------------------------------------
+    # VOLVER A LA LISTA
+    # ---------------------------------------------------------
     def volver_lista(self):
         from lista_contratos_factura import ListaContratosFactura
 

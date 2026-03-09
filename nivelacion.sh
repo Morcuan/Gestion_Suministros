@@ -74,8 +74,7 @@ fi
 
 # 2) Commit si hay algo en staging
 if [ $HAY_CAMBIOS_STAGING -eq 1 ]; then
-    COMMIT_MSG="Nivelaccion manual: Rama rectificacion facturas terminada.
-    Menu general excepto Comparativas terminado..$(date '+%Y-%m-%d %H:%M')"
+    COMMIT_MSG="Nivelaccion manual: Alteracion de la tabla facturas para quitar id_contrato.$(date '+%Y-%m-%d %H:%M')"
     echo "💾 Realizando commit: $COMMIT_MSG"
     git commit -m "$COMMIT_MSG"
     HAY_COMMITS_PENDIENTES=1
