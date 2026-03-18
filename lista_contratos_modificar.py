@@ -49,6 +49,7 @@ class ListaContratosModificar(QWidget):
 
         self.setWindowTitle("Modificar contrato")
         self.conn = get_conn()
+        self.resize(1160, 950)
 
         # Tabla
         self.tabla = QTableWidget()

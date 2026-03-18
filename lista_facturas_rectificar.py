@@ -70,8 +70,6 @@ class ListaFacturasRectificarController:
         self.ui = ui
         self.facturas: List[Dict[str, Any]] = []
 
-        print("DEBUG → Controller recibe ncontrato =", ncontrato)
-
         self._configurar_signals()
         self.cargar_facturas()
 
@@ -90,7 +88,6 @@ class ListaFacturasRectificarController:
 
     def cargar_facturas(self):
         self.facturas = obtener_facturas_para_rectificar(self.conn, self.ncontrato)
-        print("DEBUG → Cargando facturas para ncontrato =", self.ncontrato)
         self._poblar_tabla()
 
     def _poblar_tabla(self):

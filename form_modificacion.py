@@ -12,12 +12,11 @@
 # IMPORTACIONES
 import copy
 import re
-from datetime import date, datetime
+from datetime import datetime
 
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QComboBox,
-    QDialog,
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
@@ -129,8 +128,9 @@ class FormModificacionContrato(QWidget):
         for w in self.findChildren(QComboBox):
             aplicar_estilo_campo(w)
 
-        self.setMinimumWidth(650)
-        self.setMaximumWidth(750)
+        self.resize(1160, 950)
+        # self.setMinimumWidth(650)
+        # self.setMaximumWidth(750)
 
         # ------------------------------------------------------------
         # BOTONES
@@ -140,9 +140,6 @@ class FormModificacionContrato(QWidget):
 
         self.btn_guardar.clicked.connect(self.pre_guardado)
         self.btn_cancelar.clicked.connect(lambda: self.cancelado.emit())
-
-        print("BOTÓN CANCELAR REAL:", self.btn_cancelar)
-        self.btn_cancelar.clicked.connect(lambda: print("CANCELAR PULSADO EN:", self))
 
         layout = QVBoxLayout()
         layout.addWidget(self.bloque_ident)

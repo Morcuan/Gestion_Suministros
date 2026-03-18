@@ -20,7 +20,8 @@ DB_PATH = "data/almacen.db"
 # permitiendo una fácil modificación y mantenimiento.
 def crear_tabla_contratos_identificacion(cursor):
     cursor.execute("DROP TABLE IF EXISTS contratos_identificacion;")
-    cursor.execute("""
+    cursor.execute(
+        """
         CREATE TABLE IF NOT EXISTS contratos_identificacion (
             id_contrato     INTEGER PRIMARY KEY AUTOINCREMENT,
             ncontrato       TEXT NOT NULL,
@@ -35,7 +36,8 @@ def crear_tabla_contratos_identificacion(cursor):
             estado          TEXT NOT NULL,
             FOREIGN KEY (codigo_postal)   REFERENCES cpostales(codigo_postal)
         );
-    """)
+    """
+    )
 
 
 # ---------------------------------------------------------
@@ -45,7 +47,8 @@ def crear_tabla_contratos_identificacion(cursor):
 
 def crear_tabla_contratos_energia(cursor):
     cursor.execute("DROP TABLE IF EXISTS contratos_energia;")
-    cursor.execute("""
+    cursor.execute(
+        """
         CREATE TABLE IF NOT EXISTS contratos_energia (
             id_contrato     INTEGER PRIMARY KEY,
             ppunta          REAL NOT NULL,
@@ -59,12 +62,14 @@ def crear_tabla_contratos_energia(cursor):
             pv_excedent     REAL NOT NULL,
             FOREIGN KEY (id_contrato) REFERENCES contratos_identificacion(id_contrato)
         );
-    """)
+    """
+    )
 
 
 def crear_tabla_contratos_gastos(cursor):
     cursor.execute("DROP TABLE IF EXISTS contratos_gastos;")
-    cursor.execute("""
+    cursor.execute(
+        """
         CREATE TABLE IF NOT EXISTS contratos_gastos (
             id_contrato     INTEGER PRIMARY KEY,
             bono_social     REAL NOT NULL,
@@ -74,7 +79,8 @@ def crear_tabla_contratos_gastos(cursor):
             iva             REAL NOT NULL,
             FOREIGN KEY (id_contrato) REFERENCES contratos_identificacion(id_contrato)
         );
-    """)
+    """
+    )
 
 
 # ---------------------------------------------------------
@@ -111,10 +117,10 @@ def crear_tabla_cpostales(cursor):
 # ---------------------------------------------------------
 def crear_tabla_facturas(cursor):
     cursor.execute("DROP TABLE IF EXISTS facturas;")
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS facturas (
-            id_contrato        INTEGER NOT NULL,
-            nfactura           TEXT NOT NULL,
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS "facturas" (
+            nfactura           TEXT PRIMARY KEY,
             inicio_factura     TEXT NOT NULL,
             fin_factura        TEXT NOT NULL,
             dias_factura       INTEGER NOT NULL,
@@ -128,16 +134,21 @@ def crear_tabla_facturas(cursor):
             dcto_servicios     REAL,
             saldos_pendientes  REAL,
             bat_virtual        REAL,
-            recalcular         INTEGER NOT NULL DEFAULT 0,  -- 0 = no recalcular, 1 = recalcular
-            PRIMARY KEY (id_contrato, nfactura),
-            FOREIGN KEY (id_contrato) REFERENCES contratos_identificacion(id_contrato)
+            recalcular         INTEGER NOT NULL DEFAULT 0,
+            estado             TEXT DEFAULT 'Emitida',
+            rectifica_a        TEXT,
+            ncontrato          TEXT,
+            suplemento         INTEGER
         );
-        """)
+        """
+    )
 
-    cursor.execute("""
-        CREATE INDEX IF NOT EXISTS idx_facturas_fec_emision
-        ON facturas (fec_emision);
-        """)
+    cursor.execute(
+        """
+        CREATE INDEX idx_facturas_fec_emision
+            ON facturas (fec_emision);
+        """
+    )
 
 
 # ---------------------------------------------------------
@@ -145,7 +156,8 @@ def crear_tabla_facturas(cursor):
 # ---------------------------------------------------------
 def crear_tabla_factura_calculos(cursor):
     cursor.execute("DROP TABLE IF EXISTS factura_calculos;")
-    cursor("""
+    cursor(
+        """
         CREATE TABLE IF NOT EXISTS factura_calculos (
             id_calculo INTEGER PRIMARY KEY AUTOINCREMENT,
             id_factura INTEGER NOT NULL,
@@ -161,12 +173,15 @@ def crear_tabla_factura_calculos(cursor):
             detalles_json TEXT NOT NULL,          -- JSON con todos los valores intermedios
             FOREIGN KEY (id_factura) REFERENCES facturas(id)
         );
-    """)
+    """
+    )
 
-    cursor.execute("""
+    cursor.execute(
+        """
         CREATE INDEX IF NOT EXISTS idx_factura_calculos_id_factura
         ON factura_calculos (id_factura);
-    """)
+    """
+    )
 
 
 # ---------------------------------------------------------
@@ -174,11 +189,13 @@ def crear_tabla_factura_calculos(cursor):
 # ---------------------------------------------------------
 def crear_tabla_saldo_cloud(cursor):
     cursor.execute("DROP TABLE IF EXISTS saldo_cloud;")
-    cursor("""
+    cursor(
+        """
         CREATE TABLE saldo_cloud (
         id_contrato INTEGER PRIMARY KEY,
         saldo REAL NOT NULL DEFAULT 0);
-    """)
+    """
+    )
 
 
 # ---------------------------------------------------------
@@ -191,7 +208,8 @@ def crear_tabla_saldo_cloud(cursor):
 # y permitiendo consultas más simples y eficientes desde la aplicación.
 def crear_vista_contratos_completo(cursor):
     cursor.execute("DROP VIEW IF EXISTS vista_contratos;")
-    cursor.execute("""
+    cursor.execute(
+        """
         CREATE VIEW vista_contratos AS
         SELECT
             ci.id_contrato, ci.ncontrato, ci.suplemento,
@@ -206,7 +224,8 @@ def crear_vista_contratos_completo(cursor):
             JOIN contratos_energia ce ON ci.id_contrato = ce.id_contrato
             JOIN contratos_gastos cg ON ci.id_contrato = cg.id_contrato
             JOIN cpostales cp ON ci.codigo_postal = cp.codigo_postal;
-    """)
+    """
+    )
 
 
 # ---------------------------------------------------------
@@ -215,7 +234,8 @@ def crear_vista_contratos_completo(cursor):
 # para ese proceso y evitando la sobrecarga de datos innecesarios en ese contexto.
 def crear_vista_contratos_facturacion(cursor):
     cursor.execute("DROP VIEW IF EXISTS vista_contratos_identificacion;")
-    cursor.execute("""
+    cursor.execute(
+        """
         CREATE VIEW IF NOT EXISTS vista_contratos_facturacion AS
         SELECT
             c.id_contrato,
@@ -227,7 +247,8 @@ def crear_vista_contratos_facturacion(cursor):
         FROM contratos_identificacion c
         LEFT JOIN cpostales cp
                 ON c.codigo_postal = cp.codigo_postal;
-    """)
+    """
+    )
 
 
 # ---------------------------------------------------------
@@ -237,7 +258,8 @@ def crear_vista_contratos_facturacion(cursor):
 # en la aplicación.
 def crear_vista_v_datos_calculo(cursor):
     cursor.execute("DROP VIEW IF EXISTS v_datos_calculo;")
-    cursor.execute("""
+    cursor.execute(
+        """
         CREATE VIEW IF NOT EXISTS v_datos_calculo AS
         SELECT
             -- Factura
@@ -291,7 +313,8 @@ def crear_vista_v_datos_calculo(cursor):
             ON ce.id_contrato = ci.id_contrato
         JOIN contratos_gastos cg
             ON cg.id_contrato = ci.id_contrato;
-    """)
+    """
+    )
 
 
 # ---------------------------------------------------------
