@@ -1,25 +1,27 @@
-# --------------------------------------------#
-# Modulo: form_modificacion.py                #
-# Descripción: Modificación de contrato       #
-# Autor: Antonio Morales + Copilot            #
-# Fecha: 2026-02-24                           #
-# --------------------------------------------#
-# Este módulo define el formulario de modificación de contrato/suplemento.
-# Permite detectar cambios económicos vs administrativos, validar fechas
-# y emitir señales diferenciadas según el tipo de cambio.
+# ------------------------------------------------------------#
+# FormularioContrato.py                                       #
+# Formulario unificado para ALTA y MODIFICACIÓN de contratos  #
+# ------------------------------------------------------------#
+import sys
 
+print(">>> CARGANDO formulario_contrato DESDE:", __name__)
+print(">>> sys.modules contiene:")
+for m in sys.modules:
+    if "formulario_contrato" in m:
+        print("   -", m, "=>", sys.modules[m])
 
-# IMPORTACIONES
 import copy
 import re
 from datetime import datetime
 
 from PySide6.QtCore import Signal
+from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
     QComboBox,
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
+    QLabel,
     QLineEdit,
     QMessageBox,
     QPushButton,
@@ -31,131 +33,88 @@ from PySide6.QtWidgets import (
 from estilo import aplicar_estilo_campo
 
 
-# ------------------------------------------------------------
-# CLASE PRINCIPAL
-# ------------------------------------------------------------
-class FormModificacionContrato(QWidget):
-    """
-    Formulario de modificación de contrato / suplemento.
+class FormularioContrato(QWidget):
 
-    Recibe un diccionario con los datos del suplemento vigente
-    (normalmente procedente de vista_contratos + id_contrato)
-    y permite:
-
-    - Detectar cambios económicos vs administrativos
-    - Validar fechas de efecto del nuevo suplemento
-    - Emitir señales diferenciadas según el tipo de cambio
-    """
-
-    # Si solo hay cambios administrativos → actualizar suplemento vigente
-    actualizar_vigente = Signal(dict)
-
-    # Si hay cambios económicos → crear suplemento nuevo
-    crear_suplemento = Signal(dict)
-
+    guardado_alta = Signal(dict)
+    guardado_modificacion = Signal(dict)
     cancelado = Signal()
 
-    def __init__(self, datos_contrato: dict, parent=None):
+    def __init__(self, modo="alta", datos=None, parent=None):
+        """
+        modo = "alta" o "modificacion"
+        datos = diccionario con datos del contrato (solo en modificación)
+        """
         super().__init__(parent)
 
-        self.setWindowTitle("Modificación de contrato / suplemento")
-
-        # Datos originales del suplemento vigente
-        # Se espera algo del estilo:
-        # {
-        #   "id_contrato": ...,
-        #   "ncontrato": ...,
-        #   "suplemento": ...,
-        #   "compania": ...,
-        #   "codigo_postal": ...,
-        #   "fec_inicio": "YYYY-MM-DD",
-        #   "fec_final": "YYYY-MM-DD",
-        #   "efec_suple": "YYYY-MM-DD",
-        #   "fin_suple": "YYYY-MM-DD",
-        #   "estado": ...,
-        #   "ppunta": ...,
-        #   "pv_ppunta": ...,
-        #   "pvalle": ...,
-        #   "pv_pvalle": ...,
-        #   "pv_conpunta": ...,
-        #   "pv_conllano": ...,
-        #   "pv_convalle": ...,
-        #   "vertido": 0/1,
-        #   "pv_excedent": ...,
-        #   "bono_social": ...,
-        #   "alq_contador": ...,
-        #   "otros_gastos": ...,
-        #   "i_electrico": ...,
-        #   "iva": ...
-        # }
-        self.datos_originales = copy.deepcopy(datos_contrato)
-        self.datos = copy.deepcopy(datos_contrato)
-
-        # Listas de campos económicos y administrativos
-        self.campos_economicos = [
-            "efec_suple",
-            "ppunta",
-            "pv_ppunta",
-            "pvalle",
-            "pv_pvalle",
-            "pv_conpunta",
-            "pv_conllano",
-            "pv_convalle",
-            "pv_excedent",
-            "bono_social",
-            "alq_contador",
-            "otros_gastos",
-            "i_electrico",
-            "iva",
-        ]
-
-        # Administrativos (ejemplo: compañía, código postal, etc.)
-        self.campos_administrativos = [
-            "compania",
-            "codigo_postal",
-            # aquí se podrían añadir más campos no económicos
-        ]
+        self.modo = modo
+        self.datos_originales = copy.deepcopy(datos) if datos else {}
+        self.setWindowTitle(
+            "Nuevo contrato" if modo == "alta" else "Modificación de contrato"
+        )
 
         # ------------------------------------------------------------
-        #  CREACIÓN DE BLOQUES
+        #  BLOQUES
         # ------------------------------------------------------------
         self.bloque_ident = self.crear_bloque_identificacion()
         self.bloque_energia = self.crear_bloque_energia()
         self.bloque_gastos = self.crear_bloque_gastos()
 
+        # ------------------------------------------------------------
+        #  ESTILO DE CAMPOS (igual que en Nuevo contrato)
+        # ------------------------------------------------------------
         for w in self.findChildren(QLineEdit):
             aplicar_estilo_campo(w)
         for w in self.findChildren(QComboBox):
             aplicar_estilo_campo(w)
 
-        self.resize(1160, 950)
-        # self.setMinimumWidth(650)
-        # self.setMaximumWidth(750)
+        # ------------------------------------------------------------
+        #  TÍTULO
+        # ------------------------------------------------------------
+        titulo = QLabel(
+            "Nuevo contrato" if modo == "alta" else "Modificación de contrato"
+        )
+        fuente = QFont()
+        fuente.setBold(True)
+        fuente.setPointSize(12)
+        titulo.setFont(fuente)
 
         # ------------------------------------------------------------
-        # BOTONES
+        #  BOTONES
         # ------------------------------------------------------------
-        self.btn_guardar = QPushButton("Guardar modificación")
+        self.btn_guardar = QPushButton(
+            "Guardar contrato" if modo == "alta" else "Guardar modificación"
+        )
         self.btn_cancelar = QPushButton("Cancelar")
 
         self.btn_guardar.clicked.connect(self.pre_guardado)
         self.btn_cancelar.clicked.connect(lambda: self.cancelado.emit())
 
+        # ------------------------------------------------------------
+        #  LAYOUT GENERAL
+        # ------------------------------------------------------------
         layout = QVBoxLayout()
+        layout.addWidget(titulo)
         layout.addWidget(self.bloque_ident)
         layout.addWidget(self.bloque_energia)
         layout.addWidget(self.bloque_gastos)
 
         botones = QHBoxLayout()
-        botones.addStretch()
         botones.addWidget(self.btn_guardar)
+        botones.addStretch()
         botones.addWidget(self.btn_cancelar)
 
         layout.addLayout(botones)
         self.setLayout(layout)
 
+        # Ajuste de anchos (igual que en Nuevo contrato)
         self.ajustar_anchos()
-        self.cargar_datos()
+
+        # Cargar datos si estamos en modificación
+        if self.modo == "modificacion":
+            self.cargar_datos(self.datos_originales)
+            self.bloquear_campos_modificacion()
+
+        # Validaciones
         self.conectar_validaciones()
 
     # ============================================================
@@ -164,51 +123,35 @@ class FormModificacionContrato(QWidget):
     def crear_bloque_identificacion(self):
         box = QGroupBox("Identificación")
         layout = QFormLayout()
-
         layout.setHorizontalSpacing(20)
         layout.setVerticalSpacing(6)
 
         self.ncontrato = QLineEdit()
-        self.ncontrato.setReadOnly(True)
-
         self.suplemento = QLineEdit()
-        self.suplemento.setReadOnly(True)
-
         self.compania = QComboBox()
-
         self.codigo_postal = QLineEdit()
 
         self.fec_inicio = QLineEdit()
-        self.fec_inicio.setReadOnly(True)
-
         self.fec_final = QLineEdit()
-        self.fec_final.setReadOnly(True)
-
         self.fec_anulacion = QLineEdit()
-        self.fec_anulacion.setReadOnly(True)
-
         self.estado = QLineEdit()
-        self.estado.setReadOnly(True)
 
-        # En modificación, efec_suple SÍ es editable
         self.efec_suple = QLineEdit()
-
         self.fin_suple = QLineEdit()
-        self.fin_suple.setReadOnly(True)
 
         layout.addRow("Nº contrato:", self.ncontrato)
-        layout.addRow("Suplemento vigente:", self.suplemento)
+        layout.addRow("Suplemento:", self.suplemento)
         layout.addRow("Compañía:", self.compania)
         layout.addRow("Código postal:", self.codigo_postal)
-        layout.addRow("Fecha inicio contrato:", self.fec_inicio)
-        layout.addRow("Fecha final contrato:", self.fec_final)
-        layout.addRow("Fecha anulación:", self.fec_anulacion)
-        layout.addRow("Estado suplemento:", self.estado)
-        layout.addRow("Efecto suplemento (dd/mm/yyyy):", self.efec_suple)
-        layout.addRow("Fin suplemento (dd/mm/yyyy):", self.fin_suple)
+        layout.addRow("Fecha inicio (dd/mm/yyyy):", self.fec_inicio)
+        layout.addRow("Fecha final (dd/mm/yyyy):", self.fec_final)
+        layout.addRow("Fecha anulación (dd/mm/yyyy):", self.fec_anulacion)
+        layout.addRow("Estado:", self.estado)
+        layout.addRow("Efecto suplemento:", self.efec_suple)
+        layout.addRow("Fin suplemento:", self.fin_suple)
 
         box.setLayout(layout)
-        box.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding)
+        box.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
         return box
 
     # ============================================================
@@ -217,7 +160,6 @@ class FormModificacionContrato(QWidget):
     def crear_bloque_energia(self):
         box = QGroupBox("Energía")
         layout = QFormLayout()
-
         layout.setHorizontalSpacing(20)
         layout.setVerticalSpacing(6)
 
@@ -238,19 +180,16 @@ class FormModificacionContrato(QWidget):
 
         layout.addRow("Potencia punta (kW):", self.ppunta)
         layout.addRow("Potencia valle (kW):", self.pvalle)
-
         layout.addRow("Potencia punta (€/kW·día):", self.pv_ppunta)
         layout.addRow("Potencia valle (€/kW·día):", self.pv_pvalle)
-
         layout.addRow("Consumo punta (€/kWh):", self.pv_conpunta)
         layout.addRow("Consumo llano (€/kWh):", self.pv_conllano)
         layout.addRow("Consumo valle (€/kWh):", self.pv_convalle)
-
         layout.addRow("Vertido:", self.vertido)
         layout.addRow("Excedente (€/kWh):", self.pv_excedent)
 
         box.setLayout(layout)
-        box.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding)
+        box.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
         return box
 
     # ============================================================
@@ -259,7 +198,6 @@ class FormModificacionContrato(QWidget):
     def crear_bloque_gastos(self):
         box = QGroupBox("Gastos")
         layout = QFormLayout()
-
         layout.setHorizontalSpacing(20)
         layout.setVerticalSpacing(6)
 
@@ -276,20 +214,16 @@ class FormModificacionContrato(QWidget):
         layout.addRow("IVA (%):", self.iva)
 
         box.setLayout(layout)
-        box.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
+        box.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
         return box
 
     # ============================================================
-    #  CARGA DE DATOS
+    #  CARGA DE DATOS (solo en modificación)
     # ============================================================
-    def cargar_datos(self):
-        d = self.datos_originales
-
+    def cargar_datos(self, d):
         self.ncontrato.setText(str(d.get("ncontrato", "")))
         self.suplemento.setText(str(d.get("suplemento", "")))
 
-        # Compañía: aquí asumimos que el combo se rellenará desde fuera
-        # y que d["compania"] coincide con uno de los textos
         self.compania.addItem(d.get("compania", ""))
         self.compania.setCurrentText(d.get("compania", ""))
 
@@ -321,6 +255,18 @@ class FormModificacionContrato(QWidget):
         self.iva.setText(self.to_str(d.get("iva")))
 
     # ============================================================
+    #  BLOQUEAR CAMPOS EN MODO MODIFICACIÓN
+    # ============================================================
+    def bloquear_campos_modificacion(self):
+        self.ncontrato.setReadOnly(True)
+        self.suplemento.setReadOnly(True)
+        self.fec_inicio.setReadOnly(True)
+        self.fec_final.setReadOnly(True)
+        self.fec_anulacion.setReadOnly(True)
+        self.estado.setReadOnly(True)
+        self.fin_suple.setReadOnly(True)
+
+    # ============================================================
     #  VALIDACIONES
     # ============================================================
     def conectar_validaciones(self):
@@ -349,41 +295,12 @@ class FormModificacionContrato(QWidget):
         self.validar_formulario()
 
     def validar_formulario(self):
-
-        # Validación básica de formato de fecha
+        # Validación de fecha
         if not self.validar_fecha(self.efec_suple.text()):
             self.btn_guardar.setEnabled(False)
             return
 
-        try:
-            # Convertir fechas a ISO
-            fi_iso = self.to_iso(self.fec_inicio.text())
-            ff_iso = self.to_iso(self.fec_final.text())
-            fe_iso = self.to_iso(self.efec_suple.text())
-
-            # Convertir a date
-            fi = datetime.strptime(fi_iso, "%Y-%m-%d").date()
-            ff = datetime.strptime(ff_iso, "%Y-%m-%d").date()
-            fe = datetime.strptime(fe_iso, "%Y-%m-%d").date()
-
-            # Validar rango dentro del contrato
-            if not (fi <= fe <= ff):
-                self.btn_guardar.setEnabled(False)
-                return
-
-            # Validar que el nuevo suplemento empieza después del vigente
-            fe_vigente_iso = self.datos_originales.get("efec_suple")
-            if fe_vigente_iso:
-                fe_v = datetime.strptime(fe_vigente_iso, "%Y-%m-%d").date()
-                if fe <= fe_v:
-                    self.btn_guardar.setEnabled(False)
-                    return
-
-        except Exception:
-            self.btn_guardar.setEnabled(False)
-            return
-
-        # Validaciones numéricas tolerantes
+        # Validación numérica
         for campo in [
             self.ppunta,
             self.pvalle,
@@ -399,19 +316,15 @@ class FormModificacionContrato(QWidget):
             self.i_electrico,
             self.iva,
         ]:
-            texto = campo.text().strip()
-
-            # Permitir valores intermedios mientras el usuario escribe
-            if texto in ("", "-", ",", ".", "0,", "0.", ",0"):
+            t = campo.text().strip()
+            if t in ("", "-", ",", ".", "0,", "0.", ",0"):
                 continue
-
             try:
-                float(texto.replace(",", "."))
+                float(t.replace(",", "."))
             except ValueError:
                 self.btn_guardar.setEnabled(False)
                 return
 
-        # Si todo es válido → habilitar botón
         self.btn_guardar.setEnabled(True)
 
     # ============================================================
@@ -422,36 +335,23 @@ class FormModificacionContrato(QWidget):
             QMessageBox.warning(self, "Atención", "Hay errores en el formulario.")
             return
 
-        # Construir diccionario actual
-        actual = self.recoger_datos_actuales()
+        datos = self.recoger_datos()
 
-        # Detectar cambios
-        cambios_econ, cambios_admin = self.detectar_cambios(actual)
+        if self.modo == "alta":
+            self.guardado_alta.emit(datos)
+        else:
+            self.guardado_modificacion.emit(datos)
 
-        if not cambios_econ and not cambios_admin:
-            QMessageBox.information(
-                self, "Sin cambios", "No se ha modificado ningún dato."
-            )
-            return
-
-        if not cambios_econ and cambios_admin:
-            # Solo cambios administrativos → actualizar suplemento vigente
-            self.actualizar_vigente.emit(actual)
-            return
-
-        # Hay cambios económicos → crear suplemento nuevo
-        self.crear_suplemento.emit(actual)
         self.close()
 
     # ============================================================
-    #  RECOGER DATOS ACTUALES
+    #  RECOGER DATOS
     # ============================================================
-    def recoger_datos_actuales(self) -> dict:
+    def recoger_datos(self):
         d = {}
 
-        d["id_contrato"] = self.datos_originales.get("id_contrato")
         d["ncontrato"] = self.ncontrato.text().strip()
-        d["suplemento"] = self.datos_originales.get("suplemento")  # el vigente
+        d["suplemento"] = self.suplemento.text().strip()
         d["compania"] = self.compania.currentText()
         d["codigo_postal"] = self.codigo_postal.text().strip()
 
@@ -465,7 +365,7 @@ class FormModificacionContrato(QWidget):
         d["estado"] = self.estado.text().strip()
 
         d["efec_suple"] = self.to_iso(self.efec_suple.text())
-        d["fin_suple"] = self.datos_originales.get("fin_suple")
+        d["fin_suple"] = self.fin_suple.text().strip()
 
         d["ppunta"] = self.to_float(self.ppunta.text())
         d["pvalle"] = self.to_float(self.pvalle.text())
@@ -487,102 +387,42 @@ class FormModificacionContrato(QWidget):
         return d
 
     # ============================================================
-    #  DETECCIÓN DE CAMBIOS
-    # ============================================================
-    def detectar_cambios(self, actual: dict):
-        cambios_econ = False
-        cambios_admin = False
-
-        for campo in self.campos_economicos:
-            if self.normalizar_valor(
-                self.datos_originales.get(campo)
-            ) != self.normalizar_valor(actual.get(campo)):
-                cambios_econ = True
-                break
-
-        for campo in self.campos_administrativos:
-            if self.normalizar_valor(
-                self.datos_originales.get(campo)
-            ) != self.normalizar_valor(actual.get(campo)):
-                cambios_admin = True
-                break
-
-        return cambios_econ, cambios_admin
-
-    @staticmethod
-    def normalizar_valor(v):
-        if isinstance(v, float):
-            return round(v, 6)
-        return v
-
-    # ============================================================
     #  AUXILIARES
     # ============================================================
     def ajustar_anchos(self):
         for w in self.findChildren(QLineEdit):
             w.setMinimumWidth(260)
-            w.setMaximumWidth(320)
+            w.setFixedHeight(28)
         for w in self.findChildren(QComboBox):
             w.setMinimumWidth(260)
-            w.setMaximumWidth(320)
+            w.setFixedHeight(28)
 
     @staticmethod
-    def validar_fecha(f: str) -> bool:
+    def validar_fecha(f):
         return bool(re.fullmatch(r"\d{2}/\d{2}/\d{4}", f.strip()))
 
     @staticmethod
-    def to_iso(f: str) -> str:
+    def to_iso(f):
         d = datetime.strptime(f.strip(), "%d/%m/%Y")
         return d.strftime("%Y-%m-%d")
 
     @staticmethod
-    def from_iso(f: str | None) -> str:
+    def from_iso(f):
         if not f:
             return ""
         d = datetime.strptime(f, "%Y-%m-%d")
         return d.strftime("%d/%m/%Y")
 
     @staticmethod
-    def to_float(t: str) -> float:
+    def to_float(t):
         if not t.strip():
             return 0.0
         return float(t.replace(",", "."))
 
     @staticmethod
-    def to_str(v) -> str:
+    def to_str(v):
         if v is None:
             return ""
         if isinstance(v, float):
             return str(v).replace(".", ",")
         return str(v)
-
-    # ============================================================
-    #  AJUSTE DE TABULACIÓN
-    # ============================================================
-    def showEvent(self, event):
-        super().showEvent(event)
-
-        self.setTabOrder(self.ncontrato, self.compania)
-        self.setTabOrder(self.compania, self.codigo_postal)
-        self.setTabOrder(self.codigo_postal, self.efec_suple)
-
-        self.setTabOrder(self.efec_suple, self.ppunta)
-        self.setTabOrder(self.ppunta, self.pvalle)
-        self.setTabOrder(self.pvalle, self.pv_ppunta)
-        self.setTabOrder(self.pv_ppunta, self.pv_pvalle)
-        self.setTabOrder(self.pv_pvalle, self.pv_conpunta)
-        self.setTabOrder(self.pv_conpunta, self.pv_conllano)
-        self.setTabOrder(self.pv_conllano, self.pv_convalle)
-        self.setTabOrder(self.pv_convalle, self.vertido)
-        self.setTabOrder(self.vertido, self.pv_excedent)
-
-        self.setTabOrder(self.pv_excedent, self.bono_social)
-        self.setTabOrder(self.bono_social, self.alq_contador)
-        self.setTabOrder(self.alq_contador, self.otros_gastos)
-        self.setTabOrder(self.otros_gastos, self.i_electrico)
-        self.setTabOrder(self.i_electrico, self.iva)
-
-        self.setTabOrder(self.iva, self.btn_guardar)
-        self.setTabOrder(self.btn_guardar, self.btn_cancelar)
-        self.setTabOrder(self.btn_guardar, self.btn_cancelar)
-        self.setTabOrder(self.btn_guardar, self.btn_cancelar)

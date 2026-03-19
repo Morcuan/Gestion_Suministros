@@ -21,6 +21,10 @@ from PySide6.QtWidgets import (
 )
 
 import db_init
+from estadisticas_mensuales import (
+    CapturaEstadisticasMensuales,
+    ConsultaEstadisticasMensuales,
+)
 from estilo import PALETAS, aplicar_estilo_boton, aplicar_estilo_panel_lateral
 from lista_analisis_factura import ListaAnalisisFactura
 from lista_contratos_anulacion import ListaContratosAnulacion
@@ -84,7 +88,7 @@ class MainWindow(QMainWindow):
         self.encabezado_modulo.hide()
         self.zona_contenido_layout.addWidget(self.encabezado_modulo)
 
-        layout_principal.addWidget(self.zona_contenido, stretch=1)
+        layout_principal.addWidget(self.zona_contenido)
         self.setCentralWidget(contenedor)
 
         self.cargar_modulo(self.crear_pantalla_inicio(), "Pantalla de Inicio")
@@ -213,6 +217,24 @@ class MainWindow(QMainWindow):
                         lambda: self.cargar_modulo(
                             ModuloRecalculo(parent=self),
                             "Recalcular facturas pendientes",
+                        ),
+                    ),
+                    (
+                        "📅 Estadísticas mensuales",
+                        lambda: self.cargar_modulo(
+                            ConsultaEstadisticasMensuales(
+                                parent=self, conn=self.conn, cursor=self.cursor
+                            ),
+                            "Estadísticas mensuales",
+                        ),
+                    ),
+                    (
+                        "➕ Capturar estadísticas",
+                        lambda: self.cargar_modulo(
+                            CapturaEstadisticasMensuales(
+                                parent=self, conn=self.conn, cursor=self.cursor
+                            ),
+                            "Captura estadísticas mensuales",
                         ),
                     ),
                 ],
@@ -399,16 +421,27 @@ class MainWindow(QMainWindow):
     # el que estuviera antes (excepto el encabezado, que se mantiene). Recibe el widget
     # a cargar y el título que se mostrará en el encabezado.
     def cargar_modulo(self, widget, titulo):
+        # Eliminar widgets anteriores excepto el encabezado
         for i in reversed(range(self.zona_contenido_layout.count())):
             item = self.zona_contenido_layout.itemAt(i)
             w = item.widget()
             if w is not None and w is not self.encabezado_modulo:
                 self.zona_contenido_layout.removeWidget(w)
-                w.hide()
-            #   w.setParent(None)
+                w.deleteLater()
 
-        # self.encabezado_modulo.setText(titulo)
-        self.zona_contenido_layout.addWidget(widget, stretch=1)
+        # Contenedor uniforme para TODOS los módulos
+        contenedor = QWidget()
+        layout = QVBoxLayout(contenedor)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(10)
+
+        # Igual que NuevoContrato: centrado vertical
+        layout.addStretch()
+        layout.addWidget(widget)
+        layout.addStretch()
+
+        # Insertar el contenedor en zona_contenido
+        self.zona_contenido_layout.addWidget(contenedor)
 
     # ---------------------------------------------------------
     # APLICAR PALETA

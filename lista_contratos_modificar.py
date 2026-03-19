@@ -4,12 +4,14 @@
 # Autor: Antonio Morales + Copilot
 # Fecha: 2026-02-24 (actualizado)
 # --------------------------------------------#
-# Este módulo muestra una lista de contratos (usando obtener_lista_contratos)
-# y permite seleccionar uno para modificarlo. Al hacer clic en "Modificar contrato",
-# se abre el formulario de modificación (FormModificacionContrato) con los datos del contrato seleccionado.
-# Se han agregado mejoras para garantizar que se muestren los datos correctos y se manejen los estados de los contratos.
 
-# Importamos los módulos necesarios de PySide6 para la interfaz gráfica.
+import sys
+
+print(">>> MODULOS CARGADOS RELACIONADOS:")
+for m in sys.modules:
+    if "formulario_contrato" in m:
+        print("   -", m, "=>", sys.modules[m])
+
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
@@ -21,29 +23,27 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-# Importamos funciones de db.py para manejar la base de datos y el formulario de modificación.
 from db import (
     actualizar_suplemento_vigente,
     crear_suplemento_nuevo,
     get_conn,
     obtener_suplemento_vigente,
 )
-from form_modificacion import FormModificacionContrato
+
+# Usamos el formulario unificado
+from formulario_contrato import FormularioContrato
+
+print(">>> FormularioContrato:", FormularioContrato)
+print(">>> Cargado desde módulo:", FormularioContrato.__module__)
+print(
+    ">>> Cargado desde archivo:", FormularioContrato.__dict__.get("__file__", "NO FILE")
+)
+
 from lista_contratos import obtener_lista_contratos
 
 
-# ============================================================
-#  CLASE PRINCIPAL: ListaContratosModificar
-# ============================================================
 class ListaContratosModificar(QWidget):
-    """
-    Lista de contratos para seleccionar uno y modificarlo.
-    Ahora utiliza obtener_lista_contratos() para garantizar coherencia.
-    """
 
-    # ============================================================
-    #  INICIALIZACIÓN
-    # ============================================================
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -81,14 +81,14 @@ class ListaContratosModificar(QWidget):
         self.cargar_contratos()
 
     # ============================================================
-    #  CARGA DE CONTRATOS (USANDO obtener_lista_contratos)
+    #  CARGA DE CONTRATOS
     # ============================================================
     def cargar_contratos(self):
         lista = obtener_lista_contratos(
             self.conn,
-            solo_activos=False,  # Mostrar todos los estados
-            solo_ultimo_suplemento=True,  # Solo el último suplemento
-            incluir_anulados=True,  # Incluir contratos anulados
+            solo_activos=False,
+            solo_ultimo_suplemento=True,
+            incluir_anulados=True,
         )
 
         self.tabla.setRowCount(len(lista))
@@ -164,40 +164,67 @@ class ListaContratosModificar(QWidget):
             QMessageBox.critical(self, "Error", "No se pudo cargar el contrato.")
             return
 
+        # Guardamos los datos originales para comparar
+        self.datos_originales = datos.copy()
+
         main = self.get_mainwindow()
         main.lista_modificacion = self
 
-        form = FormModificacionContrato(datos, parent=main)
+        # FORMULARIO UNIFICADO EN MODO MODIFICACIÓN
+        form = FormularioContrato(modo="modificacion", datos=datos, parent=main)
 
-        form.actualizar_vigente.connect(self.actualizar_vigente)
-        form.crear_suplemento.connect(self.crear_suplemento)
+        form.guardado_modificacion.connect(self.procesar_modificacion)
         form.cancelado.connect(main.lista_modificacion.cancelar_modificacion)
 
         main.cargar_modulo(form, f"Modificar contrato {ncontrato}")
 
     # ============================================================
-    #  ACTUALIZAR SUPLEMENTO VIGENTE
+    #  PROCESAR MODIFICACIÓN
     # ============================================================
-    def actualizar_vigente(self, datos):
-        actualizar_suplemento_vigente(datos)
-        QMessageBox.information(self, "OK", "Datos administrativos actualizados.")
-        self.cargar_contratos()
+    def procesar_modificacion(self, datos):
+        """
+        El formulario unificado devuelve TODOS los datos.
+        Aquí decidimos si:
+        - solo cambian datos administrativos → actualizar vigente
+        - cambian datos económicos → crear suplemento
+        """
 
-    # ============================================================
-    #  CREAR SUPLEMENTO NUEVO
-    # ============================================================
-    def crear_suplemento(self, datos):
-        nuevo_id = crear_suplemento_nuevo(datos)
-        QMessageBox.information(
-            self,
-            "OK",
-            f"Suplemento creado correctamente (ID {nuevo_id}).\n"
-            "Se han marcado facturas para recálculo.",
+        campos_economicos = [
+            "ppunta",
+            "pvalle",
+            "pv_ppunta",
+            "pv_pvalle",
+            "pv_conpunta",
+            "pv_conllano",
+            "pv_convalle",
+            "pv_excedent",
+            "bono_social",
+            "alq_contador",
+            "otros_gastos",
+            "i_electrico",
+            "iva",
+        ]
+
+        cambios_econ = any(
+            datos.get(c) != self.datos_originales.get(c) for c in campos_economicos
         )
+
+        if cambios_econ:
+            nuevo_id = crear_suplemento_nuevo(datos)
+            QMessageBox.information(
+                self,
+                "OK",
+                f"Suplemento creado correctamente (ID {nuevo_id}).\n"
+                "Se han marcado facturas para recálculo.",
+            )
+        else:
+            actualizar_suplemento_vigente(datos)
+            QMessageBox.information(self, "OK", "Datos administrativos actualizados.")
+
         self.cargar_contratos()
 
     # ============================================================
-    #  BOTON CANCELAR
+    #  BOTÓN CANCELAR
     # ============================================================
     def cancelar_modificacion(self):
         main = self.get_mainwindow()
@@ -206,6 +233,4 @@ class ListaContratosModificar(QWidget):
 
         self.setParent(main)
         main.cargar_modulo(self, "Modificar contrato")
-        self.show()
-        self.show()
         self.show()

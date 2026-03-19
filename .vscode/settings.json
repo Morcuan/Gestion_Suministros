@@ -22,12 +22,15 @@
     // ===== PYTHON / PYLANCE =====
     "python.analysis.typeCheckingMode": "basic",
     "python.linting.enabled": false,
-
-    // Rutas adicionales para que Pylance encuentre PySide6
-    "python.analysis.extraPaths": [
-        "/usr/lib/python3/dist-packages",
-        "/usr/lib/python3/dist-packages/PySide6"
+    "python.analysis.extraPaths": [],
+    "python.analysis.stubPaths": [
+        "/home/antoniom/Desarrollo/Gestion_Suministros/venv/lib/python3.12/site-packages/PySide6-stubs"
     ],
+    "python.analysis.diagnosticSeverityOverrides": {
+        "reportAttributeAccessIssue": "none",
+        "reportGeneralTypeIssues": "none"
+    },
+
 
     // ===== TERMINAL =====
     "terminal.integrated.fontSize": 14,

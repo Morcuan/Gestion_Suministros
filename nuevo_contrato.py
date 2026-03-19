@@ -1,32 +1,25 @@
 # -------------------------------------------------------#
 # Modulo: nuevo_contrato.py                              #
-# Descripción: Es un módulo funcional que se integra en el contenedor
-# central de MainWindow. Permite dar de alta un contrato nuevo, gestionando
-# la inserción transaccional en la base de datos y la carga de compañías.
-# No es una ventana independiente, sino un widget que se muestra dentro del MainWindow.
-# El módulo se encarga de validar los datos, manejar errores y garantizar la integridad
-# de la información al insertar un nuevo contrato. Además, incluye
-# la funcionalidad para insertar un nuevo código postal si el usuario
-# lo necesita durante la creación del contrato.
-# Incluye validaciones y manejo de errores para garantizar la integridad de los datos.
+# Descripción: Alta de contrato integrado en MainWindow  #
 # Autor: Antonio Morales                                 #
 # Fecha: 2026-02-09                                      #
 # -------------------------------------------------------#
 
-# ------------------------------------------------------------
-#  IMPORTACIONES
-# ------------------------------------------------------------
 import sqlite3
 
-from PySide6.QtCore import Signal
-from PySide6.QtWidgets import QMessageBox, QSizePolicy, QVBoxLayout, QWidget
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtWidgets import (
+    QLabel,
+    QMessageBox,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
+)
 
-from form_contrato import FormContrato
+# IMPORTANTE: ahora usamos el formulario unificado
+from formulario_contrato import FormularioContrato
 
 
-# ------------------------------------------------------------
-#  CLASE PRINCIPAL DEL MÓDULO
-# ------------------------------------------------------------
 class NuevoContrato(QWidget):
     """
     Módulo funcional para dar de alta un contrato nuevo.
@@ -35,35 +28,43 @@ class NuevoContrato(QWidget):
 
     cerrado = Signal()
 
-    # init: se encarga de configurar el layout, cargar compañías y conectar señales
     def __init__(self, parent=None):
         super().__init__(parent)
 
         self.db_path = "data/almacen.db"
 
         # ------------------------------------------------------------
-        # CONTENEDOR PRINCIPAL DEL MÓDULO
+        # CONTENEDOR PRINCIPAL
         # ------------------------------------------------------------
         layout = QVBoxLayout()
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(10)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(15)
         self.setLayout(layout)
 
         # ------------------------------------------------------------
-        # FORMULARIO DE CONTRATO
+        # TÍTULO
         # ------------------------------------------------------------
-        self.form = FormContrato(modo="nuevo", parent=self)
-        layout.addWidget(self.form)
+        titulo = QLabel("Nuevo contrato")
+        titulo.setStyleSheet("font-size: 18px; font-weight: bold;")
+        layout.addWidget(titulo, alignment=Qt.AlignHCenter)
 
-        # Ajustes de tamaño dentro del contenedor
+        layout.addStretch()  # Centrado vertical superior
+
+        # ------------------------------------------------------------
+        # FORMULARIO (modo = "alta")
+        # ------------------------------------------------------------
+        self.form = FormularioContrato(modo="alta", parent=self)
         self.form.setMinimumHeight(650)
         self.form.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        layout.addWidget(self.form)
+
+        layout.addStretch()  # Centrado vertical inferior
 
         # ------------------------------------------------------------
         # SEÑALES
         # ------------------------------------------------------------
-        self.form.contrato_guardado.connect(self.insertar_contrato)
+        self.form.guardado_alta.connect(self.insertar_contrato)
         self.form.cancelado.connect(self.cerrar)
 
         # ------------------------------------------------------------
@@ -74,7 +75,6 @@ class NuevoContrato(QWidget):
     # ------------------------------------------------------------
     #  Cargar compañías desde la BD
     # ------------------------------------------------------------
-    # Carga las compañías en el combo del formulario. Si hay un error, muestra un mensaje.
     def cargar_companias(self):
         try:
             con = sqlite3.connect(self.db_path)
@@ -94,8 +94,6 @@ class NuevoContrato(QWidget):
     # ------------------------------------------------------------
     #  Comprobación de existencia de CP
     # ------------------------------------------------------------
-    # Comprueba si el código postal existe en la base de datos.
-    # Si hay un error, muestra un mensaje.
     def existe_cp(self, cp):
         try:
             con = sqlite3.connect(self.db_path)
@@ -114,8 +112,6 @@ class NuevoContrato(QWidget):
     # ------------------------------------------------------------
     #  Inserción transaccional del contrato
     # ------------------------------------------------------------
-    # Inserta un nuevo contrato en la base de datos de forma transaccional.
-    # Si hay un error, se revierte la transacción y se muestra un mensaje.
     def insertar_contrato(self, datos):
         ident = datos["identificacion"]
         ener = datos["energia"]
@@ -201,7 +197,6 @@ class NuevoContrato(QWidget):
                 self, "Contrato guardado", "El contrato se ha guardado correctamente."
             )
 
-            # 🔁 Tras guardar, cerramos el módulo → MainWindow volverá al inicio
             self.cerrar()
 
         except Exception as e:
@@ -210,21 +205,17 @@ class NuevoContrato(QWidget):
                 con.close()
             QMessageBox.critical(self, "Error", f"No se pudo guardar el contrato:\n{e}")
 
-    # insertar_cp: se encarga de insertar un nuevo código postal en la base de datos.
+    # ------------------------------------------------------------
+    #  Insertar CP (delegado al MainWindow)
+    # ------------------------------------------------------------
     def insertar_cp(self, cp, poblacion):
-        # Obtener la ventana principal real
         w = self.window()
-
         if hasattr(w, "insertar_cp"):
             return w.insertar_cp(cp, poblacion)
-
         raise RuntimeError("La ventana principal no tiene insertar_cp")
 
     # ------------------------------------------------------------
     #  Cierre del módulo
     # ------------------------------------------------------------
     def cerrar(self):
-        # No cerramos ventana (no es independiente), solo avisamos al MainWindow
-        self.cerrado.emit()
-        self.cerrado.emit()
         self.cerrado.emit()

@@ -66,6 +66,24 @@ def crear_tabla_contratos_energia(cursor):
     )
 
 
+def crear_tabla_estadisticas_mensuales(cursor):
+    cursor.execute("DROP TABLE IF EXISTS estadisticas_mensuales;")
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS estadisticas_mensuales (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            fecha_inicio TEXT NOT NULL,   -- yyyy-mm-dd
+            fecha_fin TEXT NOT NULL,      -- yyyy-mm-dd
+            produccion REAL NOT NULL,
+            consumo REAL NOT NULL,
+            excedentes REAL NOT NULL,
+            comprado REAL NOT NULL,
+            fuente TEXT DEFAULT 'manual'
+        );
+    """
+    )
+
+
 def crear_tabla_contratos_gastos(cursor):
     cursor.execute("DROP TABLE IF EXISTS contratos_gastos;")
     cursor.execute(
@@ -327,6 +345,7 @@ def crear_vista_v_datos_calculo(cursor):
 # flexible, ya sea desde un script autónomo o desde la aplicación principal, sin necesidad de
 # modificar el código de creación de tablas cada vez.
 def crear_tablas_y_vistas(cursor):
+    crear_tabla_estadisticas_mensuales(cursor)
     crear_tabla_contratos_identificacion(cursor)
     crear_tabla_contratos_energia(cursor)
     crear_tabla_contratos_gastos(cursor)
