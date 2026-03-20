@@ -74,11 +74,9 @@ fi
 
 # 2) Commit si hay algo en staging
 if [ $HAY_CAMBIOS_STAGING -eq 1 ]; then
-    COMMIT_MSG="Nivelaccion manual: Nivelacion visual de la rama contrato de menu.
-    Se ha creado un formulario_contrato que unifica form_contrato y form_modificacion
-    en un solo modulo. Tambien se ha implementado en menu el modulo estadisticas_mensuales
-    para capturar las estadisticas de generacion, consumo, excedentes y compra de energía
-    con los valores de la app solarman.$(date '+%Y-%m-%d %H:%M')"
+    COMMIT_MSG="Nivelaccion manual: NUEVA ARQUITECTURA.
+    Modulos en carpetas separadas contrato, utilidades, etc.
+    Implementando nuevo formulario, nuevo contrato faltando el guardar el registro. $(date '+%Y-%m-%d %H:%M')"
     echo "💾 Realizando commit: $COMMIT_MSG"
     git commit -m "$COMMIT_MSG"
     HAY_COMMITS_PENDIENTES=1

@@ -4,10 +4,16 @@
 # Autor: Antonio Morales                          #
 # Fecha: 2026-02-09                               #
 # ------------------------------------------------#
-# Esta clase define la ventana principal de la aplicación, que contiene el menú lateral
-# y la zona de contenido donde se cargarán los diferentes módulos según la opción seleccionada.
 
-# Importaciones necesarias
+# from estadisticas_mensuales import (CapturaEstadisticasMensuales,ConsultaEstadisticasMensuales,)
+# from lista_analisis_factura import ListaAnalisisFactura
+# from lista_contratos_anulacion import ListaContratosAnulacion
+# from lista_contratos_factura import ListaContratosFactura
+# from lista_contratos_historia import ListaContratosHistoria
+# from lista_contratos_modificar import ListaContratosModificar
+# from lista_contratos_rectificar import ListaContratosRectificar
+# from modulo_recalculo import ModuloRecalculo
+
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QHBoxLayout,
@@ -20,31 +26,21 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-import db_init
-from estadisticas_mensuales import (
+from contratos.nuevo_contrato import NuevoContrato
+from estilo import PALETAS, aplicar_estilo_boton, aplicar_estilo_panel_lateral
+from utilidades.estadisticas_mensuales import (
     CapturaEstadisticasMensuales,
     ConsultaEstadisticasMensuales,
 )
-from estilo import PALETAS, aplicar_estilo_boton, aplicar_estilo_panel_lateral
-from lista_analisis_factura import ListaAnalisisFactura
-from lista_contratos_anulacion import ListaContratosAnulacion
-from lista_contratos_factura import ListaContratosFactura
-from lista_contratos_historia import ListaContratosHistoria
-from lista_contratos_modificar import ListaContratosModificar
-from lista_contratos_rectificar import ListaContratosRectificar
-from modulo_recalculo import ModuloRecalculo
-from nuevo_contrato import NuevoContrato
+
+# import db_init
 
 
-# class MainWindow(QMainWindow):
 class MainWindow(QMainWindow):
-    # init recibe la conexión y cursor de la BD desde main.py
+
     def __init__(self, conn, cursor):
         super().__init__()
 
-        # ---------------------------------------------------------
-        # CONEXIÓN A BD (RECIBIDA DESDE main.py)
-        # ---------------------------------------------------------
         self.conn = conn
         self.cursor = cursor
 
@@ -67,13 +63,12 @@ class MainWindow(QMainWindow):
 
         scroll_lateral = QScrollArea()
         scroll_lateral.setWidgetResizable(True)
-        scroll_lateral.setFrameShape(QScrollArea.Shape.NoFrame)
+        scroll_lateral.setFrameShape(QScrollArea.NoFrame)
         scroll_lateral.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         scroll_lateral.setWidget(panel_lateral_widget)
         scroll_lateral.setFixedWidth(260)
 
-        self.panel_lateral = scroll_lateral
-        layout_principal.addWidget(self.panel_lateral)
+        layout_principal.addWidget(scroll_lateral)
 
         # ---------------------------------------------------------
         # ZONA DE CONTENIDO
@@ -83,21 +78,23 @@ class MainWindow(QMainWindow):
         self.zona_contenido_layout.setContentsMargins(20, 20, 20, 20)
         self.zona_contenido_layout.setSpacing(15)
 
-        self.encabezado_modulo = QLabel("Pantalla de Inicio")
+        # Título superior (solo para módulos)
+        self.encabezado_modulo = QLabel("")
         self.encabezado_modulo.setStyleSheet("font-size: 18px; font-weight: bold;")
         self.encabezado_modulo.hide()
-        self.zona_contenido_layout.addWidget(self.encabezado_modulo)
+        self.zona_contenido_layout.addWidget(
+            self.encabezado_modulo, alignment=Qt.AlignHCenter
+        )
 
         layout_principal.addWidget(self.zona_contenido)
         self.setCentralWidget(contenedor)
 
-        self.cargar_modulo(self.crear_pantalla_inicio(), "Pantalla de Inicio")
+        # Pantalla de inicio sin título
+        self.cargar_modulo(self.crear_pantalla_inicio(), None)
 
     # ---------------------------------------------------------
     # MENÚ LATERAL
     # ---------------------------------------------------------
-    # Cada sección del menú se crea con crear_seccion_acordeon, que recibe
-    # un título y una lista de opciones (texto y función a ejecutar)
     def crear_menu_lateral(self):
         panel = QWidget()
         layout = QVBoxLayout(panel)
@@ -106,16 +103,14 @@ class MainWindow(QMainWindow):
 
         self.secciones_acordeon = {}
 
-        # --- Sección Inicio ---
+        # Inicio
         layout.addWidget(
             self.crear_seccion_acordeon(
                 "🏠 Inicio",
                 [
                     (
                         "🏡 Pantalla de inicio",
-                        lambda: self.cargar_modulo(
-                            self.crear_pantalla_inicio(), "Pantalla de Inicio"
-                        ),
+                        lambda: self.cargar_modulo(self.crear_pantalla_inicio(), None),
                     ),
                     (
                         "🎨 Paleta de colores",
@@ -133,8 +128,7 @@ class MainWindow(QMainWindow):
             )
         )
 
-        # --- Sección Contratos ---
-
+        # Contratos
         layout.addWidget(
             self.crear_seccion_acordeon(
                 "📄 Contratos",
@@ -143,19 +137,15 @@ class MainWindow(QMainWindow):
                     (
                         "✏️ Modificación",
                         lambda: self.cargar_modulo(
-                            ListaContratosModificar(parent=self),
-                            "Modificar contrato",
+                            ListaContratosModificar(parent=self), "Modificar contrato"
                         ),
                     ),
-                    (
-                        "❌ Anulación",
-                        lambda: self.abrir_anulacion_contrato(),
-                    ),
+                    ("❌ Anulación", lambda: self.abrir_anulacion_contrato()),
                 ],
             )
         )
 
-        # --- Sección Facturas ---
+        # Facturas
         layout.addWidget(
             self.crear_seccion_acordeon(
                 "💡 Facturas",
@@ -177,7 +167,7 @@ class MainWindow(QMainWindow):
             )
         )
 
-        # --- Sección ANÁLISIS ---
+        # Análisis
         layout.addWidget(
             self.crear_seccion_acordeon(
                 "📊 Análisis",
@@ -185,29 +175,26 @@ class MainWindow(QMainWindow):
                     (
                         "🔎 Histórico de contratos",
                         lambda: self.cargar_modulo(
-                            ListaContratosHistoria(parent=self),
-                            "Histórico contratos",
+                            ListaContratosHistoria(parent=self), "Histórico contratos"
                         ),
                     ),
                     (
                         "🔎 Explorador de facturas",
                         lambda: self.cargar_modulo(
-                            ListaAnalisisFactura(parent=self),
-                            "Explorador de facturas",
+                            ListaAnalisisFactura(parent=self), "Explorador de facturas"
                         ),
                     ),
                     (
                         "📈 Comparativas",
                         lambda: self.cargar_modulo(
-                            self.crear_placeholder("Comparativas"),
-                            "Comparativas",
+                            self.crear_placeholder("Comparativas"), "Comparativas"
                         ),
                     ),
                 ],
             )
         )
 
-        # --- Sección Utilidades ---
+        # Utilidades
         layout.addWidget(
             self.crear_seccion_acordeon(
                 "🛠️ Utilidades",
@@ -240,19 +227,17 @@ class MainWindow(QMainWindow):
                 ],
             )
         )
-        # --- Sección Sistema ---
+
+        # Sistema
         layout.addWidget(
             self.crear_seccion_acordeon(
                 "🛠️ Sistema",
-                [
-                    ("🧱 Inicializar BD", self.opcion_inicializar_bd),
-                ],
+                [("🧱 Inicializar BD", self.opcion_inicializar_bd)],
             )
         )
 
         layout.addStretch()
 
-        # --- Botón Salir ---
         btn_salir = QPushButton("🚪 Salir")
         aplicar_estilo_boton(btn_salir, principal=False)
         btn_salir.clicked.connect(self.close)
@@ -260,75 +245,20 @@ class MainWindow(QMainWindow):
 
         return panel
 
-    # inserta un nuevo código postal en la tabla cpostales
-    def insertar_cp(self, cp, poblacion):
-        """
-        Inserta un código postal nuevo en la tabla cpostales.
-        """
-        try:
-            self.cursor.execute(
-                "INSERT INTO cpostales (codigo_postal, poblacion) VALUES (?, ?)",
-                (cp, poblacion),
-            )
-            self.conn.commit()
-        except Exception as e:
-            QMessageBox.critical(
-                self,
-                "Error al insertar código postal",
-                f"No se pudo insertar el código postal {cp}.\n\n{e}",
-            )
-
     # ---------------------------------------------------------
-    # OPCIÓN: NUEVO CONTRATO (INTEGRACIÓN EN CONTENEDOR)
+    # NUEVO CONTRATO
     # ---------------------------------------------------------
-    # En lugar de abrir una ventana nueva, cargamos el módulo dentro de la zona de contenido
     def abrir_nuevo_contrato(self):
         modulo = NuevoContrato(parent=self)
         modulo.cerrado.connect(self.volver_inicio)
         self.cargar_modulo(modulo, "Nuevo contrato")
 
-    # ---------------------------------------------------------
-    # VOLVER A PANTALLA DE INICIO
-    # ---------------------------------------------------------
-    # Función para volver a la pantalla de inicio, se conecta a la señal
-    # 'cerrado' del módulo NuevoContrato
     def volver_inicio(self):
-        self.cargar_modulo(self.crear_pantalla_inicio(), "Pantalla de Inicio")
-
-    # ---------------------------------------------------------
-    # OPCIÓN: INICIALIZAR BD
-    # ---------------------------------------------------------
-    # Esta función muestra un mensaje de advertencia antes de ejecutar
-    # la inicialización de la base de datos.
-    def opcion_inicializar_bd(self):
-        self.cargar_modulo(QWidget(), "Inicialización BD")
-
-        msg = QMessageBox(self)
-        msg.setWindowTitle("Inicializar Base de Datos")
-        msg.setIcon(QMessageBox.Warning)
-        msg.setText(
-            "Esta operación creará o actualizará la estructura de la base de datos.\n"
-            "Debe usarse solo en instalaciones nuevas o bajo supervisión.\n\n"
-            "¿Deseas continuar?"
-        )
-        msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-        respuesta = msg.exec()
-
-        if respuesta == QMessageBox.Yes:
-            db_init.crear_tablas_y_vistas(self.cursor)
-            self.conn.commit()
-
-            ok = QMessageBox(self)
-            ok.setWindowTitle("BD Inicializada")
-            ok.setIcon(QMessageBox.Information)
-            ok.setText("La base de datos ha sido inicializada correctamente.")
-            ok.exec()
+        self.cargar_modulo(self.crear_pantalla_inicio(), None)
 
     # ---------------------------------------------------------
     # ACORDEÓN
     # ---------------------------------------------------------
-    # Esta función crea una sección de acordeón para el menú lateral.
-    # Recibe un título y una lista de opciones,
     def crear_seccion_acordeon(self, titulo, opciones):
         contenedor = QWidget()
         cont_layout = QVBoxLayout(contenedor)
@@ -355,9 +285,6 @@ class MainWindow(QMainWindow):
         cont_layout.addWidget(panel_opciones)
         return contenedor
 
-    # Esta función se encarga de mostrar u ocultar el panel de opciones del acordeón
-    # según el botón que se haya pulsado. Si se pulsa un botón de sección, se muestra
-    # su panel y se ocultan los demás.
     def toggle_acordeon(self, titulo):
         for nombre, (btn, panel) in self.secciones_acordeon.items():
             if nombre == titulo:
@@ -369,9 +296,6 @@ class MainWindow(QMainWindow):
     # ---------------------------------------------------------
     # PANTALLAS
     # ---------------------------------------------------------
-    # Estas funciones crean los widgets que se mostrarán en la zona de contenido al
-    # seleccionar cada opción del menú. Por ahora son pantallas de ejemplo,
-    # pero luego se reemplazarán por los módulos reales.
     def crear_pantalla_inicio(self):
         w = QWidget()
         l = QVBoxLayout(w)
@@ -415,13 +339,10 @@ class MainWindow(QMainWindow):
         return w
 
     # ---------------------------------------------------------
-    # CARGA DE MÓDULOS
+    # CARGAR MÓDULO
     # ---------------------------------------------------------
-    # Esta función se encarga de cargar un widget en la zona de contenido, eliminando
-    # el que estuviera antes (excepto el encabezado, que se mantiene). Recibe el widget
-    # a cargar y el título que se mostrará en el encabezado.
     def cargar_modulo(self, widget, titulo):
-        # Eliminar widgets anteriores excepto el encabezado
+        # Limpiar contenido anterior excepto encabezado
         for i in reversed(range(self.zona_contenido_layout.count())):
             item = self.zona_contenido_layout.itemAt(i)
             w = item.widget()
@@ -429,31 +350,65 @@ class MainWindow(QMainWindow):
                 self.zona_contenido_layout.removeWidget(w)
                 w.deleteLater()
 
-        # Contenedor uniforme para TODOS los módulos
+        # Mostrar u ocultar título
+        if titulo is None:
+            self.encabezado_modulo.hide()
+        else:
+            self.encabezado_modulo.setText(titulo)
+            self.encabezado_modulo.show()
+
+        # Scroll
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QScrollArea.NoFrame)
+
         contenedor = QWidget()
         layout = QVBoxLayout(contenedor)
-        layout.setContentsMargins(20, 20, 20, 20)
-        layout.setSpacing(10)
-
-        # Igual que NuevoContrato: centrado vertical
-        layout.addStretch()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(15)
         layout.addWidget(widget)
-        layout.addStretch()
 
-        # Insertar el contenedor en zona_contenido
-        self.zona_contenido_layout.addWidget(contenedor)
+        scroll.setWidget(contenedor)
+        self.zona_contenido_layout.addWidget(scroll)
 
     # ---------------------------------------------------------
-    # APLICAR PALETA
+    # INICIALIZAR BD
+    # ---------------------------------------------------------
+    def opcion_inicializar_bd(self):
+        self.cargar_modulo(QWidget(), "Inicialización BD")
+
+        msg = QMessageBox(self)
+        msg.setWindowTitle("Inicializar Base de Datos")
+        msg.setIcon(QMessageBox.Warning)
+        msg.setText(
+            "Esta operación creará o actualizará la estructura de la base de datos.\n"
+            "Debe usarse solo en instalaciones nuevas o bajo supervisión.\n\n"
+            "¿Deseas continuar?"
+        )
+        msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        respuesta = msg.exec()
+
+        if respuesta == QMessageBox.Yes:
+            db_init.crear_tablas_y_vistas(self.cursor)
+            self.conn.commit()
+
+            ok = QMessageBox(self)
+            ok.setWindowTitle("BD Inicializada")
+            ok.setIcon(QMessageBox.Information)
+            ok.setText("La base de datos ha sido inicializada correctamente.")
+            ok.exec()
+
+    # ---------------------------------------------------------
+    # ANULACIÓN
+    # ---------------------------------------------------------
+    def abrir_anulacion_contrato(self):
+        widget = ListaContratosAnulacion(parent=self)
+        self.cargar_modulo(widget, "Anulación de contrato")
+
+    # ---------------------------------------------------------
+    # PALETA
     # ---------------------------------------------------------
     def aplicar_paleta(self, paleta):
         from estilo import generar_stylesheet
 
         self.setStyleSheet(generar_stylesheet(paleta))
-        self.setStyleSheet(generar_stylesheet(paleta))
-        self.setStyleSheet(generar_stylesheet(paleta))
-
-    # método para anulación de contrato
-    def abrir_anulacion_contrato(self):
-        widget = ListaContratosAnulacion(parent=self)
-        self.cargar_modulo(widget, "Anulación de contrato")

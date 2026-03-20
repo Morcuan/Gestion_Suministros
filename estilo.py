@@ -4,10 +4,7 @@
 # Autor: Antonio Morales                      #
 # Fecha: 2026-02-09                           #
 # --------------------------------------------#
-# Este módulo define los estilos visuales para la ventana de contratos,
-# incluyendo colores, fuentes y estilos de widgets.
 
-# Importaciones necesarias
 from PySide6.QtGui import QColor, QFont
 from PySide6.QtWidgets import QComboBox, QLineEdit, QPushButton
 
@@ -35,10 +32,12 @@ FUENTE_BOTON = QFont("DejaVu Sans", 12)
 
 
 def aplicar_estilo_panel_lateral(widget):
-    widget.setStyleSheet("""
+    widget.setStyleSheet(
+        """
         background-color: #F7F7F7;
         border-right: 1px solid #CCCCCC;
-        """)
+        """
+    )
 
 
 # ---------------------------------------------------------
@@ -48,9 +47,10 @@ def aplicar_estilo_panel_lateral(widget):
 
 def aplicar_estilo_boton(boton: QPushButton, principal=False):
     boton.setFont(FUENTE_BOTON)
-    boton.setStyleSheet(f"""
+    boton.setStyleSheet(
+        f"""
         QPushButton {{
-            background-color: {"{0}".format(COLOR_PRIMARIO) if principal else COLOR_SECUNDARIO};
+            background-color: {COLOR_PRIMARIO if principal else COLOR_SECUNDARIO};
             color: {COLOR_TEXTO};
             border-radius: 6px;
             padding: 6px 10px;
@@ -59,46 +59,22 @@ def aplicar_estilo_boton(boton: QPushButton, principal=False):
         QPushButton:hover {{
             background-color: {COLOR_ACENTO};
         }}
-        """)
+        """
+    )
 
 
 # ---------------------------------------------------------
 # ESTILO UNIVERSAL PARA CAMPOS (QLineEdit y QComboBox)
 # ---------------------------------------------------------
-# Este es el bloque que soluciona el problema de alturas
-# y evita que el texto quede cortado por arriba o por abajo.
 
 
 def aplicar_estilo_campo(widget):
     """
-    Aplica estilo coherente a QLineEdit y QComboBox:
-    - Fuente uniforme
-    - Altura mínima suficiente
-    - Padding interno
-    - Coherencia visual en todo el formulario
+    Estilo mínimo: solo fuente.
+    Nada de alturas, nada de padding, nada de márgenes.
+    El tamaño lo controla el formulario.
     """
     widget.setFont(FUENTE_NORMAL)
-    widget.setMinimumHeight(30)  # altura perfecta para evitar cortes
-    widget.setContentsMargins(4, 4, 4, 4)
-
-    # Para QLineEdit añadimos un pequeño padding interno
-    if isinstance(widget, QLineEdit):
-        widget.setStyleSheet("""
-            QLineEdit {
-                padding: 4px;
-            }
-            """)
-
-    # Para QComboBox ajustamos padding y altura del desplegable
-    if isinstance(widget, QComboBox):
-        widget.setStyleSheet("""
-            QComboBox {
-                padding: 4px;
-            }
-            QComboBox QAbstractItemView {
-                min-height: 28px;
-            }
-            """)
 
 
 # ---------------------------------------------------------
@@ -166,6 +142,11 @@ def generar_stylesheet(paleta):
             background-color: {paleta["acento"]};
         }}
     """
+
+
+# ---------------------------------------------------------
+# COLORES SEGÚN ESTADO
+# ---------------------------------------------------------
 
 
 def color_estado(estado):

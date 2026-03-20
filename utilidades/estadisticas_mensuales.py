@@ -10,20 +10,19 @@ from PySide6.QtWidgets import (
     QComboBox,
     QGridLayout,
     QHBoxLayout,
+    QHeaderView,
     QLabel,
     QLineEdit,
+    QMainWindow,
     QMessageBox,
     QPushButton,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
     QWidget,
-    QHeaderView,
-    QMainWindow,
 )
 
 from estilo import aplicar_estilo_boton
-
 
 # ---------------------------------------------------------
 # MESES

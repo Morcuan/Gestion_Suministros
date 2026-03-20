@@ -33,7 +33,6 @@ def crear_tabla_contratos_identificacion(cursor):
             efec_suple      TEXT NOT NULL,
             fin_suple       TEXT NOT NULL,
             fec_anulacion   TEXT,
-            estado          TEXT NOT NULL,
             FOREIGN KEY (codigo_postal)   REFERENCES cpostales(codigo_postal)
         );
     """
@@ -231,7 +230,7 @@ def crear_vista_contratos_completo(cursor):
         CREATE VIEW vista_contratos AS
         SELECT
             ci.id_contrato, ci.ncontrato, ci.suplemento,
-            ci.estado, ci.compania, ci.codigo_postal,
+            ci.compania, ci.codigo_postal,
             cp.poblacion, ci.fec_inicio, ci.fec_final,
             ci.efec_suple, ci.fin_suple, ci.fec_anulacion,
             ce.ppunta, ce.pv_ppunta, ce.pvalle, ce.pv_pvalle,
@@ -258,7 +257,6 @@ def crear_vista_contratos_facturacion(cursor):
         SELECT
             c.id_contrato,
             c.ncontrato,
-            c.estado,
             c.compania,
             c.codigo_postal,
             cp.poblacion
