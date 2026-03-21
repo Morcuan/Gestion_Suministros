@@ -74,9 +74,8 @@ fi
 
 # 2) Commit si hay algo en staging
 if [ $HAY_CAMBIOS_STAGING -eq 1 ]; then
-    COMMIT_MSG="Nivelaccion manual: NUEVA ARQUITECTURA.
-    Modulos en carpetas separadas contrato, utilidades, etc.
-    Implementando nuevo formulario, nuevo contrato faltando el guardar el registro. $(date '+%Y-%m-%d %H:%M')"
+    COMMIT_MSG="Nivelaccion manual: Flujo nuevo contrato terminado.
+    Validaciones ok. pruebas ok. bd ok. $(date '+%Y-%m-%d %H:%M')"
     echo "💾 Realizando commit: $COMMIT_MSG"
     git commit -m "$COMMIT_MSG"
     HAY_COMMITS_PENDIENTES=1

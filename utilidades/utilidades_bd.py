@@ -55,7 +55,7 @@ def insertar_contrato_energia(cursor, id_contrato, datos):
     sql = """
         INSERT INTO contratos_energia
         (id_contrato, ppunta, pvalle, pv_ppunta, pv_pvalle,
-         pv_conpunta, pv_conllano, pv_convalle, vertido, pv_excedentes)
+         pv_conpunta, pv_conllano, pv_convalle, vertido, pv_excedent)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """
 
@@ -143,7 +143,9 @@ def validar_codigo_postal(cursor, codigo_postal):
     Devuelve (True, poblacion) si existe.
     Devuelve (False, None) si no existe.
     """
-    cursor.execute("SELECT poblacion FROM cpostales WHERE codigo = ?", (codigo_postal,))
+    cursor.execute(
+        "SELECT poblacion FROM cpostales WHERE codigo_postal = ?", (codigo_postal,)
+    )
     fila = cursor.fetchone()
 
     if fila:
@@ -160,7 +162,7 @@ def insertar_codigo_postal(conn, cursor, codigo_postal, poblacion):
     Inserta un nuevo código postal en la tabla cpostales.
     """
     cursor.execute(
-        "INSERT INTO cpostales (codigo, poblacion) VALUES (?, ?)",
+        "INSERT INTO cpostales (codigo_postal, poblacion) VALUES (?, ?)",
         (codigo_postal, poblacion),
     )
     conn.commit()

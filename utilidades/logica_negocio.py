@@ -9,26 +9,45 @@
 Este módulo contiene funciones reutilizables de lógica de negocio.
 Versión inicial: solo stubs para permitir que el proyecto arranque.
 """
+import datetime
 
 
 def validar_fecha(fecha_str):
-    """Stub: valida formato dd/mm/aaaa."""
-    return True
+    """Valida formato dd/mm/yyyy."""
+    try:
+        datetime.datetime.strptime(fecha_str, "%d/%m/%Y")
+        return True
+    except ValueError:
+        return False
 
 
 def convertir_a_iso(fecha_str):
-    """Stub: convierte dd/mm/aaaa a yyyy-mm-dd."""
-    return fecha_str
+    """Convierte dd/mm/yyyy → yyyy-mm-dd."""
+    d = datetime.datetime.strptime(fecha_str, "%d/%m/%Y")
+    return d.strftime("%Y-%m-%d")
 
 
 def convertir_a_ddmmaaaa(fecha_iso):
-    """Stub: convierte yyyy-mm-dd a dd/mm/aaaa."""
-    return fecha_iso
+    """Convierte yyyy-mm-dd → dd/mm/yyyy."""
+    d = datetime.datetime.strptime(fecha_iso, "%Y-%m-%d")
+    return d.strftime("%d/%m/%Y")
 
 
-def sumar_10_anios(fecha_str):
-    """Stub: devuelve una fecha ficticia +10 años."""
-    return fecha_str
+def sumar_10_anios(fecha_iso):
+    """Suma 10 años a una fecha ISO y resta 1 día para obtener la fecha final."""
+    d = datetime.datetime.strptime(fecha_iso, "%Y-%m-%d").date()
+
+    # Intentamos sumar 10 años respetando día y mes
+    try:
+        d_fin = d.replace(year=d.year + 10)
+    except ValueError:
+        # Caso raro: 29/02 → ajustamos a 28/02 del año destino
+        d_fin = d.replace(year=d.year + 10, day=28)
+
+    # Restamos 1 día para obtener la fecha final real
+    d_fin = d_fin - datetime.timedelta(days=1)
+
+    return d_fin.strftime("%Y-%m-%d")
 
 
 def calcular_estado_contrato(fec_inicio, fec_final):

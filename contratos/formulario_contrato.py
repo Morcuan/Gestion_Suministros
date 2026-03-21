@@ -98,6 +98,7 @@ class FormularioContrato(QWidget):
         self.txt_pv_conllano = QLineEdit()
         self.txt_pv_convalle = QLineEdit()
         self.txt_vertido = QLineEdit()
+        self.txt_vertido.textChanged.connect(self._vertido_upper)
         self.txt_pv_excedentes = QLineEdit()
 
         col_der.addRow("Pv. cons. punta (€):", self.txt_pv_conpunta)
@@ -270,14 +271,10 @@ class FormularioContrato(QWidget):
     # LIMPIAR FORMULARIO
     # ---------------------------------------------------------
     def limpiar(self):
-        """Limpia todos los campos del formulario."""
+        """Limpia todos los QLineEdit del formulario."""
 
-        for gb in self.findChildren(QGroupBox):
-            layout = gb.layout()
-            for i in range(layout.rowCount()):
-                widget = layout.itemAt(i, layout.FieldRole).widget()
-                if isinstance(widget, QLineEdit):
-                    widget.clear()
+        for edit in self.findChildren(QLineEdit):
+            edit.clear()
 
         # Reset del combo
         self.cmb_compania.setCurrentIndex(0)
@@ -359,3 +356,10 @@ class FormularioContrato(QWidget):
         }
 
         return datos_identificacion, datos_energia, datos_gastos
+
+    def _vertido_upper(self, texto):
+        # Evita bucles infinitos
+        if texto != texto.upper():
+            cursor_pos = self.txt_vertido.cursorPosition()
+            self.txt_vertido.setText(texto.upper())
+            self.txt_vertido.setCursorPosition(cursor_pos)
