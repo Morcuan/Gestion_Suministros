@@ -27,8 +27,17 @@ class FormularioContrato(QWidget):
     No contiene lógica de negocio, validaciones ni acceso a BD.
     """
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, conn=None, modo="nuevo", datos=None):
         super().__init__(parent)
+
+        # Indicamos explícitamente a Pylance que parent es un MainWindow
+        from main_window import MainWindow
+
+        self.main_window: MainWindow = parent
+
+        self.conn = conn
+        self.modo = modo
+        self.datos = datos
 
         # ---------------------------------------------------------
         # LAYOUT PRINCIPAL
@@ -46,7 +55,9 @@ class FormularioContrato(QWidget):
         gb_ident.setLayout(layout_ident)
 
         self.txt_ncontrato = QLineEdit()
+        self.txt_ncontrato.setEnabled(False)
         self.txt_suplemento = QLineEdit()
+        self.txt_suplemento.setEnabled(False)
 
         self.txt_codigo_postal = QLineEdit()
         self.txt_fec_inicio = QLineEdit()
@@ -143,6 +154,8 @@ class FormularioContrato(QWidget):
         self.btn_guardar = QPushButton("Guardar")
         self.btn_cancelar = QPushButton("Cancelar")
 
+        self.btn_cancelar.clicked.connect(self._cancelar)
+
         self.btn_guardar.setFixedHeight(32)
         self.btn_cancelar.setFixedHeight(32)
 
@@ -173,6 +186,14 @@ class FormularioContrato(QWidget):
 
         for edit in self.findChildren(QLineEdit):
             edit.setFixedHeight(26)
+
+        # ---------------------------------------------------------
+        # CONFIGURAR MODO Y CARGAR DATOS SI ES MODIFICACIÓN
+        # ---------------------------------------------------------
+        self.set_modo(self.modo)
+
+        if self.modo == "modificar" and self.datos is not None:
+            self.cargar_datos(self.datos)
 
     # ---------------------------------------------------------
     # MODO NUEVO / MODIFICAR
@@ -363,3 +384,6 @@ class FormularioContrato(QWidget):
             cursor_pos = self.txt_vertido.cursorPosition()
             self.txt_vertido.setText(texto.upper())
             self.txt_vertido.setCursorPosition(cursor_pos)
+
+    def _cancelar(self):
+        self.main_window.cargar_modulo(self.main_window.crear_pantalla_inicio(), None)

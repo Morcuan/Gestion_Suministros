@@ -27,6 +27,9 @@ from PySide6.QtWidgets import (
 )
 
 from contratos.nuevo_contrato import NuevoContrato
+from contratos.lista_contratos import ListaContratos
+from contratos.modificar_contrato import ModificarContrato
+
 from estilo import PALETAS, aplicar_estilo_boton, aplicar_estilo_panel_lateral
 from utilidades.estadisticas_mensuales import (
     CapturaEstadisticasMensuales,
@@ -134,17 +137,11 @@ class MainWindow(QMainWindow):
                 "📄 Contratos",
                 [
                     ("➕ Nuevo contrato", lambda: self.abrir_nuevo_contrato()),
-                    (
-                        "✏️ Modificación",
-                        lambda: self.cargar_modulo(
-                            ListaContratosModificar(parent=self), "Modificar contrato"
-                        ),
-                    ),
+                    ("✏️ Modificación", self.abrir_modificacion_contratos),
                     ("❌ Anulación", lambda: self.abrir_anulacion_contrato()),
                 ],
             )
         )
-
         # Facturas
         layout.addWidget(
             self.crear_seccion_acordeon(
@@ -257,6 +254,18 @@ class MainWindow(QMainWindow):
         self.cargar_modulo(self.crear_pantalla_inicio(), None)
 
     # ---------------------------------------------------------
+    # MODIFICAR CONTRATO (FLUJO NUEVO)
+    # ---------------------------------------------------------
+    def abrir_modificacion_contratos(self):
+        lista = ListaContratos(
+            parent=self, conn=self.conn, callback=self._abrir_modificar_contrato
+        )
+        self.cargar_modulo(lista, "Modificar contrato")
+
+    def _abrir_modificar_contrato(self, ncontrato):
+        ModificarContrato(parent=self, conn=self.conn, ncontrato=ncontrato)
+
+    # ---------------------------------------------------------
     # ACORDEÓN
     # ---------------------------------------------------------
     def crear_seccion_acordeon(self, titulo, opciones):
@@ -339,7 +348,7 @@ class MainWindow(QMainWindow):
         return w
 
     # ---------------------------------------------------------
-    # CARGAR MÓDULO
+    # CARGAR MÓDULO (CORREGIDO)
     # ---------------------------------------------------------
     def cargar_modulo(self, widget, titulo):
         # Limpiar contenido anterior excepto encabezado
@@ -366,6 +375,10 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(contenedor)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(15)
+
+        # 🔥 LÍNEA CRÍTICA
+        widget.setMinimumHeight(600)
+
         layout.addWidget(widget)
 
         scroll.setWidget(contenedor)

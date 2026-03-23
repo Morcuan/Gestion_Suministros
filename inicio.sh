@@ -25,19 +25,19 @@ NOMBRE="Gestion_Suministros_${FECHA}.tar.gz"
 
 DESTINO="/media/antoniom/ALMACEN/Proyecto_20"
 
+# Crear backup SIEMPRE en el directorio del proyecto
+tar --exclude="venv" \
+    --exclude="*/__pycache__" \
+    -czf "$NOMBRE" .
+
 # Comprobar si la SD está montada
 if mount | grep -q "$DESTINO"; then
     echo "💽 SD detectada en: $DESTINO"
 else
     echo "⚠️ No se detecta la SD montada en $DESTINO"
     echo "⏳ Esperando 3 segundos por si acaba de montarse..."
-    sleep 3
+    sleep 6
 fi
-
-# Crear backup SIEMPRE en el directorio del proyecto
-tar --exclude="venv" \
-    --exclude="*/__pycache__" \
-    -czf "$NOMBRE" .
 
 # Intentar copiar a la SD
 if cp "$NOMBRE" "$DESTINO/" 2>/dev/null; then
