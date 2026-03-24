@@ -17,7 +17,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from utilidades.logica_negocio import convertir_a_iso, sumar_10_anios
+from utilidades.logica_negocio import (
+    convertir_a_ddmmaaaa,
+    convertir_a_iso,
+    sumar_10_anios,
+)
 from utilidades.utilidades_bd import obtener_companias
 
 
@@ -230,7 +234,8 @@ class FormularioContrato(QWidget):
             # En modificación, algunos campos siguen bloqueados
             self.txt_suplemento.setEnabled(False)
             self.txt_fec_final.setEnabled(False)
-            self.txt_efec_suple.setEnabled(False)
+
+            self.txt_efec_suple.setEnabled(True)
             self.txt_fin_suple.setEnabled(False)
 
             # fec_anulacion sí puede habilitarse en modificación
@@ -252,25 +257,60 @@ class FormularioContrato(QWidget):
         energia = datos_dict["energia"]
         gastos = datos_dict["gastos"]
 
-        # Identificación
+        # ---------------------------------------------------------
+        # IDENTIFICACIÓN
+        # ---------------------------------------------------------
         self.txt_ncontrato.setText(str(ident["ncontrato"]))
         self.txt_suplemento.setText(str(ident["suplemento"]))
 
-        # Seleccionar compañía en el combo
+        # Seleccionar compañía
         idx = self.cmb_compania.findText(ident["compania"])
         if idx >= 0:
             self.cmb_compania.setCurrentIndex(idx)
 
         self.txt_codigo_postal.setText(str(ident["codigo_postal"]))
-        self.txt_fec_inicio.setText(ident["fec_inicio"])
-        self.txt_fec_final.setText(ident["fec_final"])
-        self.txt_efec_suple.setText(ident["efec_suple"])
-        self.txt_fin_suple.setText(ident["fin_suple"])
-        self.txt_fec_anulacion.setText(
-            "" if ident["fec_anulacion"] is None else ident["fec_anulacion"]
+
+        # Fechas convertidas a dd/mm/yyyy
+        self.txt_fec_inicio.setText(convertir_a_ddmmaaaa(ident["fec_inicio"]))
+        self.txt_fec_final.setText(convertir_a_ddmmaaaa(ident["fec_final"]))
+        self.txt_efec_suple.setText(convertir_a_ddmmaaaa(ident["efec_suple"]))
+        self.txt_fin_suple.setText(convertir_a_ddmmaaaa(ident["fin_suple"]))
+
+        # fec_anulacion (no editable)
+        if ident["fec_anulacion"]:
+            self.txt_fec_anulacion.setText(convertir_a_ddmmaaaa(ident["fec_anulacion"]))
+        else:
+            self.txt_fec_anulacion.setText("")
+
+        # ---------------------------------------------------------
+        # CAMPOS NO EDITABLES (en gris)
+        # ---------------------------------------------------------
+        gris = "background-color: #e0e0e0;"
+
+        no_editables = (
+            self.txt_ncontrato,
+            self.txt_suplemento,
+            self.txt_fec_inicio,
+            self.txt_fec_final,
+            self.txt_fin_suple,
+            self.txt_fec_anulacion,
         )
 
-        # Energía
+        for widget in no_editables:
+            widget.setReadOnly(True)
+            widget.setEnabled(True)  # por si estaban disabled
+            widget.setStyleSheet(gris)
+
+        # ---------------------------------------------------------
+        # EFECTO SUPLEMENTO — SÍ editable (estilo normal)
+        # ---------------------------------------------------------
+        self.txt_efec_suple.setEnabled(True)  # ← imprescindible
+        self.txt_efec_suple.setReadOnly(False)  # ← imprescindible
+        self.txt_efec_suple.setStyleSheet("background-color: white;")
+
+        # ---------------------------------------------------------
+        # ENERGÍA
+        # ---------------------------------------------------------
         self.txt_ppunta.setText(str(energia["ppunta"]))
         self.txt_pvalle.setText(str(energia["pvalle"]))
         self.txt_pv_ppunta.setText(str(energia["pv_ppunta"]))
@@ -281,7 +321,9 @@ class FormularioContrato(QWidget):
         self.txt_vertido.setText(str(energia["vertido"]))
         self.txt_pv_excedentes.setText(str(energia["pv_excedentes"]))
 
-        # Gastos
+        # ---------------------------------------------------------
+        # GASTOS
+        # ---------------------------------------------------------
         self.txt_bono_social.setText(str(gastos["bono_social"]))
         self.txt_i_electrico.setText(str(gastos["i_electrico"]))
         self.txt_alq_contador.setText(str(gastos["alq_contador"]))

@@ -1,7 +1,14 @@
-# modificar_contrato.py
+# ---------------------------------------------------------
+# Modulo: modificar_contrato.py
+# Integración con GuardarModificacion
+# ---------------------------------------------------------
+
 from PySide6.QtWidgets import QWidget
 
 from contratos.formulario_contrato import FormularioContrato
+
+# IMPORTANTE: importar el nuevo módulo
+from contratos.guardar_modificacion import GuardarModificacion
 from utilidades.utilidades_bd import obtener_companias
 
 
@@ -17,6 +24,7 @@ class ModificarContrato(QWidget):
 
         self.main_window = parent
         self.conn = conn
+        self.cursor = conn.cursor()
         self.ncontrato = ncontrato
 
         # ---------------------------------------------------------
@@ -27,25 +35,58 @@ class ModificarContrato(QWidget):
         # ---------------------------------------------------------
         # 2. Crear formulario en modo modificación
         # ---------------------------------------------------------
-        form = FormularioContrato(
+        self.form = FormularioContrato(
             parent=self.main_window, conn=self.conn, modo="modificar", datos=datos
         )
 
         # ---------------------------------------------------------
-        # 3. Cargar compañías (IMPRESCINDIBLE)
+        # 3. Cargar compañías
         # ---------------------------------------------------------
-        cursor = self.conn.cursor()
-        lista = obtener_companias(cursor)
-
-        form.cargar_companias(lista)
+        lista = obtener_companias(self.cursor)
+        self.form.cargar_companias(lista)
 
         # ---------------------------------------------------------
-        # 4. Mostrar formulario incrustado en la ventana principal
+        # 4. Conectar botón GUARDAR al nuevo módulo
         # ---------------------------------------------------------
-        self.main_window.cargar_modulo(form, f"Modificar contrato {self.ncontrato}")
+        self.form.btn_guardar.clicked.connect(self._guardar_modificacion)
+
+        # ---------------------------------------------------------
+        # 5. Mostrar formulario incrustado
+        # ---------------------------------------------------------
+        self.main_window.cargar_modulo(
+            self.form, f"Modificar contrato {self.ncontrato}"
+        )
 
     # ---------------------------------------------------------
-    # Cargar datos desde vista_contratos
+    # Método que invoca el módulo GuardarModificacion
+    # ---------------------------------------------------------
+    def _guardar_modificacion(self):
+        controlador = GuardarModificacion(
+            parent=self.main_window,
+            conn=self.conn,
+            cursor=self.cursor,
+            datos_originales=self.datos_originales,
+            formulario=self.form,
+        )
+        controlador.guardar()
+
+    # ---------------------------------------------------------
+    # Cargar suplemento actual REAL desde la BD
+    # ---------------------------------------------------------
+    def _cargar_suplemento_actual(self):
+        sql = """
+            SELECT suplemento
+            FROM contratos_identificacion
+            WHERE ncontrato = ?
+            ORDER BY suplemento DESC
+            LIMIT 1
+        """
+        self.cursor.execute(sql, (self.ncontrato,))
+        fila = self.cursor.fetchone()
+        return fila[0] if fila else 0
+
+    # ---------------------------------------------------------
+    # Cargar datos desde vista_contratos (último suplemento)
     # ---------------------------------------------------------
     def _cargar_datos_contrato(self):
         cursor = self.conn.cursor()
@@ -101,6 +142,20 @@ class ModificarContrato(QWidget):
                 "otros_gastos": d["otros_gastos"],
                 "iva": d["iva"],
             },
+        }
+
+        # ---------------------------------------------------------
+        # Cargar suplemento REAL desde la BD (no confiar en la vista)
+        # ---------------------------------------------------------
+        suplemento_real = self._cargar_suplemento_actual()
+
+        # Reconstruir datos_originales con suplemento REAL
+        self.datos_originales = {
+            "ncontrato": datos["identificacion"]["ncontrato"],
+            "suplemento": suplemento_real,
+            **datos["identificacion"],
+            **datos["energia"],
+            **datos["gastos"],
         }
 
         return datos
