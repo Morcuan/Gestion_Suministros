@@ -364,20 +364,15 @@ class GuardarModificacion:
     # ACTUALIZAR SUPLEMENTO ANTERIOR
     # ---------------------------------------------------------
     def _actualizar_suplemento_anterior(self, efec_suple_nuevo):
-        """
-        Actualiza el fin_suple del suplemento anterior:
-        fin_suple_anterior = efec_suple_nuevo - 1 día
-        """
 
         ncontrato = self.datos_originales["ncontrato"]
-        supl_actual = self.datos_originales["suplemento"]
-        supl_anterior = supl_actual - 1
+        # El suplemento anterior es el suplemento real del contrato
+        supl_anterior = self.datos_originales["suplemento"]
 
-        # Si no hay suplemento anterior, no hacemos nada
         if supl_anterior < 0:
+            print("No hay suplemento anterior. Salgo.")
             return
 
-        # Convertir fecha ISO a date
         nueva = datetime.strptime(efec_suple_nuevo, "%Y-%m-%d").date()
         fin_anterior = nueva - timedelta(days=1)
         fin_iso = fin_anterior.strftime("%Y-%m-%d")
@@ -386,7 +381,7 @@ class GuardarModificacion:
             UPDATE contratos_identificacion
             SET fin_suple = ?
             WHERE ncontrato = ?
-              AND suplemento = ?
+            AND suplemento = ?
         """
 
         self.cursor.execute(sql, (fin_iso, ncontrato, supl_anterior))

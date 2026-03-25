@@ -149,13 +149,15 @@ class ModificarContrato(QWidget):
         # ---------------------------------------------------------
         suplemento_real = self._cargar_suplemento_actual()
 
-        # Reconstruir datos_originales con suplemento REAL
+        # Reconstruir datos_originales SIN machacar el suplemento real
         self.datos_originales = {
-            "ncontrato": datos["identificacion"]["ncontrato"],
-            "suplemento": suplemento_real,
             **datos["identificacion"],
             **datos["energia"],
             **datos["gastos"],
         }
+
+        # Sobrescribir con los valores correctos
+        self.datos_originales["ncontrato"] = datos["identificacion"]["ncontrato"]
+        self.datos_originales["suplemento"] = suplemento_real
 
         return datos
