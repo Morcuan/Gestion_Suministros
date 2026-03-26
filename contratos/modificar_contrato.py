@@ -1,22 +1,19 @@
 # ---------------------------------------------------------
 # Modulo: modificar_contrato.py
-# Integración con GuardarModificacion
+# Widget contenedor + controlador de modificación
 # ---------------------------------------------------------
 
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QWidget, QVBoxLayout
 
 from contratos.formulario_contrato import FormularioContrato
-
-# IMPORTANTE: importar el nuevo módulo
 from contratos.guardar_modificacion import GuardarModificacion
 from utilidades.utilidades_bd import obtener_companias
 
 
 class ModificarContrato(QWidget):
     """
-    Controlador para modificar un contrato existente.
-    Carga los datos desde vista_contratos (último suplemento)
-    y abre el formulario en modo modificación.
+    Widget que contiene el formulario de contrato en modo modificación
+    y coordina la lógica de guardado mediante GuardarModificacion.
     """
 
     def __init__(self, parent, conn, ncontrato):
@@ -27,6 +24,9 @@ class ModificarContrato(QWidget):
         self.cursor = conn.cursor()
         self.ncontrato = ncontrato
 
+        # Layout principal
+        layout = QVBoxLayout(self)
+
         # ---------------------------------------------------------
         # 1. Cargar datos del contrato desde vista_contratos
         # ---------------------------------------------------------
@@ -36,7 +36,10 @@ class ModificarContrato(QWidget):
         # 2. Crear formulario en modo modificación
         # ---------------------------------------------------------
         self.form = FormularioContrato(
-            parent=self.main_window, conn=self.conn, modo="modificar", datos=datos
+            parent=self.main_window,
+            conn=self.conn,
+            modo="modificar",
+            datos=datos,
         )
 
         # ---------------------------------------------------------
@@ -46,21 +49,20 @@ class ModificarContrato(QWidget):
         self.form.cargar_companias(lista)
 
         # ---------------------------------------------------------
-        # 4. Conectar botón GUARDAR al nuevo módulo
+        # 4. Conectar botón GUARDAR
         # ---------------------------------------------------------
         self.form.btn_guardar.clicked.connect(self._guardar_modificacion)
 
         # ---------------------------------------------------------
-        # 5. Mostrar formulario incrustado
+        # 5. Añadir formulario al layout del widget
         # ---------------------------------------------------------
-        self.main_window.cargar_modulo(
-            self.form, f"Modificar contrato {self.ncontrato}"
-        )
+        layout.addWidget(self.form)
 
     # ---------------------------------------------------------
-    # Método que invoca el módulo GuardarModificacion
+    # Slot del botón GUARDAR
     # ---------------------------------------------------------
     def _guardar_modificacion(self):
+
         controlador = GuardarModificacion(
             parent=self.main_window,
             conn=self.conn,
@@ -68,6 +70,7 @@ class ModificarContrato(QWidget):
             datos_originales=self.datos_originales,
             formulario=self.form,
         )
+
         controlador.guardar()
 
     # ---------------------------------------------------------
@@ -111,7 +114,6 @@ class ModificarContrato(QWidget):
         columnas = [desc[0] for desc in cursor.description]
         d = dict(zip(columnas, fila))
 
-        # Adaptar a la estructura que espera cargar_datos()
         datos = {
             "identificacion": {
                 "ncontrato": d["ncontrato"],
@@ -144,19 +146,14 @@ class ModificarContrato(QWidget):
             },
         }
 
-        # ---------------------------------------------------------
-        # Cargar suplemento REAL desde la BD (no confiar en la vista)
-        # ---------------------------------------------------------
         suplemento_real = self._cargar_suplemento_actual()
 
-        # Reconstruir datos_originales SIN machacar el suplemento real
         self.datos_originales = {
             **datos["identificacion"],
             **datos["energia"],
             **datos["gastos"],
         }
 
-        # Sobrescribir con los valores correctos
         self.datos_originales["ncontrato"] = datos["identificacion"]["ncontrato"]
         self.datos_originales["suplemento"] = suplemento_real
 

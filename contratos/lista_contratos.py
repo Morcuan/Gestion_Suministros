@@ -1,143 +1,114 @@
-# --------------------------------------------------
-# lista_contratos.py
-# Función para obtener la lista de contratos desde
-#  la base de datos
-# Autor: Antonio Morales
-# Fecha: 23/03/2026
-# ---------//-----------------------------------------
-
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QStandardItem, QStandardItemModel
 from PySide6.QtWidgets import (
+    QAbstractItemView,
     QHBoxLayout,
-    QHeaderView,
+    QLabel,
+    QMessageBox,
     QPushButton,
-    QTableView,
+    QTableWidget,
+    QTableWidgetItem,
     QVBoxLayout,
     QWidget,
 )
 
-from utilidades.logica_negocio import convertir_a_ddmmaaaa
-
 
 class ListaContratos(QWidget):
-    """
-    Lista de contratos incrustada en la zona de contenido.
-    Muestra solo el último suplemento de cada contrato.
-    """
-
-    def __init__(self, parent, conn, callback):
+    def __init__(self, parent=None, modo="modificacion"):
         super().__init__(parent)
+        self.parent = parent
+        self.modo = modo  # modificacion / anulacion
 
-        self.main_window = parent  # referencia explícita al MainWindow
-        self.conn = conn
-        self.callback = callback
+        # Heredar conexión desde MainWindow
+        self.conn = self.parent.conn
+        self.cur = self.conn.cursor()
 
-        self._crear_ui()
-        self._cargar_datos()
+        self.crear_ui()
+        self.cargar_datos()
 
     # ---------------------------------------------------------
     # UI
     # ---------------------------------------------------------
-    def _crear_ui(self):
+    def crear_ui(self):
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(15)
 
-        # --- Tabla ---
-        self.tabla = QTableView()
-        self.modelo = QStandardItemModel(self)
-        self.tabla.setModel(self.modelo)
-        self.tabla.setSelectionBehavior(QTableView.SelectRows)
-        self.tabla.setSelectionMode(QTableView.SingleSelection)
-        self.tabla.setEditTriggers(QTableView.NoEditTriggers)
+        titulo = QLabel("Listado de contratos")
+        titulo.setStyleSheet("font-size: 18px; font-weight: bold;")
+        layout.addWidget(titulo)
 
-        cabeceras = ["Contrato", "Compañía", "CP", "Efecto", "Fin", "Anulación"]
-        self.modelo.setColumnCount(len(cabeceras))
-        self.modelo.setHorizontalHeaderLabels(cabeceras)
-
+        self.tabla = QTableWidget()
+        self.tabla.setColumnCount(6)
+        self.tabla.setHorizontalHeaderLabels(
+            ["Contrato", "Compañía", "C.P.", "Inicio", "Final", "Anulación"]
+        )
+        self.tabla.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.tabla.setSelectionMode(QAbstractItemView.SingleSelection)
         layout.addWidget(self.tabla)
 
-        # --- Botones inferiores ---
         botones = QHBoxLayout()
+        btn_sel = QPushButton("Seleccionar contrato")
+        btn_sel.clicked.connect(self.seleccionar_contrato)
+        botones.addWidget(btn_sel)
 
-        self.btn_elegir = QPushButton("Elegir contrato")
-        self.btn_cancelar = QPushButton("Cancelar")
-
-        self.btn_elegir.setMinimumHeight(40)
-        self.btn_cancelar.setMinimumHeight(40)
-
-        botones.addWidget(self.btn_elegir, 1)
-        botones.addWidget(self.btn_cancelar, 1)
+        btn_cancelar = QPushButton("Cancelar")
+        btn_cancelar.clicked.connect(self.cancelar)
+        botones.addWidget(btn_cancelar)
 
         layout.addLayout(botones)
 
-        # Señales
-        self.btn_elegir.clicked.connect(self._elegir)
-        self.btn_cancelar.clicked.connect(self._cancelar)
-
     # ---------------------------------------------------------
-    # Cargar datos
+    # CARGA DE DATOS (solo suplemento vigente)
     # ---------------------------------------------------------
-    def _cargar_datos(self):
-        self.modelo.removeRows(0, self.modelo.rowCount())
-
-        cursor = self.conn.cursor()
-
-        sql = """
-            SELECT v.ncontrato, v.compania, v.codigo_postal,
-                   v.efec_suple, v.fin_suple, v.fec_anulacion
-            FROM vista_contratos v
-            WHERE v.suplemento = (
-                SELECT MAX(v2.suplemento)
-                FROM vista_contratos v2
-                WHERE v2.ncontrato = v.ncontrato
-            )
-            ORDER BY v.ncontrato ASC
+    def cargar_datos(self):
+        query = """
+            SELECT ncontrato, compania, codigo_postal,
+                   efec_suple, fin_suple, fec_anulacion
+            FROM vista_contratos
+            WHERE DATE('now') BETWEEN efec_suple AND fin_suple
+            ORDER BY ncontrato ASC;
         """
 
-        cursor.execute(sql)
-        filas = cursor.fetchall()
+        self.cur.execute(query)
+        rows = self.cur.fetchall()
 
-        for fila in filas:
-            ncontrato, compania, cp, efec, fin, anul = fila
+        self.tabla.setRowCount(len(rows))
 
-            efec_fmt = convertir_a_ddmmaaaa(efec) if efec else ""
-            fin_fmt = convertir_a_ddmmaaaa(fin) if fin else ""
-            anul_fmt = convertir_a_ddmmaaaa(anul) if anul else ""
-
-            datos = [
-                str(ncontrato),
-                compania or "",
-                cp or "",
-                efec_fmt,
-                fin_fmt,
-                anul_fmt,
-            ]
-
-            items = [QStandardItem(str(v)) for v in datos]
-            for item in items:
-                item.setEditable(False)
-
-            self.modelo.appendRow(items)
-
-        # Ajuste visual
-        self.tabla.resizeColumnsToContents()
-        self.tabla.horizontalHeader().setStretchLastSection(True)
+        for r, row in enumerate(rows):
+            for c, value in enumerate(row):
+                item = QTableWidgetItem(str(value))
+                item.setFlags(item.flags() ^ Qt.ItemIsEditable)
+                self.tabla.setItem(r, c, item)
 
     # ---------------------------------------------------------
-    # Selección
+    # SELECCIONAR CONTRATO
     # ---------------------------------------------------------
-    def _elegir(self):
-        index = self.tabla.currentIndex()
-        if not index.isValid():
+    def seleccionar_contrato(self):
+        row = self.tabla.currentRow()
+        if row < 0:
+            QMessageBox.warning(self, "Aviso", "Debe seleccionar un contrato.")
             return
 
-        fila = index.row()
-        ncontrato = self.modelo.item(fila, 0).text()
+        ncontrato = self.tabla.item(row, 0).text()
+        mw = self.window()  # MainWindow real
 
-        self.callback(ncontrato)
+        if self.modo == "modificacion":
+            from contratos.modificar_contrato import ModificarContrato
 
-    def _cancelar(self):
-        # Volver a la pantalla de inicio
-        self.main_window.cargar_modulo(self.main_window.crear_pantalla_inicio(), None)
+            widget = ModificarContrato(parent=mw, conn=self.conn, ncontrato=ncontrato)
+            mw.cargar_modulo(widget, f"Modificación contrato {ncontrato}")
+            return
+
+        if self.modo == "anulacion":
+            from contratos.anular_rehabilitar import AnularRehabilitar
+
+            widget = AnularRehabilitar(parent=mw, conn=self.conn, ncontrato=ncontrato)
+            mw.cargar_modulo(widget, f"Anulación contrato {ncontrato}")
+            return
+
+        QMessageBox.critical(self, "Error", f"Modo desconocido: {self.modo}")
+
+    # ---------------------------------------------------------
+    # CANCELAR
+    # ---------------------------------------------------------
+    def cancelar(self):
+        mw = self.window()
+        mw.volver_inicio()

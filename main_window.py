@@ -26,10 +26,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from contratos.nuevo_contrato import NuevoContrato
 from contratos.lista_contratos import ListaContratos
 from contratos.modificar_contrato import ModificarContrato
-
+from contratos.nuevo_contrato import NuevoContrato
 from estilo import PALETAS, aplicar_estilo_boton, aplicar_estilo_panel_lateral
 from utilidades.estadisticas_mensuales import (
     CapturaEstadisticasMensuales,
@@ -138,7 +137,7 @@ class MainWindow(QMainWindow):
                 [
                     ("➕ Nuevo contrato", lambda: self.abrir_nuevo_contrato()),
                     ("✏️ Modificación", self.abrir_modificacion_contratos),
-                    ("❌ Anulación", lambda: self.abrir_anulacion_contrato()),
+                    ("❌ Anular/Rehabilitar", lambda: self.abrir_anulacion_contrato()),
                 ],
             )
         )
@@ -257,13 +256,8 @@ class MainWindow(QMainWindow):
     # MODIFICAR CONTRATO (FLUJO NUEVO)
     # ---------------------------------------------------------
     def abrir_modificacion_contratos(self):
-        lista = ListaContratos(
-            parent=self, conn=self.conn, callback=self._abrir_modificar_contrato
-        )
+        lista = ListaContratos(parent=self, modo="modificacion")
         self.cargar_modulo(lista, "Modificar contrato")
-
-    def _abrir_modificar_contrato(self, ncontrato):
-        ModificarContrato(parent=self, conn=self.conn, ncontrato=ncontrato)
 
     # ---------------------------------------------------------
     # ACORDEÓN
@@ -415,7 +409,7 @@ class MainWindow(QMainWindow):
     # ANULACIÓN
     # ---------------------------------------------------------
     def abrir_anulacion_contrato(self):
-        widget = ListaContratosAnulacion(parent=self)
+        widget = ListaContratos(parent=self, modo="anulacion")
         self.cargar_modulo(widget, "Anulación de contrato")
 
     # ---------------------------------------------------------

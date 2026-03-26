@@ -420,6 +420,56 @@ class FormularioContrato(QWidget):
 
         return datos_identificacion, datos_energia, datos_gastos
 
+    # ---------------------------------------------------------
+    # OBTENER DATOS (modo modificación)
+    # ---------------------------------------------------------
+    def obtener_datos_modificacion(self):
+        """
+        Obtiene los datos reales del formulario en modo modificación.
+        NO recalcula fechas ni suplemento.
+        """
+
+        # IDENTIFICACIÓN
+        datos_ident = {
+            "ncontrato": self.txt_ncontrato.text().strip(),
+            "suplemento": int(self.txt_suplemento.text().strip()),
+            "compania": self.cmb_compania.currentText().strip(),
+            "codigo_postal": self.txt_codigo_postal.text().strip(),
+            "fec_inicio": convertir_a_iso(self.txt_fec_inicio.text().strip()),
+            "fec_final": convertir_a_iso(self.txt_fec_final.text().strip()),
+            "efec_suple": convertir_a_iso(self.txt_efec_suple.text().strip()),
+            "fin_suple": convertir_a_iso(self.txt_fin_suple.text().strip()),
+            "fec_anulacion": (
+                convertir_a_iso(self.txt_fec_anulacion.text().strip())
+                if self.txt_fec_anulacion.text().strip()
+                else None
+            ),
+        }
+
+        # ENERGÍA
+        datos_energia = {
+            "ppunta": self.txt_ppunta.text().strip(),
+            "pvalle": self.txt_pvalle.text().strip(),
+            "pv_ppunta": self.txt_pv_ppunta.text().strip(),
+            "pv_pvalle": self.txt_pv_pvalle.text().strip(),
+            "pv_conpunta": self.txt_pv_conpunta.text().strip(),
+            "pv_conllano": self.txt_pv_conllano.text().strip(),
+            "pv_convalle": self.txt_pv_convalle.text().strip(),
+            "vertido": self.txt_vertido.text().strip().upper(),
+            "pv_excedentes": self.txt_pv_excedentes.text().strip(),
+        }
+
+        # GASTOS
+        datos_gastos = {
+            "bono_social": self.txt_bono_social.text().strip(),
+            "i_electrico": self.txt_i_electrico.text().strip(),
+            "alq_contador": self.txt_alq_contador.text().strip(),
+            "otros_gastos": self.txt_otros_gastos.text().strip(),
+            "iva": self.txt_iva.text().strip(),
+        }
+
+        return datos_ident, datos_energia, datos_gastos
+
     def _vertido_upper(self, texto):
         # Evita bucles infinitos
         if texto != texto.upper():

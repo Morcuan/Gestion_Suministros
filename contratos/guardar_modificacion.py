@@ -55,20 +55,17 @@ class GuardarModificacion:
         """
 
         # ======================================================
-        # 1. OBTENER DATOS DEL FORMULARIO
+        # 1. OBTENER DATOS DEL FORMULARIO (MODIFICACIÓN)
         # ======================================================
         try:
-            datos_ident, datos_energia, datos_gastos = self.form.obtener_datos()
+            datos_ident, datos_energia, datos_gastos = (
+                self.form.obtener_datos_modificacion()
+            )
         except ValueError as e:
             QMessageBox.warning(self.parent, "Error", str(e))
             return
 
-        # efec_suple viene en ISO desde obtener_datos()
-        efec_suple_nuevo = datos_ident["fec_inicio"]  # ← OJO: se usa como efec_suple
-        # En modificación, fec_inicio NO se usa como inicio real,
-        # sino como fecha de efecto capturada en el formulario.
-        # Lo corregimos aquí:
-        efec_suple_nuevo = convertir_a_iso(self.form.txt_efec_suple.text().strip())
+        efec_suple_nuevo = datos_ident["efec_suple"]
 
         # ======================================================
         # 2. DETECTAR CAMBIOS
@@ -151,36 +148,21 @@ class GuardarModificacion:
     # DETECTAR CAMBIOS
     # ---------------------------------------------------------
     def _detectar_cambios(self, ident, energia, gastos, efec_suple_nuevo):
-        """
-        Compara los datos del formulario con los datos originales.
-        Regla:
-        - Si no cambia nada → False
-        - Si solo cambia efec_suple → False
-        - Si cambia efec_suple + algún otro campo → True
-        """
-
         cambios = []
-
         orig = self.datos_originales
 
-        # ------------------------------
-        # Comparar identificación
-        # ------------------------------
+        # Identificación
         if ident["compania"] != orig["compania"]:
             cambios.append("compania")
 
         if ident["codigo_postal"] != str(orig["codigo_postal"]):
             cambios.append("codigo_postal")
 
-        # efec_suple se compara aparte
-        efec_suple_original = orig["efec_suple"]
-        if efec_suple_nuevo != efec_suple_original:
+        if efec_suple_nuevo != orig["efec_suple"]:
             cambios.append("efec_suple")
 
-        # ------------------------------
-        # Comparar energía
-        # ------------------------------
-        campos_energia = [
+        # Energía
+        for campo in [
             "ppunta",
             "pvalle",
             "pv_ppunta",
@@ -190,30 +172,21 @@ class GuardarModificacion:
             "pv_convalle",
             "vertido",
             "pv_excedentes",
-        ]
-
-        for campo in campos_energia:
+        ]:
             if str(energia[campo]) != str(orig[campo]):
                 cambios.append(campo)
 
-        # ------------------------------
-        # Comparar gastos
-        # ------------------------------
-        campos_gastos = [
+        # Gastos
+        for campo in [
             "bono_social",
             "i_electrico",
             "alq_contador",
             "otros_gastos",
             "iva",
-        ]
-
-        for campo in campos_gastos:
+        ]:
             if str(gastos[campo]) != str(orig[campo]):
                 cambios.append(campo)
 
-        # ------------------------------
-        # Reglas finales
-        # ------------------------------
         if len(cambios) == 0:
             return False
 
@@ -223,18 +196,9 @@ class GuardarModificacion:
         return True
 
     # ---------------------------------------------------------
-    # VALIDAR FECHA DE EFECTO DEL NUEVO SUPLEMENTO
+    # VALIDAR FECHA DE EFECTO
     # ---------------------------------------------------------
     def _validar_efec_suple(self, efec_suple_iso):
-        """
-        Reglas:
-        - Formato válido
-        - > efec_suple anterior
-        - ≥ hoy
-        - ≤ fec_final del contrato
-        """
-
-        # Validar formato dd/mm/yyyy desde el formulario
         efec_str = self.form.txt_efec_suple.text().strip()
         if not validar_fecha(efec_str):
             QMessageBox.warning(
@@ -244,40 +208,36 @@ class GuardarModificacion:
             )
             return False
 
-        # Convertir a date
         nueva = datetime.strptime(efec_suple_iso, "%Y-%m-%d").date()
-
-        # efec_suple anterior
-        anterior_iso = self.datos_originales["efec_suple"]
-        anterior = datetime.strptime(anterior_iso, "%Y-%m-%d").date()
+        anterior = datetime.strptime(
+            self.datos_originales["efec_suple"], "%Y-%m-%d"
+        ).date()
 
         if nueva <= anterior:
             QMessageBox.warning(
                 self.parent,
                 "Fecha inválida",
-                "La fecha de efecto debe ser posterior a la del suplemento anterior.",
+                "La fecha de efecto debe ser posterior a la anterior.",
             )
             return False
 
-        # No retroactiva
         hoy = datetime.today().date()
         if nueva < hoy:
             QMessageBox.warning(
                 self.parent,
                 "Fecha retroactiva",
-                "La fecha de efecto no puede ser anterior a la fecha actual.",
+                "La fecha de efecto no puede ser anterior a hoy.",
             )
             return False
 
-        # No superar fec_final del contrato
-        fec_final_iso = self.datos_originales["fec_final"]
-        fec_final = datetime.strptime(fec_final_iso, "%Y-%m-%d").date()
-
+        fec_final = datetime.strptime(
+            self.datos_originales["fec_final"], "%Y-%m-%d"
+        ).date()
         if nueva > fec_final:
             QMessageBox.warning(
                 self.parent,
                 "Fecha inválida",
-                "La fecha de efecto no puede superar la fecha final del contrato.",
+                "La fecha de efecto no puede superar la fecha final.",
             )
             return False
 
@@ -292,7 +252,6 @@ class GuardarModificacion:
         if ok:
             return True
 
-        # Preguntar si desea crearlo
         resp = QMessageBox.question(
             self.parent,
             "Código postal no encontrado",
@@ -303,7 +262,6 @@ class GuardarModificacion:
         if resp == QMessageBox.No:
             return False
 
-        # Pedir población
         from PySide6.QtWidgets import QInputDialog
 
         poblacion, ok2 = QInputDialog.getText(
@@ -359,19 +317,13 @@ class GuardarModificacion:
 
         return True
 
-        # ---------------------------------------------------------
-
+    # ---------------------------------------------------------
     # ACTUALIZAR SUPLEMENTO ANTERIOR
     # ---------------------------------------------------------
     def _actualizar_suplemento_anterior(self, efec_suple_nuevo):
 
         ncontrato = self.datos_originales["ncontrato"]
-        # El suplemento anterior es el suplemento real del contrato
         supl_anterior = self.datos_originales["suplemento"]
-
-        if supl_anterior < 0:
-            print("No hay suplemento anterior. Salgo.")
-            return
 
         nueva = datetime.strptime(efec_suple_nuevo, "%Y-%m-%d").date()
         fin_anterior = nueva - timedelta(days=1)
@@ -391,12 +343,6 @@ class GuardarModificacion:
     # INSERTAR SUPLEMENTO NUEVO
     # ---------------------------------------------------------
     def _insertar_suplemento_nuevo(self, ident, energia, gastos, efec_suple_nuevo):
-        """
-        Crea el nuevo suplemento:
-        - suplemento = anterior + 1
-        - efec_suple = efec_suple_nuevo
-        - fin_suple = fec_final (del contrato)
-        """
 
         suplemento_nuevo = self.datos_originales["suplemento"] + 1
 
@@ -404,10 +350,7 @@ class GuardarModificacion:
         ident["efec_suple"] = efec_suple_nuevo
         ident["fin_suple"] = self.datos_originales["fec_final"]
 
-        # Insertar identificación
         idc = insertar_contrato_identificacion(self.cursor, ident)
-
-        # Insertar energía y gastos
         insertar_contrato_energia(self.cursor, idc, energia)
         insertar_contrato_gastos(self.cursor, idc, gastos)
 
@@ -416,7 +359,7 @@ class GuardarModificacion:
         return suplemento_nuevo
 
     # ---------------------------------------------------------
-    # BUSCAR FACTURAS AFECTADAS POR EL NUEVO SUPLEMENTO
+    # BUSCAR FACTURAS AFECTADAS
     # ---------------------------------------------------------
     def _buscar_facturas_afectadas(self, efec_suple_nuevo):
 
@@ -425,7 +368,7 @@ class GuardarModificacion:
             FROM facturas
             WHERE ncontrato = ?
                 AND inicio_factura >= ?
-                ORDER BY inicio_factura
+            ORDER BY inicio_factura
         """
 
         self.cursor.execute(sql, (self.datos_originales["ncontrato"], efec_suple_nuevo))
