@@ -64,6 +64,7 @@ class ListaContratos(QWidget):
                    efec_suple, fin_suple, fec_anulacion
             FROM vista_contratos
             WHERE DATE('now') BETWEEN efec_suple AND fin_suple
+                OR DATE('now') < efec_suple
             ORDER BY ncontrato ASC;
         """
 

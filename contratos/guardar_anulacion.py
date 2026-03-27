@@ -42,7 +42,7 @@ def guardar_anulacion(
         cur.execute(
             """
             UPDATE contratos_identificacion
-            SET fec_anulacion = fec_efecto
+            SET fec_anulacion = efec_suple
             WHERE ncontrato = ?
               AND suplemento = ?;
             """,

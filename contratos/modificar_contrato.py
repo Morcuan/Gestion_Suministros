@@ -3,7 +3,7 @@
 # Widget contenedor + controlador de modificación
 # ---------------------------------------------------------
 
-from PySide6.QtWidgets import QWidget, QVBoxLayout
+from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from contratos.formulario_contrato import FormularioContrato
 from contratos.guardar_modificacion import GuardarModificacion

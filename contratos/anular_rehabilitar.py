@@ -1,7 +1,8 @@
 # anular_rehabilitar.py
 
-from formulario_anulacion import FormularioAnulacion
 from PySide6.QtWidgets import QMessageBox, QVBoxLayout, QWidget
+
+from contratos.formulario_anulacion import FormularioAnulacion
 
 
 class AnularRehabilitar(QWidget):
@@ -30,6 +31,7 @@ class AnularRehabilitar(QWidget):
             FROM vista_contratos
             WHERE ncontrato = ?
               AND DATE('now') BETWEEN efec_suple AND fin_suple
+              OR DATE('now') < efec_suple
             LIMIT 1;
             """,
             (self.ncontrato,),

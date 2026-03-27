@@ -1,6 +1,5 @@
 # formulario_anulacion.py
 
-from guardar_anulacion import guardar_anulacion
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
@@ -10,6 +9,8 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+
+from contratos.guardar_anulacion import guardar_anulacion
 
 
 class FormularioAnulacion(QWidget):
