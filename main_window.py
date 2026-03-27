@@ -252,6 +252,10 @@ class MainWindow(QMainWindow):
     def volver_inicio(self):
         self.cargar_modulo(self.crear_pantalla_inicio(), None)
 
+    def volver_menu_principal(self):
+        """Método estándar para volver al menú principal desde cualquier módulo."""
+        self.volver_inicio()
+
     # ---------------------------------------------------------
     # MODIFICAR CONTRATO (FLUJO NUEVO)
     # ---------------------------------------------------------

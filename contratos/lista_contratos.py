@@ -1,3 +1,5 @@
+# lista_contratos.py
+
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -18,16 +20,12 @@ class ListaContratos(QWidget):
         self.parent = parent
         self.modo = modo  # modificacion / anulacion
 
-        # Heredar conexión desde MainWindow
         self.conn = self.parent.conn
         self.cur = self.conn.cursor()
 
         self.crear_ui()
         self.cargar_datos()
 
-    # ---------------------------------------------------------
-    # UI
-    # ---------------------------------------------------------
     def crear_ui(self):
         layout = QVBoxLayout(self)
 
@@ -36,9 +34,17 @@ class ListaContratos(QWidget):
         layout.addWidget(titulo)
 
         self.tabla = QTableWidget()
-        self.tabla.setColumnCount(6)
+        self.tabla.setColumnCount(7)
         self.tabla.setHorizontalHeaderLabels(
-            ["Contrato", "Compañía", "C.P.", "Inicio", "Final", "Anulación"]
+            [
+                "Contrato",
+                "Fec_inicio",  # <<< AHORA AQUÍ
+                "Compañía",
+                "C.P.",
+                "Inicio",
+                "Final",
+                "Anulación",
+            ]
         )
         self.tabla.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.tabla.setSelectionMode(QAbstractItemView.SingleSelection)
@@ -55,16 +61,13 @@ class ListaContratos(QWidget):
 
         layout.addLayout(botones)
 
-    # ---------------------------------------------------------
-    # CARGA DE DATOS (solo suplemento vigente)
-    # ---------------------------------------------------------
     def cargar_datos(self):
         query = """
             SELECT ncontrato, compania, codigo_postal,
-                   efec_suple, fin_suple, fec_anulacion
+                   efec_suple, fin_suple, fec_anulacion, fec_inicio
             FROM vista_contratos
             WHERE DATE('now') BETWEEN efec_suple AND fin_suple
-                OR DATE('now') < efec_suple
+               OR DATE('now') < efec_suple
             ORDER BY ncontrato ASC;
         """
 
@@ -74,14 +77,24 @@ class ListaContratos(QWidget):
         self.tabla.setRowCount(len(rows))
 
         for r, row in enumerate(rows):
-            for c, value in enumerate(row):
+            ncontrato, compania, cp, efec, fin, anul, fec_inicio = row
+
+            # Orden natural de columnas
+            valores = [
+                ncontrato,
+                fec_inicio,  # <<< SEGUNDA COLUMNA
+                compania,
+                cp,
+                efec,
+                fin,
+                anul,
+            ]
+
+            for c, value in enumerate(valores):
                 item = QTableWidgetItem(str(value))
                 item.setFlags(item.flags() ^ Qt.ItemIsEditable)
                 self.tabla.setItem(r, c, item)
 
-    # ---------------------------------------------------------
-    # SELECCIONAR CONTRATO
-    # ---------------------------------------------------------
     def seleccionar_contrato(self):
         row = self.tabla.currentRow()
         if row < 0:
@@ -89,7 +102,7 @@ class ListaContratos(QWidget):
             return
 
         ncontrato = self.tabla.item(row, 0).text()
-        mw = self.window()  # MainWindow real
+        mw = self.window()
 
         if self.modo == "modificacion":
             from contratos.modificar_contrato import ModificarContrato
@@ -107,9 +120,6 @@ class ListaContratos(QWidget):
 
         QMessageBox.critical(self, "Error", f"Modo desconocido: {self.modo}")
 
-    # ---------------------------------------------------------
-    # CANCELAR
-    # ---------------------------------------------------------
     def cancelar(self):
         mw = self.window()
         mw.volver_inicio()
