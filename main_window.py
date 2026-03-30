@@ -30,6 +30,7 @@ from contratos.lista_contratos import ListaContratos
 from contratos.modificar_contrato import ModificarContrato
 from contratos.nuevo_contrato import NuevoContrato
 from estilo import PALETAS, aplicar_estilo_boton, aplicar_estilo_panel_lateral
+from facturas.lista_contratos_factura import ListaContratosFactura
 from utilidades.estadisticas_mensuales import (
     CapturaEstadisticasMensuales,
     ConsultaEstadisticasMensuales,

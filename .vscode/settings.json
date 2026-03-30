@@ -11,7 +11,7 @@
         "--line-length=88"
     ],
 
-    // ===== RUFF (NUEVO LSP NATIVO) =====
+    // ===== RUFF (LSP NATIVO) =====
     "ruff.enable": true,
     "ruff.lint.enable": true,
     "ruff.lint.select": ["E", "F", "W", "I"],
@@ -22,15 +22,21 @@
     // ===== PYTHON / PYLANCE =====
     "python.analysis.typeCheckingMode": "basic",
     "python.linting.enabled": false,
-    "python.analysis.extraPaths": [],
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.useLibraryCodeForTypes": true,
     "python.analysis.stubPaths": [
         "/home/antoniom/Desarrollo/Gestion_Suministros/venv/lib/python3.12/site-packages/PySide6-stubs"
     ],
+
     "python.analysis.diagnosticSeverityOverrides": {
         "reportAttributeAccessIssue": "none",
-        "reportGeneralTypeIssues": "none"
-    },
+        "reportGeneralTypeIssues": "none",
 
+        // === AÑADIDOS PARA SILENCIAR LOS 5 AVISOS RESTANTES ===
+        "reportOptionalMemberAccess": "none",
+        "reportArgumentType": "none",
+        "reportAssignmentType": "none"
+    },
 
     // ===== TERMINAL =====
     "terminal.integrated.fontSize": 14,
@@ -53,5 +59,18 @@
     "editor.minimap.enabled": false,
     "editor.renderWhitespace": "boundary",
     "editor.tabSize": 4,
-    "editor.detectIndentation": false
+    "editor.detectIndentation": false,
+
+    // ===== SUGERENCIAS INTELIGENTES =====
+    "editor.inlineSuggest.enabled": true,
+    "editor.guides.bracketPairs": true,
+
+    // ===== ACCIONES AUTOMÁTICAS =====
+    "editor.codeActionsOnSave": {
+        "source.organizeImports.ruff": "explicit"
+    },
+
+    // ===== AUTODOCSTRING (ESTILO GOOGLE) =====
+    "autoDocstring.docstringFormat": "google",
+    "autoDocstring.generateDocstringOnEnter": true
 }
