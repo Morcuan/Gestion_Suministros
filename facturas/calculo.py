@@ -9,8 +9,8 @@
 # otros conceptos, IVA) y funciones para orquestar el cálculo completo de la factura,
 # incluyendo el Bono Solar Cloud. Cada bloque tiene su propia clase con métodos específicos
 # para calcular los conceptos dentro del bloque, y un método orquestador para realizar el
-# cálculo completo del bloque. Las funciones externas permiten calcular cada bloque de la
-# factura a partir de los datos obtenidos de la base de datos, y generar el JSON
+# cálculo completo del bloque de energía. Las funciones externas permiten calcular cada
+# bloque de la factura a partir de los datos obtenidos de la base de datos, y generar el JSON
 # con los detalles del cálculo para su almacenamiento y visualización.
 
 # ------------------------------------------------------------
@@ -527,34 +527,34 @@ def generar_json_calculo(
 
 
 # Función para guardar el cálculo de la factura en la base de datos, recibiendo el cursor,
-# el id de la factura, la versión del motor de cálculo, los objetos de cada bloque
+# el número de factura (nfactura), la versión del motor de cálculo, los objetos de cada bloque
 # con los resultados calculados, el importe aplicado del Bono Solar Cloud, el nuevo
-# saldo acumulado,
+# saldo acumulado y el JSON de detalles.
 def guardar_calculo_factura(
     cursor,
-    id_factura,
-    version_motor,
+    nfactura: str,
+    version_motor: str,
     energia_obj,
     cargos_obj,
     servicios_obj,
     iva_obj,
-    aplicado_cloud,
-    nuevo_saldo,
-    detalles_json,
+    aplicado_cloud: float,
+    nuevo_saldo: float,
+    detalles_json: str,
 ):
 
     cursor.execute(
         """
         INSERT INTO factura_calculos (
-            id_factura, fecha_calculo, version_motor,
+            nfactura, fecha_calculo, version_motor,
             total_energia, total_cargos, total_servicios,
             total_iva, cloud_aplicado, cloud_sobrante,
             total_final, detalles_json
         )
         VALUES (?, DATE('now'), ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """,
+        """,
         (
-            id_factura,
+            nfactura,
             version_motor,
             energia_obj.total_energia,
             cargos_obj.total_cargos,

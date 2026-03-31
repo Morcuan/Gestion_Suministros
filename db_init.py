@@ -175,20 +175,19 @@ def crear_tabla_factura_calculos(cursor):
     cursor.execute("DROP TABLE IF EXISTS factura_calculos;")
     cursor(
         """
-        CREATE TABLE IF NOT EXISTS factura_calculos (
-            id_calculo INTEGER PRIMARY KEY AUTOINCREMENT,
-            id_factura INTEGER NOT NULL,
-            fecha_calculo TEXT NOT NULL,          -- formato ISO yyyy-mm-dd
-            version_motor TEXT NOT NULL,          -- ej: "1.0"
-            total_energia REAL NOT NULL,
-            total_cargos REAL NOT NULL,
+        CREATE TABLE factura_calculos (
+            id_calculo      INTEGER PRIMARY KEY AUTOINCREMENT,
+            nfactura        TEXT NOT NULL,
+            fecha_calculo   TEXT NOT NULL,          -- formato ISO yyyy-mm-dd
+            version_motor   TEXT NOT NULL,          -- ej: "1.0.0"
+            total_energia   REAL NOT NULL,
+            total_cargos    REAL NOT NULL,
             total_servicios REAL NOT NULL,
-            total_iva REAL NOT NULL,
-            cloud_aplicado REAL NOT NULL,
-            cloud_sobrante REAL NOT NULL,
-            total_final REAL NOT NULL,
-            detalles_json TEXT NOT NULL,          -- JSON con todos los valores intermedios
-            FOREIGN KEY (id_factura) REFERENCES facturas(id)
+            total_iva       REAL NOT NULL,
+            cloud_aplicado  REAL NOT NULL,
+            cloud_sobrante  REAL NOT NULL,
+            total_final     REAL NOT NULL,
+            detalles_json   TEXT NOT NULL
         );
     """
     )

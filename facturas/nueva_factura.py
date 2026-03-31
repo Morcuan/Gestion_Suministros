@@ -186,7 +186,7 @@ class NuevaFactura(QWidget):
             ),
         )
 
-        id_factura = self.cursor.lastrowid
+        # Ya no necesitamos el rowid para los cálculos: usamos nfactura como clave funcional
         self.conn.commit()
 
         # -----------------------------------------------------
@@ -229,7 +229,7 @@ class NuevaFactura(QWidget):
 
         guardar_calculo_factura(
             self.cursor,
-            id_factura,
+            datos["nfactura"],
             VERSION_MOTOR,
             energia,
             cargos,
