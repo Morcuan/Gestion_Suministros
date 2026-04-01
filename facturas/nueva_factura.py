@@ -26,9 +26,8 @@ from facturas.calculo import (
     obtener_datos_factura,
 )
 from facturas.formulario_factura import FormularioFactura
+from facturas.version_motor import obtener_version_motor
 from utilidades.logica_negocio import convertir_a_iso, dias_entre_fechas, validar_fecha
-
-VERSION_MOTOR = "1.0.0"
 
 
 class NuevaFactura(QWidget):
@@ -186,7 +185,6 @@ class NuevaFactura(QWidget):
             ),
         )
 
-        # Ya no necesitamos el rowid para los cálculos: usamos nfactura como clave funcional
         self.conn.commit()
 
         # -----------------------------------------------------
@@ -227,10 +225,15 @@ class NuevaFactura(QWidget):
             datos_base,
         )
 
+        # Versión de motor desde tabla version_motor
+        from facturas.calculo import VERSION_MOTOR
+
+        version_motor = VERSION_MOTOR
+
         guardar_calculo_factura(
             self.cursor,
             datos["nfactura"],
-            VERSION_MOTOR,
+            version_motor,
             energia,
             cargos,
             servicios,

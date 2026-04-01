@@ -1,6 +1,6 @@
 # -------------------------------------------------------------#
 # Módulo: lista_contratos_factura.py                           #
-# Descripción: Selección de contrato para capturar una factura #
+# Descripción: Selección de contrato para facturas             #
 # Autor: Antonio Morales                                       #
 # Fecha: 2026-02-10                                            #
 # -------------------------------------------------------------#
@@ -22,13 +22,16 @@ from PySide6.QtWidgets import (
 class ListaContratosFactura(QWidget):
     """
     Módulo específico para facturas.
-    Selecciona un contrato y su suplemento asociado,
-    y abre el formulario de captura de factura.
+    Selecciona un contrato y abre:
+      - Nueva factura
+      - Seleccionar factura (rectificar/anular)
+    según el modo recibido.
     """
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, modo="nuevo"):
         super().__init__(parent)
         self.parent = parent
+        self.modo = modo  # nuevo / rectificar / anular
 
         # Conexión a BD heredada del MainWindow
         self.conn = self.parent.conn
@@ -43,7 +46,7 @@ class ListaContratosFactura(QWidget):
     def crear_ui(self):
         layout = QVBoxLayout(self)
 
-        titulo = QLabel("Seleccionar contrato para nueva factura")
+        titulo = QLabel("Seleccionar contrato")
         titulo.setStyleSheet("font-size: 18px; font-weight: bold;")
         layout.addWidget(titulo)
 
@@ -88,10 +91,8 @@ class ListaContratosFactura(QWidget):
                     efec_suple, fin_suple, fec_anulacion, fec_inicio
                 FROM vista_contratos
                 WHERE
-                    -- Suplemento en vigor
                     DATE('now') BETWEEN efec_suple AND fin_suple
                     OR
-                    -- Contratos futuros (solo suplemento 0)
                     (suplemento = 0 AND DATE('now') < efec_suple)
                 ORDER BY ncontrato ASC, suplemento ASC;
         """
@@ -143,17 +144,31 @@ class ListaContratosFactura(QWidget):
 
         mw = self.window()
 
-        # Importación local para evitar dependencias circulares
-        from facturas.nueva_factura import NuevaFactura
+        # --- NUEVA FACTURA ---
+        if self.modo == "nuevo":
+            from facturas.nueva_factura import NuevaFactura
 
-        widget = NuevaFactura(
+            widget = NuevaFactura(
+                parent=mw,
+                conn=self.conn,
+                ncontrato=ncontrato,
+                suplemento=suplemento,
+            )
+
+            mw.cargar_modulo(widget, f"Nueva factura – Contrato {ncontrato}")
+            return
+
+        # --- RECTIFICAR / ANULAR FACTURA ---
+        from facturas.seleccionar_factura import SeleccionarFactura
+
+        widget = SeleccionarFactura(
             parent=mw,
             conn=self.conn,
             ncontrato=ncontrato,
-            suplemento=suplemento,
+            modo=self.modo,  # rectificar o anular
         )
 
-        mw.cargar_modulo(widget, f"Nueva factura – Contrato {ncontrato}")
+        mw.cargar_modulo(widget, f"Seleccionar factura – Contrato {ncontrato}")
 
     # ---------------------------------------------------------
     # Cancelar

@@ -26,6 +26,7 @@ class FormularioFactura(QWidget):
     - Nueva factura
     - Modificar factura
     - Rectificar factura
+    - Anular factura (bloques ocultables desde el controlador)
 
     No contiene lógica de BD ni motor.
     Solo UI + lectura/escritura de datos.
@@ -43,10 +44,18 @@ class FormularioFactura(QWidget):
         layout = QVBoxLayout(self)
         layout.setSpacing(15)
 
+        # -----------------------------------------------------
+        # MENSAJE DE AVISO (solo visible en modo anulación)
+        # -----------------------------------------------------
+        self.lbl_aviso = QLabel()
+        self.lbl_aviso.setStyleSheet("color: red; font-weight: bold;")
+        self.lbl_aviso.setVisible(False)
+        layout.addWidget(self.lbl_aviso)
+
         # -------------------------
         # BLOQUE IDENTIFICACIÓN
         # -------------------------
-        gb_ident = QGroupBox("Identificación")
+        self.gb_ident = QGroupBox("Identificación")
         f_ident = QFormLayout()
 
         self.txt_ncontrato = QLineEdit()
@@ -71,13 +80,13 @@ class FormularioFactura(QWidget):
         f_ident.addRow("Fin periodo (dd/mm/yyyy):", self.txt_fin)
         f_ident.addRow("Días facturados:", self.txt_dias)
 
-        gb_ident.setLayout(f_ident)
-        layout.addWidget(gb_ident)
+        self.gb_ident.setLayout(f_ident)
+        layout.addWidget(self.gb_ident)
 
         # -------------------------
         # BLOQUE CONSUMOS
         # -------------------------
-        gb_con = QGroupBox("Consumos")
+        self.gb_con = QGroupBox("Consumos")
         f_con = QFormLayout()
 
         self.txt_punta = QLineEdit()
@@ -92,13 +101,13 @@ class FormularioFactura(QWidget):
         f_con.addRow("Excedentes (kWh):", self.txt_exced)
         f_con.addRow("Importe compensado (€):", self.txt_comp)
 
-        gb_con.setLayout(f_con)
-        layout.addWidget(gb_con)
+        self.gb_con.setLayout(f_con)
+        layout.addWidget(self.gb_con)
 
         # -------------------------
         # BLOQUE SERVICIOS
         # -------------------------
-        gb_srv = QGroupBox("Servicios y ajustes")
+        self.gb_srv = QGroupBox("Servicios y ajustes")
         f_srv = QFormLayout()
 
         self.txt_serv = QLineEdit()
@@ -111,8 +120,8 @@ class FormularioFactura(QWidget):
         f_srv.addRow("Saldos pendientes (€):", self.txt_saldos)
         f_srv.addRow("Batería virtual (€):", self.txt_bat)
 
-        gb_srv.setLayout(f_srv)
-        layout.addWidget(gb_srv)
+        self.gb_srv.setLayout(f_srv)
+        layout.addWidget(self.gb_srv)
 
         layout.addStretch()
 

@@ -18,6 +18,41 @@
 # ------------------------------------------------------------
 import json
 
+# ============================================
+# Versión del motor de cálculo
+# ============================================
+VERSION_MOTOR = "1.0.0"
+
+
+def registrar_version_motor(cursor):
+    """
+    Registra automáticamente la versión del motor si es nueva.
+    Cierra la versión anterior y abre la nueva.
+    """
+    # ¿Existe ya esta versión?
+    cursor.execute("SELECT 1 FROM version_motor WHERE version=?", (VERSION_MOTOR,))
+    if cursor.fetchone():
+        return  # Ya registrada → no hacer nada
+
+    # Cerrar versión anterior
+    cursor.execute(
+        """
+        UPDATE version_motor
+        SET fecha_fin = DATE('now', '-1 day')
+        WHERE fecha_fin IS NULL
+    """
+    )
+
+    # Insertar nueva versión
+    cursor.execute(
+        """
+        INSERT INTO version_motor (version, fecha_inicio, fecha_fin)
+        VALUES (?, DATE('now'), NULL)
+    """,
+        (VERSION_MOTOR,),
+    )
+
+
 # ---------------------------------------------------------
 # BLOQUE 1: ENERGIA
 # ---------------------------------------------------------
@@ -543,6 +578,12 @@ def guardar_calculo_factura(
     detalles_json: str,
 ):
 
+    # 🔥 1) BORRAR CÁLCULOS ANTERIORES
+    cursor.execute("DELETE FROM factura_calculos WHERE nfactura = ?", (nfactura,))
+
+    registrar_version_motor(cursor)
+
+    # 🧱 2) INSERTAR LOS NUEVOS CÁLCULOS
     cursor.execute(
         """
         INSERT INTO factura_calculos (

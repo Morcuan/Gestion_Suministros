@@ -150,14 +150,22 @@ class MainWindow(QMainWindow):
                     (
                         "➕ Nueva factura",
                         lambda: self.cargar_modulo(
-                            ListaContratosFactura(parent=self), "Nueva factura"
+                            ListaContratosFactura(parent=self, modo="nuevo"),
+                            "Nueva factura",
                         ),
                     ),
                     (
                         "✏️ Rectif. factura",
                         lambda: self.cargar_modulo(
-                            ListaContratosRectificar(parent=self, conn=self.conn),
+                            ListaContratosFactura(parent=self, modo="rectificar"),
                             "Rectificar factura",
+                        ),
+                    ),
+                    (
+                        "‼️ Anular factura",
+                        lambda: self.cargar_modulo(
+                            ListaContratosFactura(parent=self, modo="anular"),
+                            "Anular factura",
                         ),
                     ),
                 ],
