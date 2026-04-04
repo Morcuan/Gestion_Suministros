@@ -10,7 +10,7 @@ Este módulo contiene funciones reutilizables de lógica de negocio.
 Versión inicial: solo stubs para permitir que el proyecto arranque.
 """
 
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 
 def validar_fecha(fecha_str):
@@ -63,3 +63,69 @@ def dias_entre_fechas(inicio_ddmmyyyy, fin_ddmmyyyy):
 def calcular_estado_contrato(fec_inicio, fec_final):
     """Stub: devuelve un estado ficticio."""
     return "activo"
+
+
+# -------------------------------------------------------------#
+# Determinación del estado de un contrato                      #
+# -------------------------------------------------------------#
+
+
+def determinar_estado_contrato(
+    efec_suple, fin_suple, fec_anulacion, lista_fechas_efecto, fecha_ref=None
+):
+    """
+    Determina el estado de un contrato según el DRU de estados.
+    Parámetros:
+        efec_suple: fecha ISO yyyy-mm-dd
+        fin_suple: fecha ISO yyyy-mm-dd
+        fec_anulacion: fecha ISO yyyy-mm-dd o None
+        lista_fechas_efecto: lista de fechas ISO de todos los suplementos
+        fecha_ref: fecha ISO o None (por defecto hoy)
+    """
+
+    # Convertir a objetos date
+    efec = datetime.strptime(efec_suple, "%Y-%m-%d").date()
+    fin = datetime.strptime(fin_suple, "%Y-%m-%d").date()
+
+    anul = None
+    if fec_anulacion:
+        anul = datetime.strptime(fec_anulacion, "%Y-%m-%d").date()
+
+    if fecha_ref is None:
+        fecha_ref = date.today()
+    else:
+        fecha_ref = datetime.strptime(fecha_ref, "%Y-%m-%d").date()
+
+    # ---------------------------------------------------------
+    # 1. CASOS CON ANULACIÓN
+    # ---------------------------------------------------------
+    if anul is not None:
+
+        # 1.1 Posible "Sin efecto"
+        if anul == efec:
+            # Si todos los suplementos tienen la misma fecha de efecto
+            if len(set(lista_fechas_efecto)) == 1:
+                return "Sin efecto"
+            # Si hay fechas distintas → no puede ser "Sin efecto"
+            # Se evalúa como anulado normal
+
+        # 1.2 Anulado (siempre válido porque ya validas que anul <= fin)
+        return "Anulado"
+
+    # ---------------------------------------------------------
+    # 2. CASOS SIN ANULACIÓN
+    # ---------------------------------------------------------
+
+    # 2.1 Futuro
+    if efec > fecha_ref:
+        return "Futuro"
+
+    # 2.2 Caducado
+    if fin < fecha_ref:
+        return "Caducado"
+
+    # 2.3 En vigor
+    if efec <= fecha_ref <= fin:
+        return "En vigor"
+
+    return "Indeterminado"

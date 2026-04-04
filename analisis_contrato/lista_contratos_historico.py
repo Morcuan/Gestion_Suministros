@@ -1,5 +1,5 @@
 # -------------------------------------------------------------#
-# Módulo: lista_contratos.py                                   #
+# Módulo: lista_contratos_historico.p                          #
 # Descripción: Selección de contratos                          #
 # Autor: Antonio Morales                                       #
 # Fecha: 2026-03                                               #

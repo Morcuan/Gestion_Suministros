@@ -9,6 +9,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QHBoxLayout,
+    QHeaderView,
     QLabel,
     QMessageBox,
     QPushButton,
@@ -18,31 +19,21 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from utilidades.logica_negocio import determinar_estado_contrato
+
 
 class ListaContratosFactura(QWidget):
-    """
-    Módulo específico para facturas.
-    Selecciona un contrato y abre:
-      - Nueva factura
-      - Seleccionar factura (rectificar/anular)
-    según el modo recibido.
-    """
-
     def __init__(self, parent=None, modo="nuevo"):
         super().__init__(parent)
         self.parent = parent
-        self.modo = modo  # nuevo / rectificar / anular
+        self.modo = modo
 
-        # Conexión a BD heredada del MainWindow
         self.conn = self.parent.conn
         self.cur = self.conn.cursor()
 
         self.crear_ui()
         self.cargar_datos()
 
-    # ---------------------------------------------------------
-    # UI
-    # ---------------------------------------------------------
     def crear_ui(self):
         layout = QVBoxLayout(self)
 
@@ -50,26 +41,38 @@ class ListaContratosFactura(QWidget):
         titulo.setStyleSheet("font-size: 18px; font-weight: bold;")
         layout.addWidget(titulo)
 
-        # Tabla
         self.tabla = QTableWidget()
-        self.tabla.setColumnCount(8)
+        self.tabla.setColumnCount(9)
         self.tabla.setHorizontalHeaderLabels(
             [
                 "Contrato",
-                "Suplemento",
+                "Sup.",  # <<< Ajustado
                 "Fec_inicio",
                 "Compañía",
                 "C.P.",
                 "Inicio",
                 "Final",
                 "Anulación",
+                "Estado",
             ]
         )
         self.tabla.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.tabla.setSelectionMode(QAbstractItemView.SingleSelection)
+
+        # --- Ajuste fino por columnas ---
+        header = self.tabla.horizontalHeader()
+        header.setSectionResizeMode(0, QHeaderView.ResizeToContents)  # Contrato
+        header.setSectionResizeMode(1, QHeaderView.ResizeToContents)  # Sup.
+        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)  # Fec_inicio
+        header.setSectionResizeMode(3, QHeaderView.Stretch)  # Compañía
+        header.setSectionResizeMode(4, QHeaderView.ResizeToContents)  # C.P.
+        header.setSectionResizeMode(5, QHeaderView.ResizeToContents)  # Inicio
+        header.setSectionResizeMode(6, QHeaderView.ResizeToContents)  # Final
+        header.setSectionResizeMode(7, QHeaderView.ResizeToContents)  # Anulación
+        header.setSectionResizeMode(8, QHeaderView.ResizeToContents)  # Estado
+
         layout.addWidget(self.tabla)
 
-        # Botones
         botones = QHBoxLayout()
 
         btn_sel = QPushButton("Seleccionar contrato")
@@ -82,19 +85,14 @@ class ListaContratosFactura(QWidget):
 
         layout.addLayout(botones)
 
-    # ---------------------------------------------------------
-    # Cargar datos desde vista_contratos
-    # ---------------------------------------------------------
     def cargar_datos(self):
         query = """
             SELECT ncontrato, suplemento, compania, codigo_postal,
-                    efec_suple, fin_suple, fec_anulacion, fec_inicio
-                FROM vista_contratos
-                WHERE
-                    DATE('now') BETWEEN efec_suple AND fin_suple
-                    OR
-                    (suplemento = 0 AND DATE('now') < efec_suple)
-                ORDER BY ncontrato ASC, suplemento ASC;
+                   efec_suple, fin_suple, fec_anulacion, fec_inicio
+            FROM vista_contratos
+            WHERE DATE('now') BETWEEN efec_suple AND fin_suple
+               OR (suplemento = 0 AND DATE('now') < efec_suple)
+            ORDER BY ncontrato ASC, suplemento ASC;
         """
 
         self.cur.execute(query)
@@ -114,6 +112,20 @@ class ListaContratosFactura(QWidget):
                 fec_inicio,
             ) = row
 
+            # Obtener todas las fechas de efecto del contrato
+            self.cur.execute(
+                "SELECT efec_suple FROM contratos_identificacion WHERE ncontrato = ?",
+                (ncontrato,),
+            )
+            fechas = [f[0] for f in self.cur.fetchall()]
+
+            estado = determinar_estado_contrato(
+                efec_suple=efec,
+                fin_suple=fin,
+                fec_anulacion=anul,
+                lista_fechas_efecto=fechas,
+            )
+
             valores = [
                 ncontrato,
                 suplemento,
@@ -123,6 +135,7 @@ class ListaContratosFactura(QWidget):
                 efec,
                 fin,
                 anul,
+                estado,
             ]
 
             for c, value in enumerate(valores):
@@ -130,9 +143,6 @@ class ListaContratosFactura(QWidget):
                 item.setFlags(item.flags() ^ Qt.ItemIsEditable)
                 self.tabla.setItem(r, c, item)
 
-    # ---------------------------------------------------------
-    # Selección de contrato
-    # ---------------------------------------------------------
     def seleccionar_contrato(self):
         row = self.tabla.currentRow()
         if row < 0:
@@ -144,7 +154,6 @@ class ListaContratosFactura(QWidget):
 
         mw = self.window()
 
-        # --- NUEVA FACTURA ---
         if self.modo == "nuevo":
             from facturas.nueva_factura import NuevaFactura
 
@@ -154,25 +163,19 @@ class ListaContratosFactura(QWidget):
                 ncontrato=ncontrato,
                 suplemento=suplemento,
             )
-
             mw.cargar_modulo(widget, f"Nueva factura – Contrato {ncontrato}")
             return
 
-        # --- RECTIFICAR / ANULAR FACTURA ---
         from facturas.seleccionar_factura import SeleccionarFactura
 
         widget = SeleccionarFactura(
             parent=mw,
             conn=self.conn,
             ncontrato=ncontrato,
-            modo=self.modo,  # rectificar o anular
+            modo=self.modo,
         )
-
         mw.cargar_modulo(widget, f"Seleccionar factura – Contrato {ncontrato}")
 
-    # ---------------------------------------------------------
-    # Cancelar
-    # ---------------------------------------------------------
     def cancelar(self):
         mw = self.window()
         mw.volver_inicio()
