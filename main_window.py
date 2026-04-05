@@ -26,6 +26,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from analisis_contrato.lista_contratos_historico import ListaContratosHistorico
 from contratos.lista_contratos import ListaContratos
 from contratos.modificar_contrato import ModificarContrato
 from contratos.nuevo_contrato import NuevoContrato
@@ -180,7 +181,8 @@ class MainWindow(QMainWindow):
                     (
                         "🔎 Histórico de contratos",
                         lambda: self.cargar_modulo(
-                            ListaContratosHistoria(parent=self), "Histórico contratos"
+                            ListaContratosHistorico(parent=self, conn=self.conn),
+                            "Histórico contratos",
                         ),
                     ),
                     (
