@@ -5,14 +5,6 @@
 # Fecha: 2026-02-09                               #
 # ------------------------------------------------#
 
-# from estadisticas_mensuales import (CapturaEstadisticasMensuales,ConsultaEstadisticasMensuales,)
-# from lista_analisis_factura import ListaAnalisisFactura
-# from lista_contratos_anulacion import ListaContratosAnulacion
-# from lista_contratos_factura import ListaContratosFactura
-# from lista_contratos_historia import ListaContratosHistoria
-# from lista_contratos_modificar import ListaContratosModificar
-# from lista_contratos_rectificar import ListaContratosRectificar
-# from modulo_recalculo import ModuloRecalculo
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
@@ -27,8 +19,8 @@ from PySide6.QtWidgets import (
 )
 
 from analisis_contrato.lista_contratos_historico import ListaContratosHistorico
+from analisis_factura.lista_con_his_factura import ListaConHisFactura
 from contratos.lista_contratos import ListaContratos
-from contratos.modificar_contrato import ModificarContrato
 from contratos.nuevo_contrato import NuevoContrato
 from estilo import PALETAS, aplicar_estilo_boton, aplicar_estilo_panel_lateral
 from facturas.lista_contratos_factura import ListaContratosFactura
@@ -36,8 +28,7 @@ from utilidades.estadisticas_mensuales import (
     CapturaEstadisticasMensuales,
     ConsultaEstadisticasMensuales,
 )
-
-# import db_init
+from utilidades.modulo_recalculo import ModuloRecalculo
 
 
 class MainWindow(QMainWindow):
@@ -182,13 +173,13 @@ class MainWindow(QMainWindow):
                         "🔎 Histórico de contratos",
                         lambda: self.cargar_modulo(
                             ListaContratosHistorico(parent=self, conn=self.conn),
-                            "Histórico contratos",
+                            "Histórico de contratos",
                         ),
                     ),
                     (
-                        "🔎 Explorador de facturas",
+                        "🔎 Histórico de facturas",
                         lambda: self.cargar_modulo(
-                            ListaAnalisisFactura(parent=self), "Explorador de facturas"
+                            ListaConHisFactura(parent=self), "Histórico de facturas"
                         ),
                     ),
                     (
@@ -207,7 +198,7 @@ class MainWindow(QMainWindow):
                 "🛠️ Utilidades",
                 [
                     (
-                        "♻️ Recalcular facturas pdtes",
+                        "♻️ Recalcular facturas",
                         lambda: self.cargar_modulo(
                             ModuloRecalculo(parent=self),
                             "Recalcular facturas pendientes",
