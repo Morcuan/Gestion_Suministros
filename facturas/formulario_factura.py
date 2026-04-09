@@ -129,9 +129,26 @@ class FormularioFactura(QWidget):
     # EVENTOS
     # ---------------------------------------------------------
     def conectar_eventos(self):
+        self.txt_inicio.editingFinished.connect(self.corregir_inicio)
         self.txt_inicio.editingFinished.connect(self.recalcular_dias)
         self.txt_fin.editingFinished.connect(self.recalcular_dias)
         self.txt_dias.editingFinished.connect(self.validar_dias_usuario)
+
+    # ---------------------------------------------------------
+    # CORRECCIÓN AUTOMÁTICA FECHA INICIO (+1 día)
+    # ---------------------------------------------------------
+    def corregir_inicio(self):
+        texto = self.txt_inicio.text().strip()
+        if not validar_fecha(texto):
+            return
+
+        from datetime import datetime, timedelta
+
+        dia, mes, anio = map(int, texto.split("/"))
+        fecha = datetime(anio, mes, dia)
+
+        fecha_corregida = fecha + timedelta(days=1)
+        self.txt_inicio.setText(fecha_corregida.strftime("%d/%m/%Y"))
 
     # ---------------------------------------------------------
     # LÓGICA DE DÍAS FACTURADOS
@@ -207,3 +224,15 @@ class FormularioFactura(QWidget):
                 widget = getattr(self, attr)
                 if isinstance(widget, QLineEdit) and not widget.isReadOnly():
                     widget.clear()
+
+    # ---------------------------------------------------------
+    # OCULTAR CAMPOS NO EDITABLES (solo nueva factura)
+    # ---------------------------------------------------------
+    def ocultar_campos_no_editables(self):
+        # Ocultar widgets
+        self.txt_comp.setVisible(False)
+        self.txt_bat.setVisible(False)
+
+        # Ocultar etiquetas asociadas
+        self.gb_con.layout().labelForField(self.txt_comp).setVisible(False)
+        self.gb_srv.layout().labelForField(self.txt_bat).setVisible(False)

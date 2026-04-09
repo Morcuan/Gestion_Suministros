@@ -175,6 +175,7 @@ class DetallesCalculoHisFactura(QWidget):
         layout.addWidget(self.subbloque("Cargos normativos", j["cargos"]))
         layout.addWidget(self.subbloque("Servicios", j["servicios"]))
         layout.addWidget(self.subbloque("IVA", j["iva"]))
+        layout.addWidget(self.subbloque("Saldos pendientes", j["saldos_pendientes"]))
         layout.addWidget(self.subbloque("Cloud", j["cloud"]))
 
         grupo.setLayout(layout)

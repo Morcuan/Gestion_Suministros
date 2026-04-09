@@ -1,17 +1,9 @@
 # --------------------------------------------#
-# Modulo: calculo.py                          #
-# Descripción: Calculo de facturas de energía #
+# Módulo: calculo.py                          #
+# Descripción: Cálculo de facturas de energía #
 # Autor: Antonio Morales                      #
-# Fecha: 2026-02-09                           #
+# Versión motor: ver constante VERSION_MOTOR  #
 # --------------------------------------------#
-# Este módulo contiene la lógica de cálculo de las facturas de energía, organizada
-# en clases para cada bloque de la factura (energía, cargos normativos, servicios y
-# otros conceptos, IVA) y funciones para orquestar el cálculo completo de la factura,
-# incluyendo el Bono Solar Cloud. Cada bloque tiene su propia clase con métodos específicos
-# para calcular los conceptos dentro del bloque, y un método orquestador para realizar el
-# cálculo completo del bloque de energía. Las funciones externas permiten calcular cada
-# bloque de la factura a partir de los datos obtenidos de la base de datos, y generar el JSON
-# con los detalles del cálculo para su almacenamiento y visualización.
 
 # ------------------------------------------------------------
 # IMPORTACIONES
@@ -21,26 +13,33 @@ import json
 # ============================================
 # Versión del motor de cálculo
 # ============================================
-VERSION_MOTOR = "1.0.0"
+VERSION_MOTOR = "1.1.0"
 
 
-def registrar_version_motor(cursor):
+def registrar_version_motor(cursor) -> None:
     """
     Registra automáticamente la versión del motor si es nueva.
-    Cierra la versión anterior y abre la nueva.
+    - Si la versión ya existe, no hace nada.
+    - Si es nueva:
+        - Cierra la versión anterior (fecha_fin = ayer)
+        - Abre la nueva (fecha_inicio = hoy, fecha_fin = NULL)
     """
     # ¿Existe ya esta versión?
-    cursor.execute("SELECT 1 FROM version_motor WHERE version=?", (VERSION_MOTOR,))
+    cursor.execute(
+        "SELECT 1 FROM version_motor WHERE version = ?",
+        (VERSION_MOTOR,),
+    )
     if cursor.fetchone():
-        return  # Ya registrada → no hacer nada
+        # Ya registrada → no hacer nada
+        return
 
-    # Cerrar versión anterior
+    # Cerrar versión anterior (si la hay)
     cursor.execute(
         """
         UPDATE version_motor
         SET fecha_fin = DATE('now', '-1 day')
         WHERE fecha_fin IS NULL
-    """
+        """
     )
 
     # Insertar nueva versión
@@ -48,61 +47,50 @@ def registrar_version_motor(cursor):
         """
         INSERT INTO version_motor (version, fecha_inicio, fecha_fin)
         VALUES (?, DATE('now'), NULL)
-    """,
+        """,
         (VERSION_MOTOR,),
     )
 
 
 # ---------------------------------------------------------
-# BLOQUE 1: ENERGIA
+# BLOQUE 1: ENERGÍA
 # ---------------------------------------------------------
-# Bloque 1.- ENERGÍA
-# Incluye:
-# - Potencia (kW × días × precio)
-# - Energía consumida (kWh × precio)
-# - Compensación por excedentes (kWh × precio, con límite por consumo)
-# - Impuesto eléctrico (aplica sobre la suma de los anteriores, con posible
-# bonificación por bono social)
-
-
-# El bloque de energía se calcula en una clase dedicada, que recibe el diccionario
-# completo de datos para facilitar el acceso a los datos necesarios para cada cálculo,
-# y tiene métodos específicos para calcular cada concepto dentro del bloque, así como
-# un método orquestador para realizar el cálculo completo del bloque de energía.
 class Energia:
-    # init recibe el diccionario completo de datos para facilitar cálculos posteriores
+    """
+    Bloque 1.- ENERGÍA
+    Incluye:
+    - Potencia
+    - Energía consumida
+    - Excedentes (compensación y sobrante)
+    - Impuesto eléctrico (IEE)
+    - Total energía del bloque
+    """
+
     def __init__(self, datos: dict):
         self.datos = datos
 
+        # Totales principales
         self.total_potencia = 0.0
         self.total_consumo = 0.0
         self.compensacion_excedentes = 0.0
+        self.sobrante_excedentes = 0.0
         self.impuesto_electrico = 0.0
         self.total_energia = 0.0
-
-        # NUEVO: sobrante de excedentes para el Bono Solar Cloud
-        self.sobrante_excedentes = 0.0
 
     # ---------------------------------------------------------
     # POTENCIA
     # ---------------------------------------------------------
-    # El cálculo de potencia se hace directamente con los datos de días y precios,
-    # sin necesidad de variables intermedias para kW, ya que el resultado final
-    # es el importe total por potencia.
     def calcular_potencia(self):
         dias = self.datos["dias_factura"]
 
-        ppunta = self.datos["ppunta"] * dias * self.datos["pv_ppunta"]
-        pvalle = self.datos["pvalle"] * dias * self.datos["pv_pvalle"]
+        p_punta = self.datos["ppunta"] * dias * self.datos["pv_ppunta"]
+        p_valle = self.datos["pvalle"] * dias * self.datos["pv_pvalle"]
 
-        self.total_potencia = round(ppunta + pvalle, 2)
+        self.total_potencia = round(p_punta + p_valle, 2)
 
     # ---------------------------------------------------------
     # ENERGÍA CONSUMIDA
     # ---------------------------------------------------------
-    # Similar al caso de potencia, el cálculo se hace directamente con los datos
-    # de consumo y precios, sin necesidad de variables intermedias para kWh,
-    # ya que el resultado final es el importe total por consumo.
     def calcular_consumo(self):
         c_punta = self.datos["consumo_punta"] * self.datos["pv_conpunta"]
         c_llano = self.datos["consumo_llano"] * self.datos["pv_conllano"]
@@ -113,11 +101,6 @@ class Energia:
     # ---------------------------------------------------------
     # EXCEDENTES
     # ---------------------------------------------------------
-    # El cálculo de excedentes se hace en varios pasos:
-    # 1) Calcular el importe total generado por los excedentes (kWh × precio)
-    # 2) Calcular la compensación aplicable (siempre negativa, con límite por consumo)
-    # 3) Calcular el sobrante de excedentes que no se compensan,
-    # para acumularlo en el Bono Solar Cloud
     def calcular_excedentes(self, limite_por_consumo=True):
         exced_kwh = self.datos["excedentes"]
         precio_exc = self.datos["pv_excedent"]
@@ -125,6 +108,7 @@ class Energia:
         importe_excedentes = round(exced_kwh * precio_exc, 2)
         compensacion = -importe_excedentes  # siempre negativo
 
+        # Límite: no compensar más que el consumo
         if limite_por_consumo:
             max_compensable = self.total_consumo
             if abs(compensacion) > max_compensable:
@@ -132,7 +116,7 @@ class Energia:
 
         self.compensacion_excedentes = round(compensacion, 2)
 
-        # Cálculo del sobrante de excedentes para el Bono Solar Cloud
+        # Sobrante para el Bono Solar Cloud
         self.sobrante_excedentes = round(
             importe_excedentes - abs(self.compensacion_excedentes), 2
         )
@@ -143,13 +127,16 @@ class Energia:
     # ---------------------------------------------------------
     # IMPUESTO ELÉCTRICO (IEE)
     # ---------------------------------------------------------
-    # El impuesto eléctrico se calcula aplicando el porcentaje sobre la suma de
-    # potencia, consumo, compensación por excedentes y bono social (si aplica).
     def calcular_impuesto_electrico(self, bono_social):
+        """
+        Base correcta según tu guía técnica:
+        total_potencia
+        + (total_consumo - compensación_excedentes)
+        + bono_social
+        """
         base = (
             self.total_potencia
-            + self.total_consumo
-            + self.compensacion_excedentes
+            + (self.total_consumo - abs(self.compensacion_excedentes))
             + bono_social
         )
 
@@ -159,9 +146,11 @@ class Energia:
     # ---------------------------------------------------------
     # TOTAL BLOQUE
     # ---------------------------------------------------------
-    # El total del bloque de energía es la suma de potencia, consumo, compensación
-    # por excedentes e impuesto eléctrico.
     def calcular_bloque(self):
+        """
+        Total energía = potencia + consumo + compensación + IEE
+        (compensación es negativa)
+        """
         self.total_energia = round(
             self.total_potencia
             + self.total_consumo
@@ -173,10 +162,7 @@ class Energia:
     # ---------------------------------------------------------
     # ORQUESTADOR
     # ---------------------------------------------------------
-    # El método calcular orquesta el cálculo completo del bloque de energía, recibiendo
-    # el bono social como parámetro para incluirlo en el cálculo del impuesto eléctrico.
     def calcular(self, bono_social):
-
         self.calcular_potencia()
         self.calcular_consumo()
         self.calcular_excedentes()
@@ -188,9 +174,6 @@ class Energia:
 # ---------------------------------------------------------
 # BLOQUE 2: CARGOS NORMATIVOS
 # ---------------------------------------------------------
-# Bloque 2.- CARGOS NORMATIVOS
-# Incluye:
-# - Bono social (importe diario × días)
 class CargosNormativos:
     """
     Bloque 2.- CARGOS NORMATIVOS
@@ -198,18 +181,15 @@ class CargosNormativos:
     - Bono social (importe diario × días)
     """
 
-    # El init recibe el diccionario completo de datos para facilitar cálculos posteriores
     def __init__(self, datos: dict):
         self.datos = datos
+
         self.bono_social = 0.0
         self.total_cargos = 0.0
 
     # ---------------------------------------------------------
-    # BONO SOCIAL (importe fijo diario)
+    # BONO SOCIAL
     # ---------------------------------------------------------
-    # El cálculo del bono social se hace directamente con los datos de días y el
-    # importe diario, sin necesidad de variables intermedias, ya que el resultado
-    # final es el importe total por bono social.
     def calcular_bono_social(self):
         dias = self.datos["dias_factura"]
         importe_diario = self.datos["bono_social"]
@@ -219,19 +199,14 @@ class CargosNormativos:
     # ---------------------------------------------------------
     # TOTAL BLOQUE
     # ---------------------------------------------------------
-    # El total del bloque de cargos normativos es el importe del bono social, ya que
-    # no hay otros cargos normativos en este bloque.
     def calcular_bloque(self):
+        # En este bloque solo existe el bono social
         self.total_cargos = round(self.bono_social, 2)
 
     # ---------------------------------------------------------
     # ORQUESTADOR
     # ---------------------------------------------------------
-    # El método calcular orquesta el cálculo completo del bloque de cargos normativos,
-    # que en este caso se reduce al cálculo del bono social y su asignación al
-    # total de cargos.
     def calcular(self):
-
         self.calcular_bono_social()
         self.calcular_bloque()
         return self
@@ -248,7 +223,6 @@ class ServiciosOtros:
     - Servicios asociados (incluye descuentos)
     """
 
-    # El init recibe el diccionario completo de datos para facilitar cálculos posteriores
     def __init__(self, datos: dict):
         self.datos = datos
 
@@ -259,41 +233,38 @@ class ServiciosOtros:
     # ---------------------------------------------------------
     # ALQUILER DE EQUIPOS
     # ---------------------------------------------------------
-    # El cálculo del alquiler de equipos se hace directamente con los datos de días y el
-    # precio diario, sin necesidad de variables intermedias, ya que el resultado final
-    # es el importe total por alquiler de equipos.
     def calcular_equipos(self):
         dias = self.datos["dias_factura"]
-        precio = self.datos["alq_contador"]
+        precio_diario = self.datos["alq_contador"]
 
-        self.equipos = round(dias * precio, 2)
+        self.equipos = round(dias * precio_diario, 2)
 
     # ---------------------------------------------------------
     # SERVICIOS ASOCIADOS
     # ---------------------------------------------------------
-    # El cálculo de servicios asociados se hace directamente con los datos de importe total
-    # de servicios y el descuento aplicado, sin necesidad de variables intermedias, ya que
-    # el resultado final es el importe total por servicios asociados después de
-    # aplicar el descuento.
     def calcular_servicios(self):
+        """
+        servicios: importe total de servicios
+        dcto_servicios: descuento (viene en negativo)
+        """
         servicios = self.datos["servicios"]
-        dcto = self.datos["dcto_servicios"]  # viene en negativo
+        descuento = self.datos["dcto_servicios"]
 
-        self.servicios = round(servicios + dcto, 2)
+        self.servicios = round(servicios + descuento, 2)
 
     # ---------------------------------------------------------
     # TOTAL BLOQUE
     # ---------------------------------------------------------
     def calcular_bloque(self):
-        self.total_servicios_otros = round(self.equipos + self.servicios, 2)
+        self.total_servicios_otros = round(
+            self.equipos + self.servicios,
+            2,
+        )
 
     # ---------------------------------------------------------
     # ORQUESTADOR
     # ---------------------------------------------------------
-    # El método calcular orquesta el cálculo completo del bloque de servicios y
-    # otros conceptos, que incluye
     def calcular(self):
-
         self.calcular_equipos()
         self.calcular_servicios()
         self.calcular_bloque()
@@ -303,11 +274,6 @@ class ServiciosOtros:
 # ---------------------------------------------------------
 # BLOQUE 4: IVA
 # ---------------------------------------------------------
-# Bloque 4.- IVA
-# Incluye:
-# - Base imponible (suma de bloques 1, 2 y 3)
-# - Tipo de IVA aplicado
-# - Cuota resultante
 class IVA:
     """
     Bloque 4.- IVA
@@ -315,23 +281,20 @@ class IVA:
     - Base imponible (suma de bloques 1, 2 y 3)
     - Tipo de IVA aplicado
     - Cuota resultante
+    - Total con IVA
     """
 
-    # El init recibe la base imponible calculada a partir de la suma de los bloques
-    # anteriores, y el tipo de IVA a aplicar, que por defecto es el 21%.
-    # No es necesario recibir el total de los bloques anteriores,
-    # ya que la base imponible se pasa directamente desde el cálculo de los bloques anteriores.
     def __init__(self, base_imponible: float, tipo_iva: float = 0.21):
+        # La base imponible ya viene calculada desde fuera
         self.base_imponible = round(base_imponible, 2)
         self.tipo_iva = tipo_iva
+
         self.cuota_iva = 0.0
         self.total_con_iva = 0.0
 
     # ---------------------------------------------------------
     # CÁLCULO DEL IVA
     # ---------------------------------------------------------
-    # El cálculo del IVA se hace aplicando el tipo de IVA sobre la base imponible,
-    # y luego sumando la cuota de IVA a la base para obtener el total con IVA.
     def calcular_iva(self):
         self.cuota_iva = round(self.base_imponible * self.tipo_iva, 2)
         self.total_con_iva = round(self.base_imponible + self.cuota_iva, 2)
@@ -339,33 +302,109 @@ class IVA:
     # ---------------------------------------------------------
     # ORQUESTADOR
     # ---------------------------------------------------------
-    # El método calcular orquesta el cálculo completo del bloque de IVA, que incluye
-    # el cálculo de la cuota de IVA y el total con IVA a partir de la base
-    # imponible y el tipo de IVA.
     def calcular(self):
-
         self.calcular_iva()
         return self
 
 
 # ---------------------------------------------------------
-# BONO SOLAR CLOUD
+# BLOQUE 5: SALDOS PENDIENTES
+# ---------------------------------------------------------
+class SaldosPendientes:
+    """
+    Bloque 5.- SALDOS PENDIENTES
+    Se aplican DESPUÉS del IVA y ANTES del Cloud.
+    El valor viene en negativo desde la BD.
+    """
+
+    def __init__(self, datos: dict):
+        self.datos = datos
+        self.saldo_pendiente = 0.0
+        self.total_con_saldos = 0.0
+
+    # ---------------------------------------------------------
+    # CÁLCULO DEL SALDO PENDIENTE
+    # ---------------------------------------------------------
+    def calcular_saldo(self):
+        """
+        El saldo pendiente viene en negativo desde la BD.
+        Se suma al total con IVA.
+        """
+        self.saldo_pendiente = round(self.datos.get("saldos_pendientes", 0.0), 2)
+
+    # ---------------------------------------------------------
+    # APLICACIÓN DEL SALDO
+    # ---------------------------------------------------------
+    def aplicar(self, total_con_iva: float):
+        """
+        total_con_saldos = total_con_iva + saldo_pendiente
+        (si saldo_pendiente es negativo → resta)
+        """
+        self.total_con_saldos = round(total_con_iva + self.saldo_pendiente, 2)
+        return self.total_con_saldos
+
+    # ---------------------------------------------------------
+    # ORQUESTADOR
+    # ---------------------------------------------------------
+    def calcular(self, total_con_iva: float):
+        self.calcular_saldo()
+        return self.aplicar(total_con_iva)
+
+
+# ---------------------------------------------------------
+# BLOQUE 6: BONO SOLAR CLOUD
 # ---------------------------------------------------------
 
 
-# El cálculo del Bono Solar Cloud se hace en una función externa, ya que requiere
-# acceder a la base de datos para leer el saldo acumulado, aplicar ese saldo a
-# la factura actual
-def calcular_bono_solar_cloud(cursor, id_contrato, total_con_iva, sobrante_excedentes):
-    # 1) Leer saldo acumulado
-    saldo_tabla = obtener_saldo_cloud(cursor, id_contrato)
+def obtener_saldo_cloud(cursor, id_contrato):
+    """
+    Devuelve el saldo acumulado del Bono Solar Cloud.
+    Si no existe registro, devuelve 0.0.
+    """
+    cursor.execute(
+        "SELECT saldo FROM saldo_cloud WHERE id_contrato = ?",
+        (id_contrato,),
+    )
+    row = cursor.fetchone()
+    return row[0] if row else 0.0
 
-    # 2) Aplicar saldo acumulado a la factura actual
-    aplicado = min(saldo_tabla, total_con_iva)
-    total_final = round(total_con_iva - aplicado, 2)
+
+def guardar_saldo_cloud(cursor, id_contrato, nuevo_saldo):
+    """
+    Guarda el nuevo saldo acumulado del Bono Solar Cloud.
+    Si el contrato ya existe, actualiza el saldo.
+    """
+    cursor.execute(
+        """
+        INSERT INTO saldo_cloud (id_contrato, saldo)
+        VALUES (?, ?)
+        ON CONFLICT(id_contrato) DO UPDATE SET saldo = excluded.saldo
+        """,
+        (id_contrato, nuevo_saldo),
+    )
+
+
+def calcular_bono_solar_cloud(
+    cursor, id_contrato, total_con_saldos, sobrante_excedentes
+):
+    """
+    Aplica el Bono Solar Cloud siguiendo tu lógica exacta:
+
+    1) Leer saldo acumulado anterior.
+    2) Aplicar ese saldo al total con IVA (ya ajustado por saldos pendientes).
+    3) El excedente de la factura actual NO se aplica aquí → solo se acumula.
+    4) El nuevo saldo = (saldo_anterior - aplicado) + sobrante_excedentes.
+    """
+
+    # 1) Leer saldo acumulado
+    saldo_anterior = obtener_saldo_cloud(cursor, id_contrato)
+
+    # 2) Aplicar saldo al total con IVA (tras saldos pendientes)
+    aplicado = min(saldo_anterior, total_con_saldos)
+    total_final = round(total_con_saldos - aplicado, 2)
 
     # 3) Calcular nuevo saldo acumulado
-    nuevo_saldo = round((saldo_tabla - aplicado) + sobrante_excedentes, 2)
+    nuevo_saldo = round((saldo_anterior - aplicado) + sobrante_excedentes, 2)
 
     # 4) Guardar nuevo saldo
     guardar_saldo_cloud(cursor, id_contrato, nuevo_saldo)
@@ -378,32 +417,28 @@ def calcular_bono_solar_cloud(cursor, id_contrato, total_con_iva, sobrante_exced
 # ---------------------------------------------------------
 
 
-# Función para obtener los datos de la factura desde la base de datos, a partir
-# del número de factura.
 def obtener_datos_factura(cursor, nfactura: str) -> dict:
+    """
+    Devuelve un diccionario con todos los datos necesarios para el cálculo.
+    """
     cursor.execute(
         """
         SELECT *
         FROM v_datos_calculo
         WHERE nfactura = ?
-    """,
+        """,
         (nfactura,),
     )
     row = cursor.fetchone()
     columnas = [d[0] for d in cursor.description]
-    return dict(zip(columnas, row))  # noqa: B905
+    return dict(zip(columnas, row))
 
 
-# Funciones para calcular cada bloque, recibiendo los datos necesarios y devolviendo
-# el objeto con los resultados calculados.
-def calcular_cargos_para_factura(datos: dict):
-    cargos = CargosNormativos(datos)
-    cargos.calcular()
-    return cargos
+# ---------------------------------------------------------
+# ORQUESTADORES DE BLOQUES
+# ---------------------------------------------------------
 
 
-# Función para calcular el bloque de energía, recibiendo el bono social calculado
-# para incluirlo en el cálculo del impuesto eléctrico.
 def calcular_energia_para_factura(cursor, nfactura: str, bono_social: float):
     datos = obtener_datos_factura(cursor, nfactura)
     energia = Energia(datos)
@@ -411,18 +446,18 @@ def calcular_energia_para_factura(cursor, nfactura: str, bono_social: float):
     return energia, datos
 
 
-# Función para calcular el bloque de servicios y otros conceptos, recibiendo los
-# datos necesarios para el cálculo.
+def calcular_cargos_para_factura(datos: dict):
+    cargos = CargosNormativos(datos)
+    cargos.calcular()
+    return cargos
+
+
 def calcular_servicios_para_factura(datos: dict):
     serv = ServiciosOtros(datos)
     serv.calcular()
     return serv
 
 
-# Función para calcular el bloque de IVA, recibiendo la base imponible calculada a
-# partir de la suma de los bloques anteriores.
-# No es necesario recibir el total de los bloques anteriores, ya que la base
-# imponible se pasa directamente desde el cálculo de los bloques anteriores.
 def calcular_iva_para_factura(
     total_energia: float, total_cargos: float, total_servicios: float
 ):
@@ -432,122 +467,147 @@ def calcular_iva_para_factura(
     return iva
 
 
-# Función para calcular el Bono Solar Cloud, recibiendo el cursor de la base de datos,
-# el id del contrato, el total con IVA de la factura actual y el sobrante de excedentes
-# para acumular en el bono. Devuelve el total final después de aplicar el bono, el
-# importe aplicado del bono
-def obtener_saldo_cloud(cursor, id_contrato):
-    cursor.execute(
-        "SELECT saldo FROM saldo_cloud WHERE id_contrato = ?", (id_contrato,)
-    )
-    row = cursor.fetchone()
-    return row[0] if row else 0.0
+def calcular_saldos_pendientes(datos: dict, total_con_iva: float):
+    saldos = SaldosPendientes(datos)
+    total_con_saldos = saldos.calcular(total_con_iva)
+    return saldos, total_con_saldos
 
 
-# Función para guardar el nuevo saldo acumulado del Bono Solar Cloud en la base de datos,
-# utilizando una sentencia INSERT para insertar o actualizar el saldo según corresponda.
-def guardar_saldo_cloud(cursor, id_contrato, nuevo_saldo):
-    cursor.execute(
-        """
-        INSERT INTO saldo_cloud (id_contrato, saldo)
-        VALUES (?, ?)
-        ON CONFLICT(id_contrato) DO UPDATE SET saldo = excluded.saldo
-    """,
-        (id_contrato, nuevo_saldo),
-    )
+# ---------------------------------------------------------
+# JSON AMPLIADO DEL CÁLCULO
+# ---------------------------------------------------------
 
 
-# Función para generar el JSON con los detalles del cálculo de la factura, recibiendo
-# los objetos de cada bloque con los resultados calculados, el importe aplicado del
-# Bono Solar Cloud, el nuevo saldo acumulado, y los datos base para incluir en el JSON.
 def generar_json_calculo(
     energia_obj,
     cargos_obj,
     servicios_obj,
     iva_obj,
+    saldos_obj,
     aplicado_cloud,
     nuevo_saldo,
     datos_base,
 ):
+    """
+    Genera el JSON ampliado según la guía técnica:
+    - Ningún importe sin sus parámetros origen
+    - Estructura limpia y trazable
+    """
 
     detalles = {
         "dias_factura": datos_base["dias_factura"],
+        # ------------------------
+        # POTENCIA
+        # ------------------------
         "potencia": {
-            "periodos": {
-                "punta": {
-                    "kW": datos_base["ppunta"],
-                    "precio_unitario": datos_base["pv_ppunta"],
-                    "importe": round(
-                        datos_base["ppunta"]
-                        * datos_base["dias_factura"]
-                        * datos_base["pv_ppunta"],
-                        2,
-                    ),
-                },
-                "llano": {
-                    "kW": 0,
-                    "precio_unitario": 0,
-                    "importe": 0,
-                },
-                "valle": {
-                    "kW": datos_base["pvalle"],
-                    "precio_unitario": datos_base["pv_pvalle"],
-                    "importe": round(
-                        datos_base["pvalle"]
-                        * datos_base["dias_factura"]
-                        * datos_base["pv_pvalle"],
-                        2,
-                    ),
-                },
+            "punta": {
+                "kw": datos_base["ppunta"],
+                "precio": datos_base["pv_ppunta"],
+                "dias": datos_base["dias_factura"],
+                "importe": round(
+                    datos_base["ppunta"]
+                    * datos_base["pv_ppunta"]
+                    * datos_base["dias_factura"],
+                    2,
+                ),
+            },
+            "valle": {
+                "kw": datos_base["pvalle"],
+                "precio": datos_base["pv_pvalle"],
+                "dias": datos_base["dias_factura"],
+                "importe": round(
+                    datos_base["pvalle"]
+                    * datos_base["pv_pvalle"]
+                    * datos_base["dias_factura"],
+                    2,
+                ),
             },
             "total": energia_obj.total_potencia,
         },
+        # ------------------------
+        # CONSUMO
+        # ------------------------
         "consumo": {
-            "periodos": {
-                "punta": {
-                    "kWh": datos_base["consumo_punta"],
-                    "precio_unitario": datos_base["pv_conpunta"],
-                    "importe": round(
-                        datos_base["consumo_punta"] * datos_base["pv_conpunta"], 2
-                    ),
-                },
-                "llano": {
-                    "kWh": datos_base["consumo_llano"],
-                    "precio_unitario": datos_base["pv_conllano"],
-                    "importe": round(
-                        datos_base["consumo_llano"] * datos_base["pv_conllano"], 2
-                    ),
-                },
-                "valle": {
-                    "kWh": datos_base["consumo_valle"],
-                    "precio_unitario": datos_base["pv_convalle"],
-                    "importe": round(
-                        datos_base["consumo_valle"] * datos_base["pv_convalle"], 2
-                    ),
-                },
+            "punta": {
+                "kwh": datos_base["consumo_punta"],
+                "precio": datos_base["pv_conpunta"],
+                "importe": round(
+                    datos_base["consumo_punta"] * datos_base["pv_conpunta"], 2
+                ),
+            },
+            "llano": {
+                "kwh": datos_base["consumo_llano"],
+                "precio": datos_base["pv_conllano"],
+                "importe": round(
+                    datos_base["consumo_llano"] * datos_base["pv_conllano"], 2
+                ),
+            },
+            "valle": {
+                "kwh": datos_base["consumo_valle"],
+                "precio": datos_base["pv_convalle"],
+                "importe": round(
+                    datos_base["consumo_valle"] * datos_base["pv_convalle"], 2
+                ),
             },
             "total": energia_obj.total_consumo,
         },
+        # ------------------------
+        # EXCEDENTES
+        # ------------------------
         "excedentes": {
-            "generados_kWh": datos_base["excedentes"],
+            "generados_kwh": datos_base["excedentes"],
             "precio_unitario": datos_base["pv_excedent"],
             "compensados": energia_obj.compensacion_excedentes,
             "sobrante": energia_obj.sobrante_excedentes,
         },
+        # ------------------------
+        # CARGOS NORMATIVOS
+        # ------------------------
         "cargos": {
-            "bono_social": cargos_obj.bono_social,
-            "total": cargos_obj.total_cargos,
+            "bono_social": {
+                "dias": datos_base["dias_factura"],
+                "importe_diario": datos_base["bono_social"],
+                "importe": cargos_obj.bono_social,
+            },
+            "iee": {
+                "base": (
+                    energia_obj.total_potencia
+                    + (
+                        energia_obj.total_consumo
+                        - abs(energia_obj.compensacion_excedentes)
+                    )
+                    + cargos_obj.bono_social
+                ),
+                "porcentaje": datos_base["i_electrico"] / 100,
+                "importe": energia_obj.impuesto_electrico,
+            },
         },
+        # ------------------------
+        # SERVICIOS
+        # ------------------------
         "servicios": {
             "equipos": servicios_obj.equipos,
             "servicios": servicios_obj.servicios,
             "total": servicios_obj.total_servicios_otros,
         },
+        # ------------------------
+        # IVA
+        # ------------------------
         "iva": {
             "base": iva_obj.base_imponible,
             "tipo": iva_obj.tipo_iva,
             "importe": iva_obj.cuota_iva,
         },
+        # ------------------------
+        # SALDOS PENDIENTES
+        # ------------------------
+        "saldos_pendientes": {
+            "importe": saldos_obj.saldo_pendiente,
+            "total_tras_saldos": saldos_obj.total_con_saldos,
+        },
+        # ------------------------
+        # CLOUD
+        # ------------------------
         "cloud": {
             "aplicado": aplicado_cloud,
             "sobrante_excedentes": energia_obj.sobrante_excedentes,
@@ -555,16 +615,17 @@ def generar_json_calculo(
         },
     }
 
-    # 👉 AÑADIDO AQUÍ, EN EL SITIO CORRECTO
-    detalles["total_final"] = iva_obj.total_con_iva - aplicado_cloud
+    # Total final de la factura
+    detalles["total_final"] = round(saldos_obj.total_con_saldos - aplicado_cloud, 2)
 
     return json.dumps(detalles, ensure_ascii=False, indent=2)
 
 
-# Función para guardar el cálculo de la factura en la base de datos, recibiendo el cursor,
-# el número de factura (nfactura), la versión del motor de cálculo, los objetos de cada bloque
-# con los resultados calculados, el importe aplicado del Bono Solar Cloud, el nuevo
-# saldo acumulado y el JSON de detalles.
+# ---------------------------------------------------------
+# GUARDADO FINAL EN BD
+# ---------------------------------------------------------
+
+
 def guardar_calculo_factura(
     cursor,
     nfactura: str,
@@ -573,17 +634,22 @@ def guardar_calculo_factura(
     cargos_obj,
     servicios_obj,
     iva_obj,
+    saldos_obj,
     aplicado_cloud: float,
     nuevo_saldo: float,
     detalles_json: str,
 ):
+    """
+    Guarda el cálculo completo en la tabla factura_calculos.
+    """
 
-    # 🔥 1) BORRAR CÁLCULOS ANTERIORES
+    # 1) Borrar cálculo anterior
     cursor.execute("DELETE FROM factura_calculos WHERE nfactura = ?", (nfactura,))
 
+    # Registrar versión del motor
     registrar_version_motor(cursor)
 
-    # 🧱 2) INSERTAR LOS NUEVOS CÁLCULOS
+    # 2) Insertar nuevo cálculo
     cursor.execute(
         """
         INSERT INTO factura_calculos (
@@ -603,7 +669,7 @@ def guardar_calculo_factura(
             iva_obj.cuota_iva,
             aplicado_cloud,
             energia_obj.sobrante_excedentes,
-            iva_obj.total_con_iva - aplicado_cloud,
+            round(saldos_obj.total_con_saldos - aplicado_cloud, 2),
             detalles_json,
         ),
     )

@@ -20,13 +20,13 @@ from facturas.calculo import (
     calcular_cargos_para_factura,
     calcular_energia_para_factura,
     calcular_iva_para_factura,
+    calcular_saldos_pendientes,
     calcular_servicios_para_factura,
     generar_json_calculo,
     guardar_calculo_factura,
     obtener_datos_factura,
 )
 from facturas.formulario_factura import FormularioFactura
-from facturas.version_motor import obtener_version_motor
 from utilidades.logica_negocio import convertir_a_iso, dias_entre_fechas, validar_fecha
 
 
@@ -67,6 +67,10 @@ class NuevaFactura(QWidget):
         layout.setSpacing(15)
 
         self.form = FormularioFactura(parent=self)
+
+        # OCULTAR CAMPOS NO EDITABLES (solo nueva factura)
+        self.form.ocultar_campos_no_editables()
+
         self.form.set_identificacion(self.ncontrato, self.suplemento)
         layout.addWidget(self.form)
 
@@ -116,7 +120,6 @@ class NuevaFactura(QWidget):
             "consumo_llano",
             "consumo_valle",
             "excedentes",
-            "importe_compensado",
             "servicios",
             "dcto_servicios",
             "saldos_pendientes",
@@ -180,7 +183,7 @@ class NuevaFactura(QWidget):
                 float(datos["excedentes"] or 0),
                 float(datos["servicios"] or 0),
                 -float(datos["dcto_servicios"] or 0),  # SIEMPRE NEGATIVO
-                float(datos["saldos_pendientes"] or 0),
+                -float(datos["saldos_pendientes"] or 0),
                 float(datos["bat_virtual"] or 0),
             ),
         )
@@ -192,34 +195,45 @@ class NuevaFactura(QWidget):
         # -----------------------------------------------------
         datos_base = obtener_datos_factura(self.cursor, datos["nfactura"])
 
-        cargos = calcular_cargos_para_factura(datos_base)
+        # 1) Cargos normativos
+        cargos_obj = calcular_cargos_para_factura(datos_base)
 
-        energia, datos_base = calcular_energia_para_factura(
-            self.cursor, datos["nfactura"], cargos.bono_social
+        # 2) Energía
+        energia_obj, datos_base = calcular_energia_para_factura(
+            self.cursor, datos["nfactura"], cargos_obj.bono_social
         )
 
-        servicios = calcular_servicios_para_factura(datos_base)
+        # 3) Servicios
+        servicios_obj = calcular_servicios_para_factura(datos_base)
 
-        iva = calcular_iva_para_factura(
-            energia.total_energia,
-            cargos.total_cargos,
-            servicios.total_servicios_otros,
+        # 4) IVA
+        iva_obj = calcular_iva_para_factura(
+            energia_obj.total_energia,
+            cargos_obj.total_cargos,
+            servicios_obj.total_servicios_otros,
         )
 
-        total_con_iva = iva.total_con_iva
+        # 5) Saldos pendientes
+        total_con_iva = iva_obj.total_con_iva
+        saldos_obj, total_con_saldos = calcular_saldos_pendientes(
+            datos_base, total_con_iva
+        )
 
+        # 6) Cloud
         total_final, aplicado_cloud, nuevo_saldo = calcular_bono_solar_cloud(
             self.cursor,
             datos_base["id_contrato"],
-            total_con_iva,
-            energia.sobrante_excedentes,
+            total_con_saldos,
+            energia_obj.sobrante_excedentes,
         )
 
+        # 7) JSON ampliado
         detalles_json = generar_json_calculo(
-            energia,
-            cargos,
-            servicios,
-            iva,
+            energia_obj,
+            cargos_obj,
+            servicios_obj,
+            iva_obj,
+            saldos_obj,
             aplicado_cloud,
             nuevo_saldo,
             datos_base,
@@ -230,14 +244,16 @@ class NuevaFactura(QWidget):
 
         version_motor = VERSION_MOTOR
 
+        # 8) Guardar cálculo
         guardar_calculo_factura(
             self.cursor,
             datos["nfactura"],
             version_motor,
-            energia,
-            cargos,
-            servicios,
-            iva,
+            energia_obj,
+            cargos_obj,
+            servicios_obj,
+            iva_obj,
+            saldos_obj,
             aplicado_cloud,
             nuevo_saldo,
             detalles_json,
@@ -258,6 +274,9 @@ class NuevaFactura(QWidget):
         self.form.limpiar()
         self.form.set_identificacion(self.ncontrato, self.suplemento)
 
+        # Volver a ocultar campos no editables
+        self.form.ocultar_campos_no_editables()
+
         self.btn_otro.setEnabled(True)
         self.btn_guardar.setEnabled(False)
 
@@ -267,6 +286,10 @@ class NuevaFactura(QWidget):
     def nueva_factura(self):
         self.form.limpiar()
         self.form.set_identificacion(self.ncontrato, self.suplemento)
+
+        # Volver a ocultar campos no editables
+        self.form.ocultar_campos_no_editables()
+
         self.btn_guardar.setEnabled(True)
         self.btn_otro.setEnabled(False)
 

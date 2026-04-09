@@ -74,10 +74,11 @@ fi
 
 # 2) Commit si hay algo en staging
 if [ $HAY_CAMBIOS_STAGING -eq 1 ]; then
-    COMMIT_MSG="Nivelaccion manual: Rama Analisis - Historico de facturas
-    Terminada 100% probada y correcta.
-    Creaciion del modulo de recalculo de facturas rama Utilidades
-    probada 100% correcta. $(date '+%Y-%m-%d %H:%M')"
+    COMMIT_MSG="Nivelaccion manual: Corregido formulario_factura para eliminar
+    campos que se capturaban pero no era necesario hacerlo porque
+    se calculaban en el motor. Corregido el json para que represente los parametros
+    que resultaban en los calculos. Corregido el json de detalles_calculo_his_factura
+    para que muestre el json nuevo. $(date '+%Y-%m-%d %H:%M')"
     echo "💾 Realizando commit: $COMMIT_MSG"
     git commit -m "$COMMIT_MSG"
     HAY_COMMITS_PENDIENTES=1
