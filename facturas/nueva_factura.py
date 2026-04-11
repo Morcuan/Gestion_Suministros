@@ -208,9 +208,7 @@ class NuevaFactura(QWidget):
 
         # 4) IVA
         iva_obj = calcular_iva_para_factura(
-            energia_obj.total_energia,
-            cargos_obj.total_cargos,
-            servicios_obj.total_servicios_otros,
+            energia_obj, cargos_obj, servicios_obj, datos_base
         )
 
         # 5) Saldos pendientes

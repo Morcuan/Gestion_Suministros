@@ -272,22 +272,25 @@ class ServiciosOtros:
 
 
 # ---------------------------------------------------------
-# BLOQUE 4: IVA
+# BLOQUE 4: IVA  (VERSIÓN DEFINITIVA)
 # ---------------------------------------------------------
 class IVA:
     """
     Bloque 4.- IVA
     Incluye:
     - Base imponible (suma de bloques 1, 2 y 3)
-    - Tipo de IVA aplicado
+    - Tipo de IVA aplicado (procedente de contrato_gastos, en %)
     - Cuota resultante
     - Total con IVA
     """
 
-    def __init__(self, base_imponible: float, tipo_iva: float = 0.21):
+    def __init__(self, base_imponible: float, tipo_iva_porcentaje: float):
         # La base imponible ya viene calculada desde fuera
         self.base_imponible = round(base_imponible, 2)
-        self.tipo_iva = tipo_iva
+
+        # El valor en la BD viene como 21, 10, 5...
+        # Lo convertimos a decimal: 21 → 0.21
+        self.tipo_iva = float(tipo_iva_porcentaje) / 100
 
         self.cuota_iva = 0.0
         self.total_con_iva = 0.0
@@ -304,7 +307,12 @@ class IVA:
     # ---------------------------------------------------------
     def calcular(self):
         self.calcular_iva()
-        return self
+        return {
+            "base_imponible": self.base_imponible,
+            "tipo_iva": self.tipo_iva,  # ya en decimal
+            "cuota_iva": self.cuota_iva,
+            "total_con_iva": self.total_con_iva,
+        }
 
 
 # ---------------------------------------------------------
@@ -458,13 +466,19 @@ def calcular_servicios_para_factura(datos: dict):
     return serv
 
 
-def calcular_iva_para_factura(
-    total_energia: float, total_cargos: float, total_servicios: float
-):
-    base = round(total_energia + total_cargos + total_servicios, 2)
-    iva = IVA(base)
-    iva.calcular()
-    return iva
+def calcular_iva_para_factura(energia_obj, cargos_obj, servicios_obj, datos_base):
+    base = round(
+        energia_obj.total_energia
+        + cargos_obj.total_cargos
+        + servicios_obj.total_servicios_otros,
+        2,
+    )
+
+    tipo_iva = datos_base["iva"]  # porcentaje entero
+    iva = IVA(base, tipo_iva)
+
+    iva.calcular()  # ← calcula internamente
+    return iva  # ← devolvemos el OBJETO, no el dict
 
 
 def calcular_saldos_pendientes(datos: dict, total_con_iva: float):

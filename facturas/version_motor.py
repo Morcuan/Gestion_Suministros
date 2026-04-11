@@ -21,4 +21,4 @@ def obtener_version_motor(cursor):
         """
     )
     row = cursor.fetchone()
-    return row[0] if row else "1.0.0"
+    return row[0] if row else "2.0.0"

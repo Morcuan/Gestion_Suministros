@@ -5,11 +5,9 @@
 # Fecha: 2026-02-10                                            #
 # -------------------------------------------------------------#
 
-from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QFormLayout,
     QGroupBox,
-    QHBoxLayout,
     QLabel,
     QLineEdit,
     QMessageBox,

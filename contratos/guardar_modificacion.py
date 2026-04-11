@@ -196,9 +196,17 @@ class GuardarModificacion:
         return True
 
     # ---------------------------------------------------------
-    # VALIDAR FECHA DE EFECTO
+    # VALIDAR FECHA DE EFECTO (CORREGIDO)
     # ---------------------------------------------------------
     def _validar_efec_suple(self, efec_suple_iso):
+        """
+        Regla corregida:
+        - La fecha debe ser válida
+        - Debe ser posterior al suplemento anterior
+        - NO se compara con la fecha de hoy (permitimos retroactividad)
+        - No puede superar la fecha final del contrato
+        """
+
         efec_str = self.form.txt_efec_suple.text().strip()
         if not validar_fecha(efec_str):
             QMessageBox.warning(
@@ -213,31 +221,25 @@ class GuardarModificacion:
             self.datos_originales["efec_suple"], "%Y-%m-%d"
         ).date()
 
+        # Regla correcta: debe ser posterior al suplemento anterior
         if nueva <= anterior:
             QMessageBox.warning(
                 self.parent,
                 "Fecha inválida",
-                "La fecha de efecto debe ser posterior a la anterior.",
+                "La fecha de efecto debe ser posterior a la del suplemento anterior.",
             )
             return False
 
-        hoy = datetime.today().date()
-        if nueva < hoy:
-            QMessageBox.warning(
-                self.parent,
-                "Fecha retroactiva",
-                "La fecha de efecto no puede ser anterior a hoy.",
-            )
-            return False
-
+        # Regla mantenida: no puede superar la fecha final del contrato
         fec_final = datetime.strptime(
             self.datos_originales["fec_final"], "%Y-%m-%d"
         ).date()
+
         if nueva > fec_final:
             QMessageBox.warning(
                 self.parent,
                 "Fecha inválida",
-                "La fecha de efecto no puede superar la fecha final.",
+                "La fecha de efecto no puede superar la fecha final del contrato.",
             )
             return False
 
