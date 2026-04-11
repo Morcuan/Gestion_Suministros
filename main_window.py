@@ -134,6 +134,7 @@ class MainWindow(QMainWindow):
                 ],
             )
         )
+
         # Facturas
         layout.addWidget(
             self.crear_seccion_acordeon(
@@ -182,12 +183,17 @@ class MainWindow(QMainWindow):
                             ListaConHisFactura(parent=self), "Histórico de facturas"
                         ),
                     ),
-                    (
-                        "📈 Comparativas",
-                        lambda: self.cargar_modulo(
-                            self.crear_placeholder("Comparativas"), "Comparativas"
-                        ),
-                    ),
+                ],
+            )
+        )
+
+        # >>> NUEVA SECCIÓN: COMPARATIVAS COMO SUBMENÚ REAL
+        layout.addWidget(
+            self.crear_seccion_acordeon(
+                "📈 Comparativas",
+                [
+                    ("📊 Comparativa Interna", self.ejecutar_comparar_ofertas),
+                    ("📦 Oferta externa (próx.)", lambda: None),
                 ],
             )
         )
@@ -244,6 +250,43 @@ class MainWindow(QMainWindow):
         return panel
 
     # ---------------------------------------------------------
+    # SUBMENÚ COMPARATIVAS
+    # ---------------------------------------------------------
+    def crear_menu_comparativas(self):
+        """Submenú interno para Comparativas."""
+        w = QWidget()
+        l = QVBoxLayout(w)
+
+        # >>> AÑADIDO: Comparar ofertas
+        btn_test = QPushButton("📊 Comparar ofertas")
+        aplicar_estilo_boton(btn_test)
+        btn_test.clicked.connect(self.ejecutar_comparar_ofertas)
+        l.addWidget(btn_test)
+
+        # >>> AÑADIDO: Comparar oferta externa
+        btn_oferta = QPushButton("📦 Comparar oferta externa (próximamente)")
+        aplicar_estilo_boton(btn_oferta)
+        l.addWidget(btn_oferta)
+
+        l.addStretch()
+        return w
+
+    # ---------------------------------------------------------
+    # EJECUTAR COMPARAR OFERTAS
+    # ---------------------------------------------------------
+    def ejecutar_comparativa_interna(self):
+        try:
+            from analisis_comparativas.comparativa_interna_full import (
+                ejecutar_proceso_completo,
+            )
+
+            ejecutar_proceso_completo()
+        except Exception as e:
+            QMessageBox.critical(
+                self, "Error", f"Error ejecutando comparativa interna:\n{e}"
+            )
+
+    # ---------------------------------------------------------
     # NUEVO CONTRATO
     # ---------------------------------------------------------
     def abrir_nuevo_contrato(self):
@@ -255,11 +298,10 @@ class MainWindow(QMainWindow):
         self.cargar_modulo(self.crear_pantalla_inicio(), None)
 
     def volver_menu_principal(self):
-        """Método estándar para volver al menú principal desde cualquier módulo."""
         self.volver_inicio()
 
     # ---------------------------------------------------------
-    # MODIFICAR CONTRATO (FLUJO NUEVO)
+    # MODIFICAR CONTRATO
     # ---------------------------------------------------------
     def abrir_modificacion_contratos(self):
         lista = ListaContratos(parent=self, modo="modificacion")
@@ -348,10 +390,9 @@ class MainWindow(QMainWindow):
         return w
 
     # ---------------------------------------------------------
-    # CARGAR MÓDULO (CORREGIDO)
+    # CARGAR MÓDULO
     # ---------------------------------------------------------
     def cargar_modulo(self, widget, titulo):
-        # Limpiar contenido anterior excepto encabezado
         for i in reversed(range(self.zona_contenido_layout.count())):
             item = self.zona_contenido_layout.itemAt(i)
             w = item.widget()
@@ -359,14 +400,12 @@ class MainWindow(QMainWindow):
                 self.zona_contenido_layout.removeWidget(w)
                 w.deleteLater()
 
-        # Mostrar u ocultar título
         if titulo is None:
             self.encabezado_modulo.hide()
         else:
             self.encabezado_modulo.setText(titulo)
             self.encabezado_modulo.show()
 
-        # Scroll
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QScrollArea.NoFrame)
@@ -376,9 +415,7 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(15)
 
-        # 🔥 LÍNEA CRÍTICA
         widget.setMinimumHeight(600)
-
         layout.addWidget(widget)
 
         scroll.setWidget(contenedor)

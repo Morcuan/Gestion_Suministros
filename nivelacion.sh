@@ -74,8 +74,8 @@ fi
 
 # 2) Commit si hay algo en staging
 if [ $HAY_CAMBIOS_STAGING -eq 1 ]; then
-    COMMIT_MSG="Nivelaccion manual: Modificado poder hacer suplementos con fecha atras.
-    Solucionado el problema con el iva hardcordeado y no recogido de la tabla. $(date '+%Y-%m-%d %H:%M')"
+    COMMIT_MSG="Nivelaccion manual: Creado la simiente de comparativas.
+    Creado el menu "Comparativa interna". Creado entorno test $(date '+%Y-%m-%d %H:%M')"
     echo "💾 Realizando commit: $COMMIT_MSG"
     git commit -m "$COMMIT_MSG"
     HAY_COMMITS_PENDIENTES=1

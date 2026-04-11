@@ -190,7 +190,7 @@ class ServiciosOtros:
 
 
 class IVA:
-    def __init__(self, base_imponible: float, tipo_iva: float = 0.21):
+    def __init__(self, base_imponible: float, tipo_iva: float):
         self.base_imponible = round(base_imponible, 2)
         self.tipo_iva = tipo_iva
         self.cuota_iva = 0.0
@@ -302,9 +302,10 @@ def motor_calculo(datos: dict, saldo_cloud_actual: float):
     # 3. Servicios
     servicios = ServiciosOtros(datos).calcular()
 
-    # 4. IVA
+    # 4. IVA (tipo desde datos: porcentaje → factor)
+    tipo_iva = datos["iva"] / 100
     base = energia.total_energia + cargos.total_cargos + servicios.total_servicios_otros
-    iva = IVA(base).calcular()
+    iva = IVA(base, tipo_iva).calcular()
 
     # 5. Cloud (solo cálculo matemático)
     aplicado = min(saldo_cloud_actual, iva.total_con_iva)

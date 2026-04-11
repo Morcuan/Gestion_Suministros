@@ -13,7 +13,7 @@ import json
 # ============================================
 # Versión del motor de cálculo
 # ============================================
-VERSION_MOTOR = "1.1.0"
+VERSION_MOTOR = "2.0.0"
 
 
 def registrar_version_motor(cursor) -> None:
