@@ -1,23 +1,14 @@
+#!/usr/bin/env python3
 # -------------------------------------------------------------#
-# Módulo: crear_entorno_test.py                                #
-# Descripción: Crea las tablas y vistas necesarias para el     #
-#              entorno de pruebas (facturas_test, etc.)        #
-# Autor: Antonio Morales                                       #
-# Fecha: 2026-04                                               #
+# Módulo: crear_entorno_interno.py                             #
 # -------------------------------------------------------------#
 
-import sqlite3
 
-
-def crear_entorno_test(ruta_bd):
-    conn = sqlite3.connect(ruta_bd)
+def crear_entorno_interno(conn):
     cursor = conn.cursor()
 
-    print("🧱 Creando entorno de pruebas...")
+    print("🧱 Creando entorno interno...")
 
-    # ---------------------------------------------------------
-    # 1. Tablas duplicadas
-    # ---------------------------------------------------------
     tablas = [
         ("facturas_test", "facturas"),
         ("factura_calculos_test", "factura_calculos"),
@@ -29,9 +20,6 @@ def crear_entorno_test(ruta_bd):
         cursor.execute(f"DROP TABLE IF EXISTS {tabla_test};")
         cursor.execute(f"CREATE TABLE {tabla_test} AS SELECT * FROM {tabla_real};")
 
-    # ---------------------------------------------------------
-    # 2. Vista v_datos_calculo_test
-    # ---------------------------------------------------------
     print("→ Creando vista v_datos_calculo_test...")
 
     cursor.execute("DROP VIEW IF EXISTS v_datos_calculo_test;")
@@ -40,7 +28,6 @@ def crear_entorno_test(ruta_bd):
         """
         CREATE VIEW v_datos_calculo_test AS
             SELECT
-                -- Factura (TEST)
                 fa.ncontrato,
                 fa.suplemento,
                 fa.nfactura,
@@ -55,13 +42,9 @@ def crear_entorno_test(ruta_bd):
                 fa.dcto_servicios,
                 fa.saldos_pendientes,
                 fa.bat_virtual,
-
-                -- Suplemento correcto
                 ci.id_contrato,
                 ci.efec_suple,
                 ci.fin_suple,
-
-                -- Contratos energía
                 ce.ppunta,
                 ce.pv_ppunta,
                 ce.pvalle,
@@ -70,14 +53,11 @@ def crear_entorno_test(ruta_bd):
                 ce.pv_conllano,
                 ce.pv_convalle,
                 ce.pv_excedent,
-
-                -- Contratos gastos
                 cg.bono_social,
                 cg.alq_contador,
                 cg.otros_gastos,
                 cg.i_electrico,
                 cg.iva
-
             FROM facturas_test fa
             JOIN contratos_identificacion ci
                 ON ci.ncontrato = fa.ncontrato
@@ -86,15 +66,9 @@ def crear_entorno_test(ruta_bd):
                 ON ce.id_contrato = ci.id_contrato
             JOIN contratos_gastos cg
                 ON cg.id_contrato = ci.id_contrato;
-    """
+        """
     )
 
     conn.commit()
-    conn.close()
 
-    print("✅ Entorno de pruebas creado correctamente.")
-
-
-if __name__ == "__main__":
-    # Ajusta la ruta a tu BD real
-    crear_entorno_test("data/almacen.db")
+    print("✅ Entorno interno creado correctamente.")

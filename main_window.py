@@ -7,6 +7,8 @@
 
 
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QTextDocument
+from PySide6.QtPrintSupport import QPrintDialog, QPrinter
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
@@ -18,6 +20,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from analisis_comparativas.informe_interno import generar_html_comparativa_interna
 from analisis_contrato.lista_contratos_historico import ListaContratosHistorico
 from analisis_factura.lista_con_his_factura import ListaConHisFactura
 from contratos.lista_contratos import ListaContratos
@@ -33,11 +36,9 @@ from utilidades.modulo_recalculo import ModuloRecalculo
 
 class MainWindow(QMainWindow):
 
-    def __init__(self, conn, cursor):
+    def __init__(self, conn):
         super().__init__()
-
         self.conn = conn
-        self.cursor = cursor
 
         self.setWindowTitle("Gestion_suministros 2.0")
         self.resize(1160, 950)
@@ -192,7 +193,15 @@ class MainWindow(QMainWindow):
             self.crear_seccion_acordeon(
                 "📈 Comparativas",
                 [
-                    ("📊 Comparativa Interna", self.ejecutar_comparar_ofertas),
+                    ("📊 Comparativa Interna", self.ejecutar_comparativa_interna),
+                    (
+                        "🖨 Imprimir comparativa interna",
+                        self.imprimir_comparativa_interna,
+                    ),
+                    (
+                        "📄 Exportar comparativa interna a PDF",
+                        self.exportar_pdf_comparativa_interna,
+                    ),
                     ("📦 Oferta externa (próx.)", lambda: None),
                 ],
             )
@@ -260,7 +269,7 @@ class MainWindow(QMainWindow):
         # >>> AÑADIDO: Comparar ofertas
         btn_test = QPushButton("📊 Comparar ofertas")
         aplicar_estilo_boton(btn_test)
-        btn_test.clicked.connect(self.ejecutar_comparar_ofertas)
+        btn_test.clicked.connect(self.ejecutar_comparativa_interna)
         l.addWidget(btn_test)
 
         # >>> AÑADIDO: Comparar oferta externa
@@ -280,7 +289,7 @@ class MainWindow(QMainWindow):
                 ejecutar_proceso_completo,
             )
 
-            ejecutar_proceso_completo()
+            ejecutar_proceso_completo(self.conn)
         except Exception as e:
             QMessageBox.critical(
                 self, "Error", f"Error ejecutando comparativa interna:\n{e}"
@@ -462,3 +471,36 @@ class MainWindow(QMainWindow):
         from estilo import generar_stylesheet
 
         self.setStyleSheet(generar_stylesheet(paleta))
+
+    def imprimir_comparativa_interna(self):
+        html = generar_html_comparativa_interna(self.conn)
+
+        printer = QPrinter(QPrinter.HighResolution)
+        dialog = QPrintDialog(printer, self)
+
+        if dialog.exec():
+            doc = QTextDocument()
+            doc.setHtml(html)
+            doc.print(printer)
+
+    from PySide6.QtWidgets import QFileDialog
+
+    def exportar_pdf_comparativa_interna(self):
+        html = generar_html_comparativa_interna(self.conn)
+
+        ruta, _ = QFileDialog.getSaveFileName(
+            self,
+            "Guardar informe comparativa interna como PDF",
+            "comparativa_interna.pdf",
+            "PDF (*.pdf)",
+        )
+        if not ruta:
+            return
+
+        printer = QPrinter(QPrinter.HighResolution)
+        printer.setOutputFormat(QPrinter.PdfFormat)
+        printer.setOutputFileName(ruta)
+
+        doc = QTextDocument()
+        doc.setHtml(html)
+        doc.print(printer)
