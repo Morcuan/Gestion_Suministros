@@ -3,10 +3,23 @@
 # Descripción: Recalculo masivo de facturas con flag pendiente #
 # Autor: Antonio Morales                                       #
 # Fecha: 2026-04                                               #
+# Notas:
+#   - Alineado con el motor oficial facturas.calculo (v2.0.0)
+#   - Sin motor paralelo en utilidades                         #
 # -------------------------------------------------------------#
 
-from facturas.calculo import VERSION_MOTOR, registrar_version_motor
-from utilidades.motor_calculo import motor_calculo
+from facturas.calculo import (
+    VERSION_MOTOR,
+    calcular_bono_solar_cloud,
+    calcular_cargos_para_factura,
+    calcular_energia_para_factura,
+    calcular_iva_para_factura,
+    calcular_saldos_pendientes,
+    calcular_servicios_para_factura,
+    generar_json_calculo,
+    guardar_calculo_factura,
+    obtener_datos_factura,
+)
 
 
 def obtener_facturas_pendientes(cursor):
@@ -21,87 +34,22 @@ def obtener_facturas_pendientes(cursor):
     return [row[0] for row in cursor.fetchall()]
 
 
-def obtener_datos_para_factura(cursor, nfactura):
+def marcar_factura_recalculada(cursor, nfactura):
     cursor.execute(
-        """
-        SELECT *
-        FROM v_datos_calculo
-        WHERE nfactura = ?
-        """,
+        "UPDATE facturas SET recalcular = 0 WHERE nfactura = ?",
         (nfactura,),
     )
-    row = cursor.fetchone()
-    if not row:
-        return None
-
-    columnas = [d[0] for d in cursor.description]
-    return dict(zip(columnas, row))
-
-
-def obtener_saldo_cloud(cursor, id_contrato):
-    cursor.execute(
-        "SELECT saldo FROM saldo_cloud WHERE id_contrato = ?", (id_contrato,)
-    )
-    row = cursor.fetchone()
-    return row[0] if row else 0.0
-
-
-def guardar_saldo_cloud(cursor, id_contrato, nuevo_saldo):
-    cursor.execute(
-        """
-        INSERT INTO saldo_cloud (id_contrato, saldo)
-        VALUES (?, ?)
-        ON CONFLICT(id_contrato) DO UPDATE SET saldo = excluded.saldo
-        """,
-        (id_contrato, nuevo_saldo),
-    )
-
-
-def guardar_calculo(cursor, nfactura, resultado, version_motor):
-    """
-    Inserta el cálculo en factura_calculos.
-    """
-
-    cursor.execute("DELETE FROM factura_calculos WHERE nfactura = ?", (nfactura,))
-
-    cursor.execute(
-        """
-        INSERT INTO factura_calculos (
-            nfactura, fecha_calculo, version_motor,
-            total_energia, total_cargos, total_servicios,
-            total_iva, cloud_aplicado, cloud_sobrante,
-            total_final, detalles_json
-        )
-        VALUES (?, DATE('now'), ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-        (
-            nfactura,
-            version_motor,
-            resultado["energia"].total_energia,
-            resultado["cargos"].total_cargos,
-            resultado["servicios"].total_servicios_otros,
-            resultado["iva"].cuota_iva,
-            resultado["cloud_aplicado"],
-            resultado["cloud_sobrante"],
-            resultado["total_final"],
-            resultado["json"],
-        ),
-    )
-
-
-def marcar_factura_recalculada(cursor, nfactura):
-    cursor.execute("UPDATE facturas SET recalcular = 0 WHERE nfactura = ?", (nfactura,))
 
 
 def recalcular_facturas(conn):
     """
-    Proceso completo de recálculo masivo.
+    Proceso completo de recálculo masivo de facturas con flag 'recalcular = 1'.
+
+    Utiliza el mismo motor y los mismos bloques que el cálculo individual:
+    - facturas.calculo (VERSION_MOTOR 2.0.0)
     """
 
     cursor = conn.cursor()
-
-    # Registrar versión del motor si no existe
-    registrar_version_motor(cursor)
 
     pendientes = obtener_facturas_pendientes(cursor)
 
@@ -118,24 +66,99 @@ def recalcular_facturas(conn):
 
     for nfactura in pendientes:
         try:
-            datos = obtener_datos_para_factura(cursor, nfactura)
+            # -------------------------------------------------
+            # 1) Datos base de la factura
+            # -------------------------------------------------
+            datos = obtener_datos_factura(cursor, nfactura)
             if not datos:
                 errores.append(f"{nfactura}: datos no encontrados")
                 continue
 
             id_contrato = datos["ncontrato"]
-            saldo_actual = obtener_saldo_cloud(cursor, id_contrato)
 
-            # Motor puro
-            resultado = motor_calculo(datos, saldo_actual)
+            # -------------------------------------------------
+            # 2) Cargos normativos
+            # -------------------------------------------------
+            cargos = calcular_cargos_para_factura(datos)
 
-            # Guardar saldo cloud
-            guardar_saldo_cloud(cursor, id_contrato, resultado["nuevo_saldo"])
+            # -------------------------------------------------
+            # 3) Energía (usa datos de la vista y bono_social)
+            #    Devuelve objeto Energia y (de nuevo) datos_base
+            # -------------------------------------------------
+            energia, datos_base = calcular_energia_para_factura(
+                cursor,
+                nfactura,
+                cargos.bono_social,
+            )
 
-            # Guardar cálculo
-            guardar_calculo(cursor, nfactura, resultado, VERSION_MOTOR)
+            # -------------------------------------------------
+            # 4) Servicios y otros conceptos
+            # -------------------------------------------------
+            servicios = calcular_servicios_para_factura(datos_base)
 
-            # Marcar como recalculada
+            # -------------------------------------------------
+            # 5) IVA
+            # -------------------------------------------------
+            iva = calcular_iva_para_factura(
+                energia,
+                cargos,
+                servicios,
+                datos_base,
+            )
+
+            # -------------------------------------------------
+            # 6) Saldos pendientes
+            # -------------------------------------------------
+            saldos, total_con_saldos = calcular_saldos_pendientes(
+                datos_base,
+                iva.total_con_iva,
+            )
+
+            # -------------------------------------------------
+            # 7) Bono Solar Cloud
+            #    (lee y guarda saldo_cloud internamente)
+            # -------------------------------------------------
+            total_final, aplicado_cloud, nuevo_saldo = calcular_bono_solar_cloud(
+                cursor,
+                id_contrato,
+                total_con_saldos,
+                energia.sobrante_excedentes,
+            )
+
+            # -------------------------------------------------
+            # 8) JSON ampliado del cálculo
+            # -------------------------------------------------
+            detalles_json = generar_json_calculo(
+                energia,
+                cargos,
+                servicios,
+                iva,
+                saldos,
+                aplicado_cloud,
+                nuevo_saldo,
+                datos_base,
+            )
+
+            # -------------------------------------------------
+            # 9) Guardado final en factura_calculos
+            # -------------------------------------------------
+            guardar_calculo_factura(
+                cursor,
+                nfactura,
+                VERSION_MOTOR,
+                energia,
+                cargos,
+                servicios,
+                iva,
+                saldos,
+                aplicado_cloud,
+                nuevo_saldo,
+                detalles_json,
+            )
+
+            # -------------------------------------------------
+            # 10) Marcar factura como recalculada
+            # -------------------------------------------------
             marcar_factura_recalculada(cursor, nfactura)
 
             procesadas += 1

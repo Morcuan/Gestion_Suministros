@@ -138,7 +138,7 @@ class CapturaEstadisticasMensuales(QWidget):
     def __init__(self, parent, conn, cursor):
         super().__init__(parent)
         self.conn = conn
-        self.cursor = cursor
+        self.cursor = conn.cursor()
 
         self.setObjectName("CapturaEstadisticasMensuales")
 
@@ -318,10 +318,10 @@ class CapturaEstadisticasMensuales(QWidget):
 
 
 class ConsultaEstadisticasMensuales(QWidget):
-    def __init__(self, parent, conn, cursor):
+    def __init__(self, parent, conn, cursor=None):
         super().__init__(parent)
         self.conn = conn
-        self.cursor = cursor
+        self.cursor = conn.cursor()  # ← SIEMPRE CORRECTO
 
         self.setObjectName("ConsultaEstadisticasMensuales")
 

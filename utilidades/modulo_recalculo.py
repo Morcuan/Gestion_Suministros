@@ -27,6 +27,7 @@ class ModuloRecalculo(QWidget):
         self.parent = parent
         self.conn = parent.conn  # MainWindow expone la conexión
         self.crear_ui()
+        self.cargar_pendientes()  # ← Información inicial al abrir la ventana
 
     # ---------------------------------------------------------
     # UI
@@ -54,13 +55,45 @@ class ModuloRecalculo(QWidget):
         layout.addLayout(botones)
 
     # ---------------------------------------------------------
+    # Información inicial
+    # ---------------------------------------------------------
+    def cargar_pendientes(self):
+        """
+        Muestra en pantalla las facturas que tienen flag 'recalcular = 1'.
+        Se ejecuta automáticamente al abrir la ventana.
+        """
+        cursor = self.conn.cursor()
+        cursor.execute(
+            """
+            SELECT nfactura, ncontrato, fec_emision
+            FROM facturas
+            WHERE recalcular = 1
+            ORDER BY fec_emision ASC
+        """
+        )
+        filas = cursor.fetchall()
+
+        self.txt_log.clear()
+
+        if not filas:
+            self.log("No hay facturas pendientes de recálculo.")
+            return
+
+        self.log(f"Facturas pendientes de recálculo: {len(filas)}\n")
+
+        for nf, nc, fecha in filas:
+            self.log(f" - {nf} | Contrato {nc} | {fecha}")
+
+        self.log("\nEstado: En espera.")
+
+    # ---------------------------------------------------------
     # Lógica
     # ---------------------------------------------------------
     def log(self, texto):
         self.txt_log.append(texto)
 
     def iniciar_recalculo(self):
-        self.log("🔄 Iniciando recálculo de facturas pendientes...\n")
+        self.log("\n🔄 Iniciando recálculo de facturas pendientes...\n")
 
         try:
             resultado = recalcular_facturas(self.conn)

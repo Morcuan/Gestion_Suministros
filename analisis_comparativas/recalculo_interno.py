@@ -2,24 +2,96 @@
 # -------------------------------------------------------------#
 # Módulo: recalculo_interno.py                                 #
 # Descripción: Recalcula facturas internas usando el motor     #
-#              nuevo y guarda resultados en tablas *_test.     #
+#              oficial y guarda resultados en tablas *_test.   #
 # Autor: Antonio (Gestion_Suministros)                         #
 # Fecha: 2026-04-13                                            #
-# Versión: 2.0                                                 #
-# Notas:                                                       #
-#   - Sustituye todos los prints por logger para evitar ruido  #
-#     en terminal o en ejecución desde menú.                   #
-#   - Solo el mensaje final se imprime para el usuario.        #
+# Versión: 2.1 (motor oficial)                                 #
 # -------------------------------------------------------------#
 
 import logging
 
-from facturas.calculo import VERSION_MOTOR, registrar_version_motor
-from utilidades.motor_calculo import motor_calculo
+from facturas.calculo import (
+    VERSION_MOTOR,
+    calcular_bono_solar_cloud,
+    calcular_cargos_para_factura,
+    calcular_energia_para_factura,
+    calcular_iva_para_factura,
+    calcular_saldos_pendientes,
+    calcular_servicios_para_factura,
+    generar_json_calculo,
+    registrar_version_motor,
+)
 
 logger = logging.getLogger(__name__)
 
 
+# ---------------------------------------------------------
+# WRAPPER DEL MOTOR OFICIAL
+# ---------------------------------------------------------
+def motor_calculo_interno(cursor, nfactura, saldo_actual):
+    """
+    Ejecuta el motor oficial de cálculo usando la vista TEST
+    y devuelve un diccionario con la misma estructura que el motor externo.
+    """
+
+    # 1) ENERGÍA (devuelve energia_obj y datos_base)
+    energia, datos = calcular_energia_para_factura(
+        cursor,
+        nfactura,
+        datos["bono_social"],  # el motor oficial lo pide aquí
+    )
+
+    # 2) CARGOS
+    cargos = calcular_cargos_para_factura(datos)
+
+    # 3) SERVICIOS
+    servicios = calcular_servicios_para_factura(datos)
+
+    # 4) IVA
+    iva = calcular_iva_para_factura(energia, cargos, servicios, datos)
+
+    # 5) SALDOS PENDIENTES
+    saldos, total_con_saldos = calcular_saldos_pendientes(
+        datos,
+        iva.total_con_iva,
+    )
+
+    # 6) CLOUD
+    total_final, aplicado_cloud, nuevo_saldo = calcular_bono_solar_cloud(
+        cursor,
+        datos["id_contrato"],
+        total_con_saldos,
+        energia.sobrante_excedentes,
+    )
+
+    # 7) JSON
+    json_detalles = generar_json_calculo(
+        energia,
+        cargos,
+        servicios,
+        iva,
+        saldos,
+        aplicado_cloud,
+        nuevo_saldo,
+        datos,
+    )
+
+    return {
+        "energia": energia,
+        "cargos": cargos,
+        "servicios": servicios,
+        "iva": iva,
+        "cloud_aplicado": aplicado_cloud,
+        "cloud_sobrante": energia.sobrante_excedentes,
+        "nuevo_saldo": nuevo_saldo,
+        "total_final": total_final,
+        "json": json_detalles,
+    }
+
+
+# ---------------------------------------------------------
+# FUNCIONES AUXILIARES
+# ---------------------------------------------------------
 def obtener_facturas_pendientes(cursor):
     cursor.execute(
         """
@@ -112,10 +184,12 @@ def marcar_factura_recalculada(cursor, nfactura):
     )
 
 
+# ---------------------------------------------------------
+# PROCESO PRINCIPAL
+# ---------------------------------------------------------
 def recalcular_facturas_interno(conn):
     cursor = conn.cursor()
 
-    # Registrar versión del motor
     registrar_version_motor(cursor)
     logger.info(f"Versión del motor registrada: {VERSION_MOTOR}")
 
@@ -123,7 +197,6 @@ def recalcular_facturas_interno(conn):
     logger.info(f"Facturas pendientes de recálculo: {len(pendientes)}")
 
     if not pendientes:
-        logger.info("No hay facturas pendientes de recálculo interno.")
         return {
             "total": 0,
             "procesadas": 0,
@@ -139,28 +212,22 @@ def recalcular_facturas_interno(conn):
             datos = obtener_datos_para_factura(cursor, nfactura)
             if not datos:
                 errores.append(f"{nfactura}: datos no encontrados")
-                logger.warning(f"Factura {nfactura}: datos no encontrados")
                 continue
 
-            id_contrato = datos["ncontrato"]
-            saldo_actual = obtener_saldo_cloud(cursor, id_contrato)
+            saldo_actual = obtener_saldo_cloud(cursor, datos["id_contrato"])
 
-            resultado = motor_calculo(datos, saldo_actual)
+            resultado = motor_calculo_interno(cursor, nfactura, saldo_actual)
 
-            guardar_saldo_cloud(cursor, id_contrato, resultado["nuevo_saldo"])
+            guardar_saldo_cloud(cursor, datos["id_contrato"], resultado["nuevo_saldo"])
             guardar_calculo(cursor, nfactura, resultado, VERSION_MOTOR)
             marcar_factura_recalculada(cursor, nfactura)
 
             procesadas += 1
-            logger.debug(f"Factura {nfactura} recalculada correctamente")
 
         except Exception as e:
             errores.append(f"{nfactura}: {str(e)}")
-            logger.error(f"Error recalculando {nfactura}: {str(e)}")
 
     conn.commit()
-
-    logger.info("Recalculo interno finalizado")
 
     return {
         "total": len(pendientes),

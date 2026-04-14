@@ -5,7 +5,7 @@
 # Fecha: 2026-02-10                                            #
 # -------------------------------------------------------------#
 
-from PySide6.QtCore import QObject, Signal
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QInputDialog,
     QMessageBox,
@@ -38,7 +38,7 @@ class NuevoContrato(QWidget):
         # ACCESO A BD (heredado de MainWindow)
         # ---------------------------------------------------------
         self.conn = parent.conn
-        self.cursor = parent.cursor
+        self.cursor = parent.conn.cursor()  # ← CORREGIDO
 
         # ---------------------------------------------------------
         # LAYOUT PRINCIPAL
