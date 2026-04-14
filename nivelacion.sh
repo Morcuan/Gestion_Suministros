@@ -74,9 +74,7 @@ fi
 
 # 2) Commit si hay algo en staging
 if [ $HAY_CAMBIOS_STAGING -eq 1 ]; then
-    COMMIT_MSG="Nivelaccion manual: Rama comparativas informe interno corregido y
-    correcto. Añadidas opciones para imprimir o exportar a pdf. Corregidos main.py
-    y main_window.py para alinearlos con la nueva rama. $(date '+%Y-%m-%d %H:%M')"
+    COMMIT_MSG="Nivelaccion manual: Rama modificar factura corregida y operativa. $(date '+%Y-%m-%d %H:%M')"
     echo "💾 Realizando commit: $COMMIT_MSG"
     git commit -m "$COMMIT_MSG"
     HAY_COMMITS_PENDIENTES=1

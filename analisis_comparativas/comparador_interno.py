@@ -2,9 +2,17 @@
 # -------------------------------------------------------------#
 # Módulo: comparador_interno.py                                #
 # Descripción: Compara facturación real vs facturación interna #
+# Autor: Antonio (OCU_SOLAR / Gestion_Suministros)             #
+# Fecha: 2026-04-13                                            #
+# Versión: 2.0                                                 #
+# Notas: Usa logger para evitar ruido en terminal              #
 # -------------------------------------------------------------#
 
+import logging
+
 from tabulate import tabulate
+
+logger = logging.getLogger(__name__)
 
 SQL_DIFERENCIAS = """
 SELECT
@@ -16,7 +24,6 @@ FROM factura_calculos r
 JOIN factura_calculos_test t USING (nfactura)
 ORDER BY ABS(diferencia) DESC;
 """
-
 
 SQL_DETALLE = """
 SELECT
@@ -44,7 +51,6 @@ JOIN factura_calculos_test t USING (nfactura)
 ORDER BY ABS(dif_total) DESC;
 """
 
-
 SQL_DIVERGENCIAS = """
 SELECT
     nfactura,
@@ -68,69 +74,23 @@ ORDER BY ABS(diferencia) DESC;
 def comparar_facturacion_interna(conn):
     cursor = conn.cursor()
 
-    print("\n📊 Comparando facturación REAL vs INTERNA...\n")
+    logger.info("Iniciando comparación REAL vs INTERNA")
 
     cursor.execute(SQL_DIFERENCIAS)
     difs = cursor.fetchall()
 
     if not difs:
-        print("No hay datos para comparar.")
+        logger.warning("No hay datos para comparar.")
         return
 
-    print("=== DIFERENCIAS (ordenadas por impacto) ===")
-    print(
-        tabulate(
-            difs,
-            headers=["Factura", "Real (€)", "Test (€)", "Dif (€)"],
-            tablefmt="github",
-        )
-    )
+    logger.debug("Diferencias:\n" + tabulate(difs))
 
     cursor.execute(SQL_DIVERGENCIAS)
     divergencias = cursor.fetchall()
+    logger.debug("Divergencias:\n" + tabulate(divergencias))
 
-    print("\n=== DIVERGENCIAS SIGNIFICATIVAS (>= 0.01 €) ===")
-    if divergencias:
-        print(
-            tabulate(
-                divergencias,
-                headers=["Factura", "Real (€)", "Test (€)", "Dif (€)"],
-                tablefmt="github",
-            )
-        )
-    else:
-        print("✔️ No hay divergencias significativas. El motor nuevo es estable.")
-
-    print("\n=== DETALLE POR BLOQUES ===")
     cursor.execute(SQL_DETALLE)
     detalle = cursor.fetchall()
+    logger.debug("Detalle:\n" + tabulate(detalle))
 
-    print(
-        tabulate(
-            detalle,
-            headers=[
-                "Factura",
-                "Energia R",
-                "Energia T",
-                "Dif E",
-                "Cargos R",
-                "Cargos T",
-                "Dif C",
-                "Serv R",
-                "Serv T",
-                "Dif S",
-                "IVA R",
-                "IVA T",
-                "Dif IVA",
-                "Cloud R",
-                "Cloud T",
-                "Dif Cloud",
-                "Total R",
-                "Total T",
-                "Dif Total",
-            ],
-            tablefmt="github",
-        )
-    )
-
-    print("\n🏁 Comparación finalizada.\n")
+    print("🏁 Comparación finalizada.")

@@ -5,11 +5,11 @@
 # Fecha: 2026-02-09                               #
 # ------------------------------------------------#
 
-
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QTextDocument
 from PySide6.QtPrintSupport import QPrintDialog, QPrinter
 from PySide6.QtWidgets import (
+    QFileDialog,
     QHBoxLayout,
     QLabel,
     QMainWindow,
@@ -195,11 +195,11 @@ class MainWindow(QMainWindow):
                 [
                     ("📊 Comparativa Interna", self.ejecutar_comparativa_interna),
                     (
-                        "🖨 Imprimir comparativa interna",
+                        "🖨 Imp. Comp. interna",
                         self.imprimir_comparativa_interna,
                     ),
                     (
-                        "📄 Exportar comparativa interna a PDF",
+                        "📄 Exp. comp. a PDF",
                         self.exportar_pdf_comparativa_interna,
                     ),
                     ("📦 Oferta externa (próx.)", lambda: None),
@@ -481,9 +481,7 @@ class MainWindow(QMainWindow):
         if dialog.exec():
             doc = QTextDocument()
             doc.setHtml(html)
-            doc.print(printer)
-
-    from PySide6.QtWidgets import QFileDialog
+            doc.print_(printer)  # ← CORREGIDO
 
     def exportar_pdf_comparativa_interna(self):
         html = generar_html_comparativa_interna(self.conn)
@@ -494,6 +492,7 @@ class MainWindow(QMainWindow):
             "comparativa_interna.pdf",
             "PDF (*.pdf)",
         )
+
         if not ruta:
             return
 
@@ -503,4 +502,4 @@ class MainWindow(QMainWindow):
 
         doc = QTextDocument()
         doc.setHtml(html)
-        doc.print(printer)
+        doc.print_(printer)  # ← CORREGIDO

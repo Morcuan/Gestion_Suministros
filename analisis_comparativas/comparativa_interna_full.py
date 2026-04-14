@@ -1,32 +1,30 @@
+#!/usr/bin/env python3
+# -------------------------------------------------------------#
+# Módulo: ejecutar_proceso_completo.py                         #
+# Descripción: Orquesta el proceso completo de comparativa     #
+# Autor: Antonio                                               #
+# Fecha: 2026-04-13                                            #
+# Versión: 2.0                                                 #
+# -------------------------------------------------------------#
+
+import logging
+
 from analisis_comparativas.comparador_interno import comparar_facturacion_interna
 from analisis_comparativas.crear_entorno_interno import crear_entorno_interno
 from analisis_comparativas.recalculo_interno import recalcular_facturas_interno
 
+logger = logging.getLogger(__name__)
+
 
 def ejecutar_proceso_completo(conn):
-    print("\n==============================================")
-    print("🔧 INICIANDO COMPARATIVA INTERNA")
-    print("==============================================\n")
+    logger.info("Iniciando comparativa interna")
 
-    # 1. Crear entorno interno
-    print("1️⃣  Creando entorno interno...")
     crear_entorno_interno(conn)
-    print("✔️  Entorno interno creado.\n")
+    logger.info("Entorno interno creado")
 
-    # 2. Recalcular
-    print("2️⃣  Recalculando facturas internas...")
     resultado = recalcular_facturas_interno(conn)
-    print("✔️  Recalculo completado.")
-    print("   → Total:", resultado["total"])
-    print("   → Procesadas:", resultado["procesadas"])
-    if resultado["errores"]:
-        print("   → Errores:", resultado["errores"])
-    print()
+    logger.info(f"Recalculo completado: {resultado}")
 
-    # 3. Comparar
-    print("3️⃣  Comparando facturación REAL vs INTERNA...")
     comparar_facturacion_interna(conn)
 
-    print("\n==============================================")
     print("🏁 COMPARATIVA INTERNA FINALIZADA")
-    print("==============================================\n")

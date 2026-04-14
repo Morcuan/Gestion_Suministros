@@ -2,7 +2,7 @@
 # Módulo: control_rectif_anular.py                             #
 # Descripción: Controlador para rectificar y anular facturas   #
 # Autor: Antonio Morales                                       #
-# Fecha: 2026-04-01                                            #
+# Fecha: 2026-04-01 (alineado motor 2.0.0)                     #
 # -------------------------------------------------------------#
 
 from PySide6.QtWidgets import (
@@ -13,8 +13,20 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+# Motor 2.0.0
+from facturas.calculo import (
+    VERSION_MOTOR,
+    calcular_bono_solar_cloud,
+    calcular_cargos_para_factura,
+    calcular_energia_para_factura,
+    calcular_iva_para_factura,
+    calcular_saldos_pendientes,
+    calcular_servicios_para_factura,
+    generar_json_calculo,
+    guardar_calculo_factura,
+    obtener_datos_factura,
+)
 from facturas.formulario_factura import FormularioFactura
-from facturas.version_motor import obtener_version_motor
 from utilidades.logica_negocio import (
     convertir_a_ddmmaaaa,
     convertir_a_iso,
@@ -61,7 +73,6 @@ class ControlRectifAnular(QWidget):
         self.form = FormularioFactura(self)
         layout.addWidget(self.form)
 
-        # Botones inferiores
         botones = QHBoxLayout()
 
         self.btn_guardar = QPushButton()
@@ -82,7 +93,6 @@ class ControlRectifAnular(QWidget):
 
     # ---------------------------------------------------------
     def volver_lista_facturas(self):
-        """Vuelve a la lista de facturas del contrato."""
         self.parent.volver_menu_principal()
 
     # ---------------------------------------------------------
@@ -90,17 +100,10 @@ class ControlRectifAnular(QWidget):
     # ---------------------------------------------------------
     def cargar_factura_existente(self):
         cursor = self.conn.cursor()
+
+        # Obtener TODAS las columnas de la factura
         cursor.execute(
-            """
-            SELECT ncontrato, suplemento, nfactura,
-                   fec_emision, inicio_factura, fin_factura,
-                   dias_factura,
-                   consumo_punta, consumo_llano, consumo_valle,
-                   excedentes, importe_compensado,
-                   servicios, dcto_servicios, saldos_pendientes, bat_virtual
-            FROM facturas
-            WHERE nfactura = ?
-        """,
+            "SELECT * FROM facturas WHERE nfactura = ?",
             (self.nfactura,),
         )
 
@@ -109,25 +112,10 @@ class ControlRectifAnular(QWidget):
             QMessageBox.critical(self, "Error", "Factura no encontrada.")
             return
 
-        columnas = [
-            "ncontrato",
-            "suplemento",
-            "nfactura",
-            "fec_emision",
-            "inicio_factura",
-            "fin_factura",
-            "dias_factura",
-            "consumo_punta",
-            "consumo_llano",
-            "consumo_valle",
-            "excedentes",
-            "importe_compensado",
-            "servicios",
-            "dcto_servicios",
-            "saldos_pendientes",
-            "bat_virtual",
-        ]
+        # Obtener nombres reales de columnas desde la BD
+        columnas = [d[0] for d in cursor.description]
 
+        # Crear diccionario {columna: valor}
         datos = dict(zip(columnas, row))
 
         # Normalizar fechas ISO → dd/mm/yyyy
@@ -136,10 +124,9 @@ class ControlRectifAnular(QWidget):
             if isinstance(valor, str) and "-" in valor:
                 datos[clave] = convertir_a_ddmmaaaa(valor)
 
+        # Cargar datos en el formulario
         self.form.set_datos(datos)
 
-    # ---------------------------------------------------------
-    # APLICAR MODO
     # ---------------------------------------------------------
     def aplicar_modo(self):
         if self.modo == "edicion":
@@ -151,23 +138,18 @@ class ControlRectifAnular(QWidget):
         elif self.modo == "anulacion":
             self.setWindowTitle(f"Confirmar anulación de factura {self.nfactura}")
 
-            # 1) Poner todos los campos en modo lectura
             for attr in dir(self.form):
                 if attr.startswith("txt_"):
                     getattr(self.form, attr).setReadOnly(True)
 
-            # 2) Ocultar bloques no relevantes
             self.form.gb_con.setVisible(False)
             self.form.gb_srv.setVisible(False)
 
-            # 3) Mostrar mensaje de advertencia
             self.form.lbl_aviso.setText(
                 "Esta acción eliminará la factura y sus cálculos asociados. No se puede deshacer."
             )
             self.form.lbl_aviso.setVisible(True)
 
-    # ---------------------------------------------------------
-    # BOTÓN GUARDAR
     # ---------------------------------------------------------
     def on_guardar(self):
         if self.modo == "edicion":
@@ -176,18 +158,19 @@ class ControlRectifAnular(QWidget):
             self.anular_factura()
 
     # ---------------------------------------------------------
-    # RECTIFICAR FACTURA (con recálculo completo)
+    # RECTIFICAR FACTURA (motor 2.0.0)
     # ---------------------------------------------------------
     def guardar_cambios_factura(self):
         cursor_update = self.conn.cursor()
         datos = self.form.get_datos()
 
-        # Normalizar fechas a ISO si vienen en dd/mm/yyyy
+        # Normalizar fechas a ISO
         for clave in ("fec_emision", "inicio_factura", "fin_factura"):
             valor = datos.get(clave)
             if isinstance(valor, str) and "/" in valor:
                 datos[clave] = convertir_a_iso(valor)
 
+        # Guardar cambios básicos
         cursor_update.execute(
             """
             UPDATE facturas
@@ -215,53 +198,63 @@ class ControlRectifAnular(QWidget):
             ),
         )
 
-        from facturas.calculo import (
-            calcular_bono_solar_cloud,
-            calcular_cargos_para_factura,
-            calcular_energia_para_factura,
-            calcular_iva_para_factura,
-            calcular_servicios_para_factura,
-            generar_json_calculo,
-            guardar_calculo_factura,
-            obtener_datos_factura,
-        )
-
+        # ---------------------------------------------------------
+        # MOTOR 2.0.0 — FLUJO COMPLETO
+        # ---------------------------------------------------------
         cursor_calc = self.conn.cursor()
 
+        # 1) Datos base
         datos_base = obtener_datos_factura(cursor_calc, self.nfactura)
+
+        # 2) Cargos normativos
         cargos = calcular_cargos_para_factura(datos_base)
+
+        # 3) Energía
         energia, datos_base = calcular_energia_para_factura(
             cursor_calc, self.nfactura, cargos.bono_social
         )
+
+        # 4) Servicios
         servicios = calcular_servicios_para_factura(datos_base)
-        iva = calcular_iva_para_factura(
-            energia.total_energia, cargos.total_cargos, servicios.total_servicios_otros
+
+        # 5) IVA
+        iva = calcular_iva_para_factura(energia, cargos, servicios, datos_base)
+
+        # 6) Saldos pendientes
+        saldos_obj, total_con_saldos = calcular_saldos_pendientes(
+            datos_base, iva.total_con_iva
         )
 
+        # 7) Cloud
         total_final, aplicado_cloud, nuevo_saldo = calcular_bono_solar_cloud(
             cursor_calc,
             datos_base["ncontrato"],
-            iva.total_con_iva,
+            total_con_saldos,
             energia.sobrante_excedentes,
         )
 
+        # 8) JSON
         detalles_json = generar_json_calculo(
-            energia, cargos, servicios, iva, aplicado_cloud, nuevo_saldo, datos_base
-        )
-
-        # Versión de motor desde tabla version_motor
-        from facturas.calculo import VERSION_MOTOR
-
-        version_motor = VERSION_MOTOR
-
-        guardar_calculo_factura(
-            cursor_calc,
-            self.nfactura,
-            version_motor,
             energia,
             cargos,
             servicios,
             iva,
+            saldos_obj,
+            aplicado_cloud,
+            nuevo_saldo,
+            datos_base,
+        )
+
+        # 9) Guardado final
+        guardar_calculo_factura(
+            cursor_calc,
+            self.nfactura,
+            VERSION_MOTOR,
+            energia,
+            cargos,
+            servicios,
+            iva,
+            saldos_obj,
             aplicado_cloud,
             nuevo_saldo,
             detalles_json,

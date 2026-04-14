@@ -1,7 +1,17 @@
 #!/usr/bin/env python3
-# analisis_comparativas/informe_interno.py
+# -------------------------------------------------------------#
+# Módulo: informe_interno.py                                   #
+# Descripción: Genera HTML para la comparativa interna         #
+# Autor: Antonio                                               #
+# Fecha: 2026-04-13                                            #
+# Versión: 2.0                                                 #
+# -------------------------------------------------------------#
 
+import logging
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
+
 
 SQL_DIFERENCIAS = """
 SELECT

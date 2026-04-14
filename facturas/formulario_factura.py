@@ -211,10 +211,28 @@ class FormularioFactura(QWidget):
         }
 
     def set_datos(self, datos):
-        for clave, valor in datos.items():
-            attr = f"txt_{clave}"
-            if hasattr(self, attr):
-                getattr(self, attr).setText(str(valor))
+        mapa = {
+            "ncontrato": self.txt_ncontrato,
+            "suplemento": self.txt_suplemento,
+            "nfactura": self.txt_nfactura,
+            "fec_emision": self.txt_fec_emision,
+            "inicio_factura": self.txt_inicio,
+            "fin_factura": self.txt_fin,
+            "dias_factura": self.txt_dias,
+            "consumo_punta": self.txt_punta,
+            "consumo_llano": self.txt_llano,
+            "consumo_valle": self.txt_valle,
+            "excedentes": self.txt_exced,
+            "importe_compensado": self.txt_comp,
+            "servicios": self.txt_serv,
+            "dcto_servicios": self.txt_dcto,
+            "saldos_pendientes": self.txt_saldos,
+            "bat_virtual": self.txt_bat,
+        }
+
+        for clave, widget in mapa.items():
+            if clave in datos and datos[clave] is not None:
+                widget.setText(str(datos[clave]))
 
     def limpiar(self):
         for attr in dir(self):

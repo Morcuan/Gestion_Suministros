@@ -220,7 +220,7 @@ class NuevaFactura(QWidget):
         # 6) Cloud
         total_final, aplicado_cloud, nuevo_saldo = calcular_bono_solar_cloud(
             self.cursor,
-            datos_base["id_contrato"],
+            datos_base["ncontrato"],
             total_con_saldos,
             energia_obj.sobrante_excedentes,
         )
