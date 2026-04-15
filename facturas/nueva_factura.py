@@ -255,6 +255,7 @@ class NuevaFactura(QWidget):
             aplicado_cloud,
             nuevo_saldo,
             detalles_json,
+            datos_base,
         )
 
         self.conn.commit()

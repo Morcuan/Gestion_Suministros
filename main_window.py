@@ -27,6 +27,7 @@ from contratos.lista_contratos import ListaContratos
 from contratos.nuevo_contrato import NuevoContrato
 from estilo import PALETAS, aplicar_estilo_boton, aplicar_estilo_panel_lateral
 from facturas.lista_contratos_factura import ListaContratosFactura
+from facturas.recalculo_test import recalcular_facturas_test
 from utilidades.estadisticas_mensuales import (
     CapturaEstadisticasMensuales,
     ConsultaEstadisticasMensuales,
@@ -39,6 +40,7 @@ class MainWindow(QMainWindow):
     def __init__(self, conn):
         super().__init__()
         self.conn = conn
+        self.id_contrato_test = None
 
         self.setWindowTitle("Gestion_suministros 2.0")
         self.resize(1160, 950)
@@ -188,21 +190,47 @@ class MainWindow(QMainWindow):
             )
         )
 
-        # >>> NUEVA SECCIÓN: COMPARATIVAS COMO SUBMENÚ REAL
+        # ---------------------------------------------------------
+        # COMPARATIVAS (TÍTULO VISUAL)
+        # ---------------------------------------------------------
+        lbl_comp = QLabel("📈 Comparativas")
+        lbl_comp.setStyleSheet("font-size: 16px; font-weight: bold; margin-top: 10px;")
+        layout.addWidget(lbl_comp)
+
+        # ---------------------------------------------------------
+        # 📊 COMPARATIVA INTERNA (ACORDEÓN)
+        # ---------------------------------------------------------
         layout.addWidget(
             self.crear_seccion_acordeon(
-                "📈 Comparativas",
+                "📊 Comparativa interna",
                 [
-                    ("📊 Comparativa Interna", self.ejecutar_comparativa_interna),
                     (
-                        "🖨 Imp. Comp. interna",
+                        "▶ Comparativa interna",
+                        self.ejecutar_comparativa_interna,
+                    ),
+                    (
+                        "🖨 Comparativa interna",
                         self.imprimir_comparativa_interna,
                     ),
                     (
-                        "📄 Exp. comp. a PDF",
+                        "📄 Exportar a PDF",
                         self.exportar_pdf_comparativa_interna,
                     ),
-                    ("📦 Oferta externa (próx.)", lambda: None),
+                ],
+            )
+        )
+
+        # ---------------------------------------------------------
+        # 📦 OFERTA EXTERNA (ACORDEÓN)
+        # ---------------------------------------------------------
+        layout.addWidget(
+            self.crear_seccion_acordeon(
+                "📦 Oferta externa",
+                [
+                    ("➕ Nvo. contrato test", self.abrir_nuevo_contrato_test),
+                    ("📥 Fact. reales a test", self.abrir_clonador_facturas_test),
+                    ("🔄 Recalcular facturas test", self.abrir_recalculo_test),
+                    ("📊 Comp. real vs simulada", self.abrir_comparativa_ofertas),
                 ],
             )
         )
@@ -259,64 +287,6 @@ class MainWindow(QMainWindow):
         return panel
 
     # ---------------------------------------------------------
-    # SUBMENÚ COMPARATIVAS
-    # ---------------------------------------------------------
-    def crear_menu_comparativas(self):
-        """Submenú interno para Comparativas."""
-        w = QWidget()
-        l = QVBoxLayout(w)
-
-        # >>> AÑADIDO: Comparar ofertas
-        btn_test = QPushButton("📊 Comparar ofertas")
-        aplicar_estilo_boton(btn_test)
-        btn_test.clicked.connect(self.ejecutar_comparativa_interna)
-        l.addWidget(btn_test)
-
-        # >>> AÑADIDO: Comparar oferta externa
-        btn_oferta = QPushButton("📦 Comparar oferta externa (próximamente)")
-        aplicar_estilo_boton(btn_oferta)
-        l.addWidget(btn_oferta)
-
-        l.addStretch()
-        return w
-
-    # ---------------------------------------------------------
-    # EJECUTAR COMPARAR OFERTAS
-    # ---------------------------------------------------------
-    def ejecutar_comparativa_interna(self):
-        try:
-            from analisis_comparativas.comparativa_interna_full import (
-                ejecutar_proceso_completo,
-            )
-
-            ejecutar_proceso_completo(self.conn)
-        except Exception as e:
-            QMessageBox.critical(
-                self, "Error", f"Error ejecutando comparativa interna:\n{e}"
-            )
-
-    # ---------------------------------------------------------
-    # NUEVO CONTRATO
-    # ---------------------------------------------------------
-    def abrir_nuevo_contrato(self):
-        modulo = NuevoContrato(parent=self)
-        modulo.cerrado.connect(self.volver_inicio)
-        self.cargar_modulo(modulo, "Nuevo contrato")
-
-    def volver_inicio(self):
-        self.cargar_modulo(self.crear_pantalla_inicio(), None)
-
-    def volver_menu_principal(self):
-        self.volver_inicio()
-
-    # ---------------------------------------------------------
-    # MODIFICAR CONTRATO
-    # ---------------------------------------------------------
-    def abrir_modificacion_contratos(self):
-        lista = ListaContratos(parent=self, modo="modificacion")
-        self.cargar_modulo(lista, "Modificar contrato")
-
-    # ---------------------------------------------------------
     # ACORDEÓN
     # ---------------------------------------------------------
     def crear_seccion_acordeon(self, titulo, opciones):
@@ -358,28 +328,28 @@ class MainWindow(QMainWindow):
     # ---------------------------------------------------------
     def crear_pantalla_inicio(self):
         w = QWidget()
-        l = QVBoxLayout(w)
-        l.addWidget(QLabel("Bienvenido al sistema de gestión"))
-        l.addStretch()
+        layout = QVBoxLayout(w)
+        layout.addWidget(QLabel("Bienvenido al sistema de gestión"))
+        layout.addStretch()
         return w
 
     def crear_pantalla_paleta(self):
         w = QWidget()
-        l = QVBoxLayout(w)
-        l.addWidget(QLabel("Selecciona una paleta de colores"))
+        layout = QVBoxLayout(w)
+        layout.addWidget(QLabel("Selecciona una paleta de colores"))
 
         for nombre, paleta in PALETAS.items():
             btn = QPushButton(nombre)
             aplicar_estilo_boton(btn)
             btn.clicked.connect(lambda _, p=paleta: self.aplicar_paleta(p))
-            l.addWidget(btn)
+            layout.addWidget(btn)
 
-        l.addStretch()
+        layout.addStretch()
         return w
 
     def crear_pantalla_acerca(self):
         w = QWidget()
-        l = QVBoxLayout(w)
+        layout = QVBoxLayout(w)
         lbl = QLabel(
             "<b>Gestion_suministros 2.0</b><br>"
             "Proyecto iniciado: <b>enero 2025</b><br>"
@@ -387,15 +357,8 @@ class MainWindow(QMainWindow):
             "Aplicación para la gestión modular de contratos, facturas y comparativas."
         )
         lbl.setWordWrap(True)
-        l.addWidget(lbl)
-        l.addStretch()
-        return w
-
-    def crear_placeholder(self, nombre):
-        w = QWidget()
-        l = QVBoxLayout(w)
-        l.addWidget(QLabel(f"Módulo: {nombre}"))
-        l.addStretch()
+        layout.addWidget(lbl)
+        layout.addStretch()
         return w
 
     # ---------------------------------------------------------
@@ -429,6 +392,179 @@ class MainWindow(QMainWindow):
 
         scroll.setWidget(contenedor)
         self.zona_contenido_layout.addWidget(scroll)
+
+    # ---------------------------------------------------------
+    # MÉTODOS DE COMPARATIVAS
+    # ---------------------------------------------------------
+    def ejecutar_comparativa_interna(self):
+        try:
+            from analisis_comparativas.comparativa_interna_full import (
+                ejecutar_proceso_completo,
+            )
+
+            resultado = ejecutar_proceso_completo(self.conn)
+
+            # Convertimos saltos de línea a <br>
+            resultado_html = resultado.replace("\n", "<br>")
+
+            # Ponemos el mensaje final en negrita
+            resultado_html = resultado_html.replace(
+                "🏁 COMPARATIVA INTERNA FINALIZADA",
+                "<b>🏁 COMPARATIVA INTERNA FINALIZADA</b>",
+            )
+
+            # Crear widget para mostrar el resultado
+            w = QWidget()
+            layout = QVBoxLayout(w)
+
+            lbl = QLabel(resultado_html)
+            lbl.setWordWrap(True)
+            lbl.setTextFormat(Qt.RichText)
+            lbl.setStyleSheet(
+                """
+                font-size: 19px;
+                padding: 16px;
+                background-color: #f5f5f5;
+                border: 1px solid #ccc;
+                border-radius: 6px;
+                line-height: 150%;
+            """
+            )
+
+            layout.addWidget(lbl)
+
+            # Botón cerrar con estilo secundario REAL
+            btn_cerrar = QPushButton("Cerrar")
+            btn_cerrar.setProperty("clase", "secundario")  # ← activa el borde
+            aplicar_estilo_boton(btn_cerrar, principal=False)
+            btn_cerrar.setFixedWidth(120)
+            btn_cerrar.clicked.connect(self.volver_inicio)
+
+            layout.addWidget(btn_cerrar, alignment=Qt.AlignRight)
+            layout.addStretch()
+
+            self.cargar_modulo(w, "Resultado comparativa interna")
+
+        except Exception as e:
+            QMessageBox.critical(
+                self, "Error", f"Error ejecutando comparativa interna:\n{e}"
+            )
+
+    def imprimir_comparativa_interna(self):
+        html = generar_html_comparativa_interna(self.conn)
+
+        printer = QPrinter(QPrinter.HighResolution)
+        dialog = QPrintDialog(printer, self)
+
+        if dialog.exec():
+            doc = QTextDocument()
+            doc.setHtml(html)
+            doc.print_(printer)
+
+    def exportar_pdf_comparativa_interna(self):
+        html = generar_html_comparativa_interna(self.conn)
+
+        ruta, _ = QFileDialog.getSaveFileName(
+            self,
+            "Guardar informe comparativa interna como PDF",
+            "comparativa_interna.pdf",
+            "PDF (*.pdf)",
+        )
+
+        if not ruta:
+            return
+
+        printer = QPrinter(QPrinter.HighResolution)
+        printer.setOutputFormat(QPrinter.PdfFormat)
+        printer.setOutputFileName(ruta)
+
+        doc = QTextDocument()
+        doc.setHtml(html)
+        doc.print_(printer)
+
+    # ---------------------------------------------------------
+    # NUEVO CONTRATO
+    # ---------------------------------------------------------
+    def abrir_nuevo_contrato(self):
+        modulo = NuevoContrato(parent=self)
+        modulo.cerrado.connect(self.volver_inicio)
+        self.cargar_modulo(modulo, "Nuevo contrato")
+
+    def volver_inicio(self):
+        self.cargar_modulo(self.crear_pantalla_inicio(), None)
+
+    def volver_menu_principal(self):
+        self.volver_inicio()
+
+    # ---------------------------------------------------------
+    # MODIFICAR CONTRATO
+    # ---------------------------------------------------------
+    def abrir_modificacion_contratos(self):
+        lista = ListaContratos(parent=self, modo="modificacion")
+        self.cargar_modulo(lista, "Modificar contrato")
+
+    # ---------------------------------------------------------
+    # MÉTODOS PARA OFERTA EXTERNA
+    # ---------------------------------------------------------
+    def abrir_nuevo_contrato_test(self):
+        from contratos.nuevo_contrato_test import NuevoContratoTest
+
+        modulo = NuevoContratoTest(parent=self)
+
+        # 1) Guardar el id del contrato test si existe
+        modulo.cerrado.connect(
+            lambda: setattr(
+                self, "id_contrato_test", getattr(modulo, "id_contrato", None)
+            )
+        )
+
+        # 2) Volver al menú principal
+        modulo.cerrado.connect(self.volver_inicio)
+
+        self.cargar_modulo(modulo, "Nuevo contrato ficticio")
+
+    def abrir_clonador_facturas_test(self):
+
+        # Comprobar si existe contrato ficticio en la BD
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT ncontrato FROM contratos_identificacion_test LIMIT 1")
+        row = cursor.fetchone()
+
+        if row is None:
+            QMessageBox.warning(
+                self,
+                "Contrato ficticio no definido",
+                "Debe crear primero un contrato ficticio.",
+            )
+            return
+
+        from facturas.clonador_facturas_test import ClonadorFacturasTest
+
+        modulo = ClonadorFacturasTest(parent=self)
+        self.cargar_modulo(modulo, "Clonar facturas reales")
+
+    def abrir_comparativa_ofertas(self):
+        from analisis_comparativas.comparativa_ofertas import ComparativaOfertas
+
+        modulo = ComparativaOfertas(parent=self)
+        self.cargar_modulo(modulo, "Comparativa real vs simulada")
+
+    def abrir_recalculo_test(self):
+        try:
+            resultado = recalcular_facturas_test(self.conn)
+
+            mensaje = (
+                f"Total facturas: {resultado['total']}\n"
+                f"Procesadas: {resultado['procesadas']}\n"
+            )
+
+            if resultado["errores"]:
+                mensaje += "\nErrores:\n" + "\n".join(resultado["errores"])
+
+            QMessageBox.information(self, "Recalculo TEST", mensaje)
+
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Error en recálculo test:\n{str(e)}")
 
     # ---------------------------------------------------------
     # INICIALIZAR BD
@@ -471,35 +607,3 @@ class MainWindow(QMainWindow):
         from estilo import generar_stylesheet
 
         self.setStyleSheet(generar_stylesheet(paleta))
-
-    def imprimir_comparativa_interna(self):
-        html = generar_html_comparativa_interna(self.conn)
-
-        printer = QPrinter(QPrinter.HighResolution)
-        dialog = QPrintDialog(printer, self)
-
-        if dialog.exec():
-            doc = QTextDocument()
-            doc.setHtml(html)
-            doc.print_(printer)  # ← CORREGIDO
-
-    def exportar_pdf_comparativa_interna(self):
-        html = generar_html_comparativa_interna(self.conn)
-
-        ruta, _ = QFileDialog.getSaveFileName(
-            self,
-            "Guardar informe comparativa interna como PDF",
-            "comparativa_interna.pdf",
-            "PDF (*.pdf)",
-        )
-
-        if not ruta:
-            return
-
-        printer = QPrinter(QPrinter.HighResolution)
-        printer.setOutputFormat(QPrinter.PdfFormat)
-        printer.setOutputFileName(ruta)
-
-        doc = QTextDocument()
-        doc.setHtml(html)
-        doc.print_(printer)  # ← CORREGIDO

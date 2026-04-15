@@ -478,4 +478,11 @@ class FormularioContrato(QWidget):
             self.txt_vertido.setCursorPosition(cursor_pos)
 
     def _cancelar(self):
+        if self.modo == "test":
+            # No navegar, solo emitir la señal cancelar del módulo padre
+            if hasattr(self.parent(), "cancelar"):
+                self.parent().cancelar()
+            return
+
+        # Comportamiento normal (contratos reales)
         self.main_window.cargar_modulo(self.main_window.crear_pantalla_inicio(), None)

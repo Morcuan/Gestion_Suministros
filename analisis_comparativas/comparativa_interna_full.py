@@ -17,14 +17,18 @@ logger = logging.getLogger(__name__)
 
 
 def ejecutar_proceso_completo(conn):
-    logger.info("Iniciando comparativa interna")
+    mensajes = []
 
+    mensajes.append("Iniciando comparativa interna")
     crear_entorno_interno(conn)
-    logger.info("Entorno interno creado")
+    mensajes.append("Entorno interno creado")
 
     resultado = recalcular_facturas_interno(conn)
-    logger.info(f"Recalculo completado: {resultado}")
+    mensajes.append(f"Recalculo completado: {resultado}")
 
     comparar_facturacion_interna(conn)
+    mensajes.append("Comparación interna realizada")
 
-    print("🏁 COMPARATIVA INTERNA FINALIZADA")
+    mensajes.append("🏁 COMPARATIVA INTERNA FINALIZADA")
+
+    return "\n".join(mensajes)

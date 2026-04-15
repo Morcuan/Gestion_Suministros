@@ -364,37 +364,35 @@ class SaldosPendientes:
 # ---------------------------------------------------------
 
 
-def obtener_saldo_cloud(cursor, id_contrato):
+def obtener_saldo_cloud(cursor, ncontrato):
     """
     Devuelve el saldo acumulado del Bono Solar Cloud.
     Si no existe registro, devuelve 0.0.
     """
     cursor.execute(
-        "SELECT saldo FROM saldo_cloud WHERE id_contrato = ?",
-        (id_contrato,),
+        "SELECT saldo FROM saldo_cloud WHERE ncontrato = ?",
+        (ncontrato,),
     )
     row = cursor.fetchone()
     return row[0] if row else 0.0
 
 
-def guardar_saldo_cloud(cursor, id_contrato, nuevo_saldo):
+def guardar_saldo_cloud(cursor, ncontrato, nuevo_saldo):
     """
     Guarda el nuevo saldo acumulado del Bono Solar Cloud.
     Si el contrato ya existe, actualiza el saldo.
     """
     cursor.execute(
         """
-        INSERT INTO saldo_cloud (id_contrato, saldo)
+        INSERT INTO saldo_cloud (ncontrato, saldo)
         VALUES (?, ?)
-        ON CONFLICT(id_contrato) DO UPDATE SET saldo = excluded.saldo
+        ON CONFLICT(ncontrato) DO UPDATE SET saldo = excluded.saldo
         """,
-        (id_contrato, nuevo_saldo),
+        (ncontrato, nuevo_saldo),
     )
 
 
-def calcular_bono_solar_cloud(
-    cursor, id_contrato, total_con_saldos, sobrante_excedentes
-):
+def calcular_bono_solar_cloud(cursor, ncontrato, total_con_saldos, sobrante_excedentes):
     """
     Aplica el Bono Solar Cloud siguiendo tu lógica exacta:
 
@@ -405,7 +403,7 @@ def calcular_bono_solar_cloud(
     """
 
     # 1) Leer saldo acumulado
-    saldo_anterior = obtener_saldo_cloud(cursor, id_contrato)
+    saldo_anterior = obtener_saldo_cloud(cursor, ncontrato)
 
     # 2) Aplicar saldo al total con IVA (tras saldos pendientes)
     aplicado = min(saldo_anterior, total_con_saldos)
@@ -415,7 +413,7 @@ def calcular_bono_solar_cloud(
     nuevo_saldo = round((saldo_anterior - aplicado) + sobrante_excedentes, 2)
 
     # 4) Guardar nuevo saldo
-    guardar_saldo_cloud(cursor, id_contrato, nuevo_saldo)
+    guardar_saldo_cloud(cursor, ncontrato, nuevo_saldo)
 
     return total_final, aplicado, nuevo_saldo
 
@@ -652,6 +650,7 @@ def guardar_calculo_factura(
     aplicado_cloud: float,
     nuevo_saldo: float,
     detalles_json: str,
+    datos_base: dict,  # ← AÑADIMOS ESTO
 ):
     """
     Guarda el cálculo completo en la tabla factura_calculos.
@@ -667,12 +666,12 @@ def guardar_calculo_factura(
     cursor.execute(
         """
         INSERT INTO factura_calculos (
-            nfactura, fecha_calculo, version_motor,
-            total_energia, total_cargos, total_servicios,
-            total_iva, cloud_aplicado, cloud_sobrante,
-            total_final, detalles_json
+            nfactura, fecha_calculo, version_motor, total_energia,
+            total_cargos, total_servicios, total_iva, cloud_aplicado,
+            cloud_sobrante, total_final, detalles_json, bono_social,
+            alq_contador, otros_gastos, i_electrico, iva
         )
-        VALUES (?, DATE('now'), ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, date('now'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             nfactura,
@@ -685,5 +684,10 @@ def guardar_calculo_factura(
             energia_obj.sobrante_excedentes,
             round(saldos_obj.total_con_saldos - aplicado_cloud, 2),
             detalles_json,
+            datos_base["bono_social"],
+            datos_base["alq_contador"],
+            datos_base["otros_gastos"],
+            datos_base["i_electrico"],
+            datos_base["iva"],
         ),
     )

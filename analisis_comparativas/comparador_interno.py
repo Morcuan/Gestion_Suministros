@@ -93,4 +93,4 @@ def comparar_facturacion_interna(conn):
     detalle = cursor.fetchall()
     logger.debug("Detalle:\n" + tabulate(detalle))
 
-    print("🏁 Comparación finalizada.")
+    # eliminado el mensaje print("🏁 Comparación finalizada.")
