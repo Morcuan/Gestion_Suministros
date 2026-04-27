@@ -1,6 +1,6 @@
 # guardar_anulacion.py
 
-from datetime import datetime, date
+from datetime import date, datetime
 
 
 def validar_fecha(f):

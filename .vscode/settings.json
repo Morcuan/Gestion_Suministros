@@ -1,17 +1,22 @@
 {
-    // ===== ZOOM GENERAL =====
-    "window.zoomLevel": 1.25,
+    // ============================
+    //   PYTHON / INTERPRETADOR
+    // ============================
+    "python.defaultInterpreterPath": "venv/bin/python",
 
-    // ===== FORMATEADOR =====
+    // ============================
+    //   FORMATEO (BLACK)
+    // ============================
     "editor.defaultFormatter": "ms-python.black-formatter",
     "editor.formatOnSave": true,
-
-    // ===== BLACK =====
     "black-formatter.args": [
         "--line-length=88"
     ],
 
-    // ===== RUFF (LSP NATIVO) =====
+    // ============================
+    //   RUFF (LINTER + IMPORTS)
+    // ============================
+    "ruff.path": ["venv/bin/ruff"],
     "ruff.enable": true,
     "ruff.lint.enable": true,
     "ruff.lint.select": ["E", "F", "W", "I"],
@@ -19,58 +24,66 @@
     "ruff.format.enable": false,
     "ruff.organizeImports": true,
 
-    // ===== PYTHON / PYLANCE =====
+    // ============================
+    //   PYLANCE (MODO SUAVE)
+    // ============================
     "python.analysis.typeCheckingMode": "basic",
-    "python.linting.enabled": false,
     "python.analysis.autoImportCompletions": true,
     "python.analysis.useLibraryCodeForTypes": true,
-    "python.analysis.stubPaths": [
-        "/home/antoniom/Desarrollo/Gestion_Suministros/venv/lib/python3.12/site-packages/PySide6-stubs"
-    ],
 
+    // 🔧 Desactivar diagnósticos molestos
     "python.analysis.diagnosticSeverityOverrides": {
+        "reportOptionalMemberAccess": "none",
+        "reportOptionalCall": "none",
+        "reportUnknownMemberType": "none",
+        "reportUnknownArgumentType": "none",
+        "reportUnknownVariableType": "none",
+        "reportMissingModuleSource": "none",
         "reportAttributeAccessIssue": "none",
         "reportGeneralTypeIssues": "none",
-
-        // === AÑADIDOS PARA SILENCIAR LOS 5 AVISOS RESTANTES ===
-        "reportOptionalMemberAccess": "none",
-        "reportArgumentType": "none",
-        "reportAssignmentType": "none"
+        "reportOptionalIterable": "none",
+        "reportOptionalSubscript": "none"
     },
 
-    // ===== TERMINAL =====
-    "terminal.integrated.fontSize": 14,
-
-    // ===== CALIDAD DE VIDA =====
-    "errorLens.enabled": true,
-    "errorLens.fontWeight": "normal",
-    "errorLens.fontStyleItalic": false,
-    "errorLens.margin": "4px",
-
-    // ===== ARCHIVOS =====
-    "files.trimTrailingWhitespace": true,
-    "files.insertFinalNewline": true,
-
-    // ===== ESTÉTICA =====
-    "workbench.iconTheme": "material-icon-theme",
-
-    // ===== EDITOR =====
+    // ============================
+    //   EDITOR
+    // ============================
     "editor.fontSize": 14,
     "editor.minimap.enabled": false,
     "editor.renderWhitespace": "boundary",
     "editor.tabSize": 4,
     "editor.detectIndentation": false,
-
-    // ===== SUGERENCIAS INTELIGENTES =====
-    "editor.inlineSuggest.enabled": true,
     "editor.guides.bracketPairs": true,
+    "editor.inlineSuggest.enabled": true,
 
-    // ===== ACCIONES AUTOMÁTICAS =====
-    "editor.codeActionsOnSave": {
-        "source.organizeImports.ruff": "explicit"
-    },
+    // ============================
+    //   ARCHIVOS
+    // ============================
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true,
 
-    // ===== AUTODOCSTRING (ESTILO GOOGLE) =====
-    "autoDocstring.docstringFormat": "google",
-    "autoDocstring.generateDocstringOnEnter": true
+    // ============================
+    //   TERMINAL
+    // ============================
+    "terminal.integrated.fontSize": 14,
+
+    // ============================
+    //   ICONOS / UI
+    // ============================
+    "workbench.iconTheme": "material-icon-theme",
+
+    // ============================
+    //   GIT / GITLENS
+    // ============================
+    "git.autofetch": true,
+    "git.confirmSync": false,
+    "gitlens.hovers.currentLine.over": "line",
+    "gitlens.currentLine.enabled": true,
+    "gitlens.codeLens.enabled": false,
+
+    // ============================
+    //   EXPLORADOR
+    // ============================
+    "explorer.compactFolders": false,
+    "explorer.confirmDelete": false
 }

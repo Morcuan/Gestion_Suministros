@@ -1,10 +1,47 @@
-# Ignorar cachés de Python
+# ============================
+#   PYTHON
+# ============================
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+*.log
 
-# Ignorar entornos virtuales (por si algún día creas uno dentro del proyecto)
+# ============================
+#   ENTORNOS VIRTUALES
+# ============================
 venv/
 .env/
+.venv/
 
-# Ignorar archivos comprimidos de copia
+# ============================
+#   BASES DE DATOS / SQLITE
+# ============================
+# *.db
+*.sqlite
+*.sqlite3
+
+# ============================
+#   BACKUPS / EXPORTS
+# ============================
 *.tar.gz
+*.zip
+*.bak
+
+# ============================
+#   VS CODE
+# ============================
+.vscode/
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# ============================
+#   SISTEMA / TEMPORALES
+# ============================
+.DS_Store
+Thumbs.db
+*.swp
+*.tmp
