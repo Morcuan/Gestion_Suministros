@@ -26,7 +26,6 @@ from utilidades.utilidades_bd import (
 class NuevoContrato(QWidget):
     """
     Controlador del proceso de alta de contrato.
-    Versión inicial: solo muestra el formulario incrustado.
     """
 
     cerrado = Signal()  # Señal para volver al inicio
@@ -37,8 +36,9 @@ class NuevoContrato(QWidget):
         # ---------------------------------------------------------
         # ACCESO A BD (heredado de MainWindow)
         # ---------------------------------------------------------
+        self.main_window = parent
         self.conn = parent.conn
-        self.cursor = parent.conn.cursor()  # ← CORREGIDO
+        self.cursor = parent.conn.cursor()
 
         # ---------------------------------------------------------
         # LAYOUT PRINCIPAL
@@ -48,20 +48,19 @@ class NuevoContrato(QWidget):
         layout.setSpacing(10)
 
         # ---------------------------------------------------------
-        # FORMULARIO
+        # FORMULARIO (IMPORTANTE: parent=MainWindow)
         # ---------------------------------------------------------
-        self.formulario = FormularioContrato(parent=self)
-        self.formulario.set_modo("nuevo")  # ← MODO NUEVO ACTIVADO
+        self.formulario = FormularioContrato(parent=self.main_window, modo="nuevo")
         layout.addWidget(self.formulario)
 
         # ---------------------------------------------------------
         # CARGA DE COMPAÑÍAS DESDE BD
         # ---------------------------------------------------------
-        lista = obtener_companias(self.cursor)  # ← OBTENEMOS LISTA
-        self.formulario.cargar_companias(lista)  # ← CARGAMOS EN EL FORMULARIO
+        lista = obtener_companias(self.cursor)
+        self.formulario.cargar_companias(lista)
 
         # ---------------------------------------------------------
-        # CONEXIONES BÁSICAS (sin lógica aún)
+        # CONEXIONES
         # ---------------------------------------------------------
         self.formulario.btn_guardar.clicked.connect(self.guardar)
         self.formulario.btn_cancelar.clicked.connect(self.cancelar)
@@ -105,7 +104,6 @@ class NuevoContrato(QWidget):
         # ==========================================================
         # 3. VALIDAR FECHA (dd/mm/yyyy)
         # ==========================================================
-
         fec_inicio_str = self.formulario.txt_fec_inicio.text().strip()
 
         if not validar_fecha(fec_inicio_str):
@@ -120,11 +118,9 @@ class NuevoContrato(QWidget):
         # ==========================================================
         # 4. VALIDAR CÓDIGO POSTAL
         # ==========================================================
-
         ok, poblacion = validar_codigo_postal(self.cursor, datos_ident["codigo_postal"])
 
         if not ok:
-            # Preguntar si desea crearlo
             resp = QMessageBox.question(
                 self,
                 "Código postal no encontrado",
@@ -136,7 +132,6 @@ class NuevoContrato(QWidget):
             if resp == QMessageBox.No:
                 return
 
-            # Pedir población
             poblacion, ok2 = QInputDialog.getText(
                 self, "Nueva población", "Introduzca el nombre de la población:"
             )
@@ -190,7 +185,6 @@ class NuevoContrato(QWidget):
         # ==========================================================
         # 7. INSERTAR CONTRATO COMPLETO
         # ==========================================================
-
         try:
             idc = insertar_contrato(
                 self.conn, self.cursor, datos_ident, datos_energia, datos_gastos
@@ -209,6 +203,9 @@ class NuevoContrato(QWidget):
         # Opcional: limpiar formulario
         self.formulario.limpiar()
 
+    # ---------------------------------------------------------
+    # CANCELAR
+    # ---------------------------------------------------------
     def cancelar(self):
         """Cierra el módulo y vuelve al inicio."""
         self.cerrado.emit()

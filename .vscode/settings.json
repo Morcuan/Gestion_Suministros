@@ -70,7 +70,7 @@
     // ============================
     //   ICONOS / UI
     // ============================
-    "workbench.iconTheme": "material-icon-theme",
+    "workbench.iconTheme": "vs-seti",
 
     // ============================
     //   GIT / GITLENS
@@ -85,5 +85,7 @@
     //   EXPLORADOR
     // ============================
     "explorer.compactFolders": false,
-    "explorer.confirmDelete": false
+    "explorer.confirmDelete": false,
+    "editor.formatOnPaste": true,
+    "editor.formatOnType": true
 }

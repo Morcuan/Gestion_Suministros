@@ -11,7 +11,6 @@ Todas las funciones reciben la conexión y el cursor desde main.py.
 Ninguna función abre ni cierra la conexión.
 """
 
-from datetime import datetime
 
 
 # -------------------------------------------------------------

@@ -2,7 +2,7 @@
 # Modulo: nuevo_contrato_test.py                               #
 # Descripción: Alta de contrato ficticio para comparativas     #
 # Autor: Antonio Morales                                       #
-# Fecha: 2026-02-14                                            #
+# Fecha: 2026-02-14 (versión corregida 2026-04-28)             #
 # -------------------------------------------------------------#
 
 from PySide6.QtCore import Signal
@@ -34,8 +34,9 @@ class NuevoContratoTest(QWidget):
         super().__init__(parent)
 
         # ---------------------------------------------------------
-        # ACCESO A BD
+        # ACCESO A BD (heredado de MainWindow)
         # ---------------------------------------------------------
+        self.main_window = parent
         self.conn = parent.conn
         self.cursor = parent.conn.cursor()
 
@@ -47,10 +48,9 @@ class NuevoContratoTest(QWidget):
         layout.setSpacing(10)
 
         # ---------------------------------------------------------
-        # FORMULARIO
+        # FORMULARIO (IMPORTANTE: parent=MainWindow)
         # ---------------------------------------------------------
-        self.formulario = FormularioContrato(parent=self)
-        self.formulario.set_modo("test")
+        self.formulario = FormularioContrato(parent=self.main_window, modo="test")
         layout.addWidget(self.formulario)
 
         # ---------------------------------------------------------
@@ -181,19 +181,13 @@ class NuevoContratoTest(QWidget):
             datos_energia["pv_excedentes"] = "0"
 
         # ==========================================================
-        # 7. INSERTAR CONTRATO EN TABLAS TEST (ALINEADO CON TABLAS REALES)
+        # 7. INSERTAR CONTRATO EN TABLAS TEST
         # ==========================================================
         try:
             idc = self.generar_id_contrato_test()
 
-            # -------------------------
-            # GENERAR NÚMERO DE CONTRATO TEST
-            # -------------------------
             datos_ident["ncontrato"] = f"TEST_{datos_ident['compania']}_{idc}"
 
-            # -------------------------
-            # IDENTIFICACIÓN
-            # -------------------------
             sql_ident = """
                 INSERT INTO contratos_identificacion_test (
                     id_contrato, ncontrato, suplemento, compania,
@@ -218,9 +212,6 @@ class NuevoContratoTest(QWidget):
                 ),
             )
 
-            # -------------------------
-            # ENERGÍA
-            # -------------------------
             sql_energia = """
                 INSERT INTO contratos_energia_test (
                     id_contrato, ppunta, pv_ppunta,
@@ -246,9 +237,6 @@ class NuevoContratoTest(QWidget):
                 ),
             )
 
-            # -------------------------
-            # GASTOS
-            # -------------------------
             sql_gastos = """
                 INSERT INTO contratos_gastos_test (
                     id_contrato, bono_social, alq_contador,
@@ -287,5 +275,8 @@ class NuevoContratoTest(QWidget):
 
         self.formulario.limpiar()
 
+    # ---------------------------------------------------------
+    # CANCELAR
+    # ---------------------------------------------------------
     def cancelar(self):
         self.cerrado.emit()

@@ -5,7 +5,7 @@
 echo "📁 Proyecto: Gestion_Suministros"
 
 # ============================
-#   📌 IR SIEMPRE AL DIRECTORIO DEL PROYECTO
+#   📌 IR AL DIRECTORIO DEL PROYECTO
 # ============================
 
 PROYECTO="$HOME/Desarrollo/Gestion_Suministros"
@@ -23,38 +23,49 @@ echo "🗂️ Creando copia de seguridad diaria..."
 FECHA=$(date +"%d%m%y")
 NOMBRE="Gestion_Suministros_${FECHA}.tar.gz"
 
-DESTINO="/media/antoniom/ALMACEN/Proyecto_20"
+# Crear backup SIEMPRE fuera del proyecto para evitar errores de tar
+TMP_BACKUP="/tmp/$NOMBRE"
 
-# Crear backup SIEMPRE en el directorio del proyecto
 tar --exclude="venv" \
     --exclude="*/__pycache__" \
-    -czf "$NOMBRE" .
+    -czf "$TMP_BACKUP" .
 
-# Comprobar si la SD está montada
-if mount | grep -q "$DESTINO"; then
-    echo "💽 SD detectada en: $DESTINO"
-else
-    echo "⚠️ No se detecta la SD montada en $DESTINO"
-    echo "⏳ Esperando 3 segundos por si acaba de montarse..."
-    sleep 6
+if [ $? -ne 0 ]; then
+    echo "❌ Error al crear el archivo TAR."
+    return
 fi
 
-# Intentar copiar a la SD
-if cp "$NOMBRE" "$DESTINO/" 2>/dev/null; then
-    echo "🟢 Backup copiado a la SD: $DESTINO/$NOMBRE"
+echo "🟢 Backup creado temporalmente en: $TMP_BACKUP"
+
+# ============================
+#   💽 COPIA AL DISCO USB
+# ============================
+
+DESTINO="/run/media/antoniom/ALMACEN/Proyecto_20"
+
+if mount | grep -q "/run/media/antoniom/ALMACEN"; then
+    echo "💽 Disco USB detectado."
 else
-    echo "❌ Error al copiar el backup a la SD"
-    echo "   (Puede no estar montada o no tener permisos)"
+    echo "⚠️ No se detecta el disco USB montado en /run/media/antoniom/ALMACEN"
+    echo "⏳ Esperando 3 segundos..."
+    sleep 3
+fi
+
+if cp "$TMP_BACKUP" "$DESTINO/" 2>/dev/null; then
+    echo "🟢 Backup copiado correctamente a: $DESTINO/$NOMBRE"
+else
+    echo "❌ Error al copiar el backup al disco USB."
+    echo "   (Puede no estar montado o no tener permisos)"
 fi
 
 echo ""
-read -p "❓ ¿Quieres borrar el archivo temporal $NOMBRE para evitar que Git lo detecte? (s/n): " RESP
+read -p "❓ ¿Quieres borrar el archivo temporal $TMP_BACKUP? (s/n): " RESP
 
 if [[ "$RESP" =~ ^[sS]$ ]]; then
-    rm "$NOMBRE"
-    echo "🧹 Archivo temporal eliminado: $NOMBRE"
+    rm "$TMP_BACKUP"
+    echo "🧹 Archivo temporal eliminado."
 else
-    echo "📦 Archivo conservado en el directorio del proyecto."
+    echo "📦 Archivo temporal conservado en /tmp."
 fi
 echo ""
 
