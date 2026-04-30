@@ -1,66 +1,82 @@
 # -------------------------------------------------------------#
 # Módulo: recalculo_test.py                                    #
 # Descripción: Recalculo completo de facturas_test usando      #
-#              el contrato ficticio y escribiendo en tablas    #
-#              de simulación (factura_calculos_test, saldo...) #
+#              el motor calculo_test.py y escribiendo en       #
+#              factura_calculos_test y saldo_cloud_test.       #
 # -------------------------------------------------------------#
 
-from facturas.calculo import (
+import json
+
+from facturas.calculo_test import (
     VERSION_MOTOR,
-    calcular_bono_solar_cloud,
+    calcular_bono_solar_cloud,  # ← FALTABA ESTA LÍNEA
     calcular_cargos_para_factura,
     calcular_energia_para_factura,
     calcular_iva_para_factura,
     calcular_saldos_pendientes,
     calcular_servicios_para_factura,
     generar_json_calculo,
+    guardar_saldo_cloud,
+    obtener_saldo_cloud,
+    registrar_version_motor,
 )
 
 
 # -------------------------------------------------------------
-# Leer datos de facturas_test
+# Obtener datos desde la vista v_datos_calculo_test
 # -------------------------------------------------------------
 def obtener_datos_factura_test(cursor, nfactura):
     cursor.execute(
         """
-        SELECT nfactura, inicio_factura, fin_factura, dias_factura,
-               fec_emision, consumo_punta, consumo_llano, consumo_valle,
-               excedentes, importe_compensado, servicios, dcto_servicios,
-               saldos_pendientes, bat_virtual, recalcular, estado,
-               rectifica_a, ncontrato, suplemento
-        FROM facturas_test
+        SELECT *
+        FROM v_datos_calculo_test
         WHERE nfactura = ?
-    """,
+        """,
         (nfactura,),
     )
     row = cursor.fetchone()
-
     if not row:
         return None
 
-    cols = [
-        "nfactura",
-        "inicio_factura",
-        "fin_factura",
-        "dias_factura",
-        "fec_emision",
-        "consumo_punta",
-        "consumo_llano",
-        "consumo_valle",
-        "excedentes",
-        "importe_compensado",
-        "servicios",
-        "dcto_servicios",
-        "saldos_pendientes",
-        "bat_virtual",
-        "recalcular",
-        "estado",
-        "rectifica_a",
-        "ncontrato",
-        "suplemento",
-    ]
+    columnas = [d[0] for d in cursor.description]
+    return dict(zip(columnas, row))
 
-    return dict(zip(cols, row))
+
+# -------------------------------------------------------------
+# Manejo del saldo inicial TEST
+# -------------------------------------------------------------
+def inicializar_saldo_cloud_si_es_necesario(cursor, ncontrato):
+    """
+    Si saldo_cloud_test está vacío, leer saldo inicial desde
+    saldo_cloud_inicial_test y crear el registro inicial.
+    """
+
+    cursor.execute(
+        "SELECT saldo FROM saldo_cloud_test WHERE ncontrato = ?",
+        (ncontrato,),
+    )
+    row = cursor.fetchone()
+
+    if row:
+        return  # Ya existe saldo inicial
+
+    # Leer saldo inicial de la tabla inicial
+    cursor.execute(
+        "SELECT saldo FROM saldo_cloud_inicial_test WHERE ncontrato = ?",
+        (ncontrato,),
+    )
+    row = cursor.fetchone()
+
+    saldo_inicial = row[0] if row else 0.0
+
+    # Crear saldo inicial en saldo_cloud_test
+    cursor.execute(
+        """
+        INSERT INTO saldo_cloud_test (ncontrato, saldo)
+        VALUES (?, ?)
+        """,
+        (ncontrato, saldo_inicial),
+    )
 
 
 # -------------------------------------------------------------
@@ -80,6 +96,14 @@ def guardar_calculo_factura_test(
     detalles_json,
     datos_base,
 ):
+
+    # Borrar cálculo previo
+    cursor.execute("DELETE FROM factura_calculos_test WHERE nfactura = ?", (nfactura,))
+
+    # Registrar versión del motor
+    registrar_version_motor(cursor)
+
+    # Insertar nuevo cálculo
     cursor.execute(
         """
         INSERT INTO factura_calculos_test (
@@ -100,23 +124,23 @@ def guardar_calculo_factura_test(
             i_electrico,
             iva
         ) VALUES (?, date('now'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """,
+        """,
         (
             nfactura,
             version_motor,
             energia.total_energia,
             cargos.total_cargos,
-            servicios.total_servicios,
-            iva.total_iva,
+            servicios.total_servicios_otros,
+            iva.cuota_iva,
             aplicado_cloud,
-            nuevo_saldo,
-            iva.total_con_iva,
+            energia.sobrante_excedentes,
+            round(saldos.total_con_saldos - aplicado_cloud, 2),
             detalles_json,
-            datos_base["bono_social"],
-            datos_base["alq_contador"],
-            datos_base["otros_gastos"],
-            datos_base["i_electrico"],
-            datos_base["iva"],
+            float(datos_base["bono_social"]),
+            float(datos_base["alq_contador"]),
+            float(datos_base["otros_gastos"]),
+            float(datos_base["i_electrico"]),
+            float(datos_base["iva"]),
         ),
     )
 
@@ -139,19 +163,15 @@ def recalcular_facturas_test(conn):
 
     ncontrato_test = row[0]
 
-    # 2) Obtener facturas_test
+    # 2) Inicializar saldo inicial si es necesario
+    inicializar_saldo_cloud_si_es_necesario(cursor, ncontrato_test)
+
+    # 3) Obtener facturas_test
     cursor.execute("SELECT nfactura FROM facturas_test ORDER BY fec_emision ASC")
     pendientes = [row[0] for row in cursor.fetchall()]
 
     if not pendientes:
         return {"total": 0, "procesadas": 0, "errores": []}
-
-    # 3) Limpiar solo el saldo, NO los cálculos históricos
-    cursor.execute("DELETE FROM saldo_cloud_test")
-    cursor.execute(
-        "INSERT INTO saldo_cloud_test (ncontrato, saldo) VALUES (?, 0)",
-        (ncontrato_test,),
-    )
 
     errores = []
     procesadas = 0
@@ -164,9 +184,6 @@ def recalcular_facturas_test(conn):
                 errores.append(f"{nfactura}: datos no encontrados")
                 continue
 
-            # Forzar contrato ficticio
-            datos["ncontrato"] = ncontrato_test
-
             # 1) Cargos
             cargos = calcular_cargos_para_factura(datos)
 
@@ -176,42 +193,6 @@ def recalcular_facturas_test(conn):
                 nfactura,
                 cargos.bono_social,
             )
-
-            # ---------------------------------------------------------
-            # 🔥 DEBUG: VER QUÉ PASA CON LOS VALORES HISTÓRICOS
-            # ---------------------------------------------------------
-            print("\n--- DEBUG RECALCULO TEST ---")
-            print("Buscando valores históricos para nfactura:", nfactura)
-
-            cursor.execute("SELECT nfactura FROM factura_calculos_test")
-            print("Facturas presentes en factura_calculos_test:", cursor.fetchall())
-
-            # ---------------------------------------------------------
-            # 🔥 LEER VALORES HISTÓRICOS DESDE factura_calculos REAL
-            # ---------------------------------------------------------
-            cursor.execute(
-                """
-                SELECT bono_social, alq_contador, otros_gastos, i_electrico, iva
-                FROM factura_calculos
-                WHERE nfactura = ?
-                """,
-                (nfactura,),
-            )
-            row = cursor.fetchone()
-
-            print("Resultado SELECT valores históricos:", row)
-
-            if row:
-                datos_base["bono_social"] = row[0]
-                datos_base["alq_contador"] = row[1]
-                datos_base["otros_gastos"] = row[2]
-                datos_base["i_electrico"] = row[3]
-                datos_base["iva"] = row[4]
-            else:
-                errores.append(
-                    f"{nfactura}: no hay datos históricos en factura_calculos"
-                )
-                continue
 
             # 3) Servicios
             servicios = calcular_servicios_para_factura(datos_base)
@@ -230,7 +211,7 @@ def recalcular_facturas_test(conn):
                 iva.total_con_iva,
             )
 
-            # 6) Bono Solar Cloud (test)
+            # 6) Bono Solar Cloud (motor test)
             total_final, aplicado_cloud, nuevo_saldo = calcular_bono_solar_cloud(
                 cursor,
                 ncontrato_test,
@@ -238,7 +219,7 @@ def recalcular_facturas_test(conn):
                 energia.sobrante_excedentes,
             )
 
-            # 7) JSON
+            # 7) JSON (motor test)
             detalles_json = generar_json_calculo(
                 energia,
                 cargos,
