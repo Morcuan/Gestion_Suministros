@@ -2,15 +2,17 @@
 # Modulo: formulario_contrato.py                               #
 # Descripción: Vista pura del formulario de contrato           #
 # Autor: Antonio Morales                                       #
-# Fecha: 2026-02-10 (versión corregida 2026-04-28)             #
+# Fecha: 2026-02-10 (versión corregida 2026-05-03)             #
 # -------------------------------------------------------------#
 
+from PySide6.QtCore import Qt, QRect
 from PySide6.QtWidgets import (
-    QComboBox,
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
     QLineEdit,
+    QListWidget,
+    QListWidgetItem,
     QPushButton,
     QVBoxLayout,
     QWidget,
@@ -35,10 +37,15 @@ class FormularioContrato(QWidget):
         from main_window import MainWindow
 
         self.main_window: MainWindow = parent
-
         self.conn = conn
         self.modo = modo
         self.datos = datos
+
+        # Popup de sugerencias (creado una vez)
+        self.popup_sugerencias = QListWidget()
+        self.popup_sugerencias.setWindowFlags(Qt.Popup)
+        self.popup_sugerencias.hide()
+        self.popup_sugerencias.itemClicked.connect(self._seleccionar_sugerencia)
 
         # ---------------------------------------------------------
         # LAYOUT PRINCIPAL
@@ -71,10 +78,18 @@ class FormularioContrato(QWidget):
         layout_ident.addRow("Número contrato:", self.txt_ncontrato)
         layout_ident.addRow("Suplemento:", self.txt_suplemento)
 
-        self.cmb_compania = QComboBox()
-        self.cmb_compania.setMaxVisibleItems(20)
-        layout_ident.addRow("Compañía:", self.cmb_compania)
+        # ---------------------------------------------------------
+        # CAMPO COMPAÑÍA — AUTOCOMPLETADO INTELIGENTE
+        # ---------------------------------------------------------
+        self.txt_compania = QLineEdit()
+        self.txt_compania.setPlaceholderText("Escribe nombre o parte…")
+        self.txt_compania.textChanged.connect(self._buscar_compania)
 
+        layout_ident.addRow("Compañía:", self.txt_compania)
+
+        # ---------------------------------------------------------
+        # RESTO DE CAMPOS
+        # ---------------------------------------------------------
         layout_ident.addRow("Código postal:", self.txt_codigo_postal)
         layout_ident.addRow("Fecha inicio:", self.txt_fec_inicio)
         layout_ident.addRow("Fecha final:", self.txt_fec_final)
@@ -167,33 +182,174 @@ class FormularioContrato(QWidget):
         # ---------------------------------------------------------
         # ESTILOS
         # ---------------------------------------------------------
-        self.setStyleSheet(
-            """
+        self.setStyleSheet("""
             QLabel { font-size: 16px; }
             QLineEdit { font-size: 16px; padding: 3px; }
             QGroupBox { font-size: 16px; font-weight: bold; margin-top: 14px; }
-        """
-        )
+        """)
 
         for edit in self.findChildren(QLineEdit):
             edit.setFixedHeight(26)
+
+        # ---------------------------------------------------------
+        # AUTOMATIZACIONES
+        # ---------------------------------------------------------
+        self.txt_fec_inicio.textChanged.connect(self._recalcular_fechas)
 
         # ---------------------------------------------------------
         # CONFIGURAR MODO
         # ---------------------------------------------------------
         self.set_modo(self.modo)
 
+        # ---------------------------------------------------------
+        # MODO TEST
+        # ---------------------------------------------------------
+        if self.modo == "test":
+
+            gris = "background-color: #e0e0e0;"
+
+            # Número de contrato NO editable
+            self.txt_ncontrato.setEnabled(False)
+            self.txt_ncontrato.setReadOnly(True)
+            self.txt_ncontrato.setStyleSheet(gris)
+
+            # Suplemento siempre 0
+            self.txt_suplemento.setEnabled(False)
+            self.txt_suplemento.setReadOnly(True)
+            self.txt_suplemento.setText("0")
+            self.txt_suplemento.setStyleSheet(gris)
+
+            # Campos automáticos NO editables
+            for w in (
+                self.txt_fec_final,
+                self.txt_efec_suple,
+                self.txt_fin_suple,
+                self.txt_fec_anulacion,
+            ):
+                w.setEnabled(False)
+                w.setReadOnly(True)
+                w.setStyleSheet(gris)
+
+            # Campos editables
+            for w in (
+                self.txt_compania,
+                self.txt_codigo_postal,
+                self.txt_fec_inicio,
+                self.txt_ppunta,
+                self.txt_pvalle,
+                self.txt_pv_ppunta,
+                self.txt_pv_pvalle,
+                self.txt_pv_conpunta,
+                self.txt_pv_conllano,
+                self.txt_pv_convalle,
+                self.txt_vertido,
+                self.txt_pv_excedentes,
+                self.txt_bono_social,
+                self.txt_i_electrico,
+                self.txt_alq_contador,
+                self.txt_otros_gastos,
+                self.txt_iva,
+            ):
+                w.setEnabled(True)
+                w.setReadOnly(False)
+                w.setStyleSheet("background-color: white;")
+
+            return
+
+        if self.modo != "modificar":
+            self._recalcular_fechas()
+
         if self.modo == "modificar" and self.datos is not None:
             self.cargar_datos(self.datos)
+
+    # ---------------------------------------------------------
+    # AUTOCOMPLETADO DE COMPAÑÍAS
+    # ---------------------------------------------------------
+    def _buscar_compania(self, texto):
+        # Evitar ejecución prematura durante la construcción del formulario
+        if not hasattr(self, "conn") or self.conn is None:
+            return
+
+        texto = texto.strip().upper()
+        if not texto:
+            self.popup_sugerencias.hide()
+            return
+
+        cursor = self.conn.cursor()
+        cursor.execute(
+            """
+            SELECT nombre FROM companias
+            WHERE nombre LIKE ?
+            ORDER BY nombre
+            """,
+            (f"%{texto}%",),
+        )
+
+        resultados = [fila[0] for fila in cursor.fetchall()]
+
+        if len(resultados) == 0:
+            self.txt_compania.setStyleSheet("color: red;")
+            self.popup_sugerencias.hide()
+            return
+
+        self.txt_compania.setStyleSheet("color: black;")
+
+        # if len(resultados) == 1:
+        # Autocompletar directamente
+        #    self.txt_compania.blockSignals(True)
+        #    self.txt_compania.setText(resultados[0])
+        #    self.txt_compania.blockSignals(False)
+        #    self.popup_sugerencias.hide()
+        #    return
+
+        # Varias coincidencias → mostrar sugerencias
+        self._mostrar_sugerencias(resultados)
+
+    def _mostrar_sugerencias(self, lista):
+        self.popup_sugerencias.clear()
+
+        for nombre in lista:
+            item = QListWidgetItem(nombre)
+            self.popup_sugerencias.addItem(item)
+
+        # Estilo limpio, sin borde Breeze
+        self.popup_sugerencias.setStyleSheet("""
+            QListWidget {
+                background: white;
+                border: 1px solid #888;
+                outline: none;
+                font-size: 15px;
+            }
+            QListWidget::item {
+                padding: 4px;
+            }
+            QListWidget::item:selected {
+                background-color: #3874f2;
+                color: white;
+            }
+        """)
+
+        # Posicionar justo debajo del campo
+        rect = self.txt_compania.rect()
+        pos = self.txt_compania.mapToGlobal(rect.bottomLeft())
+
+        self.popup_sugerencias.setGeometry(QRect(pos.x(), pos.y(), rect.width(), 140))
+
+        self.popup_sugerencias.show()
+
+    def _seleccionar_sugerencia(self, item):
+        self.txt_compania.setText(item.text())
+        self.popup_sugerencias.hide()
 
     # ---------------------------------------------------------
     # MODO NUEVO / MODIFICAR
     # ---------------------------------------------------------
     def set_modo(self, modo):
 
+        self.modo = modo
         gris = "background-color: #e0e0e0;"
 
-        if modo == "nuevo":
+        if self.modo != "modificar":
 
             no_editables = (
                 self.txt_suplemento,
@@ -211,7 +367,7 @@ class FormularioContrato(QWidget):
             editables = (
                 self.txt_fec_inicio,
                 self.txt_codigo_postal,
-                self.cmb_compania,
+                self.txt_compania,
                 self.txt_ppunta,
                 self.txt_pvalle,
                 self.txt_pv_ppunta,
@@ -234,12 +390,12 @@ class FormularioContrato(QWidget):
                 w.setStyleSheet("background-color: white;")
 
             self.txt_suplemento.setText("0")
-            self.txt_fec_final.setText("")
-            self.txt_efec_suple.setText("")
-            self.txt_fin_suple.setText("")
-            self.txt_fec_anulacion.setText("")
+            self.txt_fec_final.clear()
+            self.txt_efec_suple.clear()
+            self.txt_fin_suple.clear()
+            self.txt_fec_anulacion.clear()
 
-        elif modo == "modificar":
+        else:
 
             no_editables = (
                 self.txt_ncontrato,
@@ -273,9 +429,8 @@ class FormularioContrato(QWidget):
         self.txt_ncontrato.setText(str(ident["ncontrato"]))
         self.txt_suplemento.setText(str(ident["suplemento"]))
 
-        idx = self.cmb_compania.findText(ident["compania"])
-        if idx >= 0:
-            self.cmb_compania.setCurrentIndex(idx)
+        # Campo compañía ahora es texto
+        self.txt_compania.setText(ident["compania"])
 
         self.txt_codigo_postal.setText(str(ident["codigo_postal"]))
 
@@ -311,15 +466,6 @@ class FormularioContrato(QWidget):
     def limpiar(self):
         for edit in self.findChildren(QLineEdit):
             edit.clear()
-        self.cmb_compania.setCurrentIndex(0)
-
-    # ---------------------------------------------------------
-    # CARGAR COMPAÑÍAS
-    # ---------------------------------------------------------
-    def cargar_companias(self, lista):
-        self.cmb_compania.clear()
-        for nombre in lista:
-            self.cmb_compania.addItem(nombre)
 
     # ---------------------------------------------------------
     # OBTENER DATOS (nuevo)
@@ -336,7 +482,7 @@ class FormularioContrato(QWidget):
         datos_identificacion = {
             "ncontrato": self.txt_ncontrato.text().strip(),
             "suplemento": 0,
-            "compania": self.cmb_compania.currentText().strip(),
+            "compania": self.txt_compania.text().strip(),
             "codigo_postal": self.txt_codigo_postal.text().strip(),
             "fec_inicio": fec_inicio_iso,
             "fec_final": fec_final_iso,
@@ -375,7 +521,7 @@ class FormularioContrato(QWidget):
         datos_ident = {
             "ncontrato": self.txt_ncontrato.text().strip(),
             "suplemento": int(self.txt_suplemento.text().strip()),
-            "compania": self.cmb_compania.currentText().strip(),
+            "compania": self.txt_compania.text().strip(),
             "codigo_postal": self.txt_codigo_postal.text().strip(),
             "fec_inicio": convertir_a_iso(self.txt_fec_inicio.text().strip()),
             "fec_final": convertir_a_iso(self.txt_fec_final.text().strip()),
@@ -409,6 +555,28 @@ class FormularioContrato(QWidget):
         }
 
         return datos_ident, datos_energia, datos_gastos
+
+    # ---------------------------------------------------------
+    # AUTOMATIZACIÓN DE FECHAS
+    # ---------------------------------------------------------
+    def _recalcular_fechas(self):
+        if self.modo == "modificar":
+            return
+
+        texto = self.txt_fec_inicio.text().strip()
+        if len(texto) != 10:
+            return
+
+        try:
+            fec_inicio_iso = convertir_a_iso(texto)
+            fec_final_iso = sumar_10_anios(fec_inicio_iso)
+
+            self.txt_fec_final.setText(convertir_a_ddmmaaaa(fec_final_iso))
+            self.txt_efec_suple.setText(convertir_a_ddmmaaaa(fec_inicio_iso))
+            self.txt_fin_suple.setText(convertir_a_ddmmaaaa(fec_final_iso))
+
+        except Exception:
+            pass
 
     # ---------------------------------------------------------
     # UTILIDADES

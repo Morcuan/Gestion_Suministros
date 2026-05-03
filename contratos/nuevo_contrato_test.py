@@ -2,7 +2,7 @@
 # Modulo: nuevo_contrato_test.py                               #
 # Descripción: Alta de contrato ficticio para comparativas     #
 # Autor: Antonio Morales                                       #
-# Fecha: 2026-02-14 (versión corregida 2026-04-28)             #
+# Fecha: 2026-02-14 (versión corregida 2026-05-02)             #
 # -------------------------------------------------------------#
 
 from PySide6.QtCore import Signal
@@ -33,35 +33,21 @@ class NuevoContratoTest(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        # ---------------------------------------------------------
-        # ACCESO A BD (heredado de MainWindow)
-        # ---------------------------------------------------------
         self.main_window = parent
         self.conn = parent.conn
         self.cursor = parent.conn.cursor()
 
-        # ---------------------------------------------------------
-        # LAYOUT PRINCIPAL
-        # ---------------------------------------------------------
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(10)
 
-        # ---------------------------------------------------------
-        # FORMULARIO (IMPORTANTE: parent=MainWindow)
-        # ---------------------------------------------------------
-        self.formulario = FormularioContrato(parent=self.main_window, modo="test")
+        self.formulario = FormularioContrato(
+            parent=self.main_window, conn=self.conn, modo="test"
+        )
         layout.addWidget(self.formulario)
 
-        # ---------------------------------------------------------
-        # CARGA DE COMPAÑÍAS
-        # ---------------------------------------------------------
-        lista = obtener_companias(self.cursor)
-        self.formulario.cargar_companias(lista)
+        # lista = obtener_companias(self.cursor)
 
-        # ---------------------------------------------------------
-        # CONEXIONES
-        # ---------------------------------------------------------
         self.formulario.btn_guardar.clicked.connect(self.guardar)
         self.formulario.btn_cancelar.clicked.connect(self.cancelar)
 
@@ -100,21 +86,16 @@ class NuevoContratoTest(QWidget):
             QMessageBox.warning(self, "Error", "Debe introducir una fecha de inicio.")
             return
 
-        # ==========================================================
-        # 3. VALIDAR FECHA
-        # ==========================================================
         fec_inicio_str = self.formulario.txt_fec_inicio.text().strip()
 
         if not validar_fecha(fec_inicio_str):
-            QMessageBox.warning(
-                self, "Error", "La fecha de inicio no es válida (dd/mm/yyyy)."
-            )
+            QMessageBox.warning(self, "Error", "La fecha de inicio no es válida.")
             return
 
         datos_ident["fec_inicio"] = convertir_a_iso(fec_inicio_str)
 
         # ==========================================================
-        # 4. VALIDAR CÓDIGO POSTAL
+        # 3. VALIDAR CÓDIGO POSTAL
         # ==========================================================
         ok, poblacion = validar_codigo_postal(self.cursor, datos_ident["codigo_postal"])
 
@@ -145,7 +126,7 @@ class NuevoContratoTest(QWidget):
             )
 
         # ==========================================================
-        # 5. VALIDAR CAMPOS NUMÉRICOS
+        # 4. VALIDAR CAMPOS NUMÉRICOS
         # ==========================================================
         campos_numericos = [
             ("Potencia punta", datos_energia["ppunta"]),
@@ -175,18 +156,32 @@ class NuevoContratoTest(QWidget):
                 return
 
         # ==========================================================
-        # 6. REGLA: SI VERTIDO = N → pv_excedentes = 0
+        # 5. REGLA: SI VERTIDO = N → pv_excedentes = 0
         # ==========================================================
         if datos_energia["vertido"] == "N":
             datos_energia["pv_excedentes"] = "0"
 
         # ==========================================================
-        # 7. INSERTAR CONTRATO EN TABLAS TEST
+        # 6. LIMPIAR TABLAS TEST (para evitar duplicidades)
+        # ==========================================================
+        self.cursor.execute("DELETE FROM contratos_identificacion_test")
+        self.cursor.execute("DELETE FROM contratos_energia_test")
+        self.cursor.execute("DELETE FROM contratos_gastos_test")
+
+        # ==========================================================
+        # 7. INSERTAR CONTRATO FICTICIO
         # ==========================================================
         try:
             idc = self.generar_id_contrato_test()
 
             datos_ident["ncontrato"] = f"TEST_{datos_ident['compania']}_{idc}"
+
+            # Suplemento TEST siempre = 0
+            suplemento_test = 0
+
+            # Rango temporal amplio para evitar fallos en la vista
+            efec_suple = "2000-01-01"
+            fin_suple = "2099-12-31"
 
             sql_ident = """
                 INSERT INTO contratos_identificacion_test (
@@ -201,14 +196,14 @@ class NuevoContratoTest(QWidget):
                 (
                     idc,
                     datos_ident["ncontrato"],
-                    datos_ident["suplemento"],
+                    suplemento_test,
                     datos_ident["compania"],
                     datos_ident["codigo_postal"],
                     datos_ident["fec_inicio"],
-                    datos_ident["fec_final"],
-                    datos_ident["efec_suple"],
-                    datos_ident["fin_suple"],
-                    datos_ident["fec_anulacion"],
+                    None,  # fec_final no aplica en TEST
+                    efec_suple,
+                    fin_suple,
+                    None,  # fec_anulacion no aplica en TEST
                 ),
             )
 
@@ -264,9 +259,6 @@ class NuevoContratoTest(QWidget):
             )
             return
 
-        # ==========================================================
-        # 8. ÉXITO
-        # ==========================================================
         QMessageBox.information(
             self,
             "Contrato ficticio",

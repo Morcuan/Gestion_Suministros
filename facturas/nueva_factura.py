@@ -2,7 +2,7 @@
 # Módulo: nueva_factura.py                                     #
 # Descripción: Controlador completo para captura de factura    #
 # Autor: Antonio Morales                                       #
-# Fecha: 2026-02-10                                            #
+# Fecha: 2026-02-10 (revisado)                                 #
 # -------------------------------------------------------------#
 
 from sqlite3 import Connection, Cursor
@@ -30,6 +30,25 @@ from facturas.formulario_factura import FormularioFactura
 from utilidades.logica_negocio import convertir_a_iso, dias_entre_fechas, validar_fecha
 
 
+# ---------------------------------------------------------
+# Obtener suplemento REAL vigente según fecha de inicio
+# ---------------------------------------------------------
+def obtener_suplemento_vigente(cursor, ncontrato, fecha_inicio_iso):
+    cursor.execute(
+        """
+        SELECT suplemento
+        FROM contratos_identificacion
+        WHERE ncontrato = ?
+          AND ? BETWEEN efec_suple AND fin_suple
+        ORDER BY suplemento DESC
+        LIMIT 1
+        """,
+        (ncontrato, fecha_inicio_iso),
+    )
+    row = cursor.fetchone()
+    return row[0] if row else 0
+
+
 class NuevaFactura(QWidget):
     """
     Caso de uso 'Nueva factura':
@@ -55,7 +74,7 @@ class NuevaFactura(QWidget):
         self.cursor: Cursor = conn.cursor()
 
         self.ncontrato = ncontrato
-        self.suplemento = suplemento
+        self.suplemento = suplemento  # solo informativo en UI
 
         self.crear_ui()
 
@@ -146,13 +165,21 @@ class NuevaFactura(QWidget):
             QMessageBox.warning(self, "Error", str(resultado))
             return
 
-        assert isinstance(resultado, dict)
         datos = resultado
 
         # Conversión fechas a ISO para BD
         fec_emision_iso = convertir_a_iso(datos["fec_emision"])
         fec_ini_iso = convertir_a_iso(datos["inicio_factura"])
         fec_fin_iso = convertir_a_iso(datos["fin_factura"])
+
+        # -----------------------------------------------------
+        # SUPLEMENTO REAL CORRECTO SEGÚN FECHA
+        # -----------------------------------------------------
+        suplemento_correcto = obtener_suplemento_vigente(
+            self.cursor,
+            datos["ncontrato"],
+            fec_ini_iso,
+        )
 
         # -----------------------------------------------------
         # INSERTAR EN TABLA FACTURAS
@@ -171,7 +198,7 @@ class NuevaFactura(QWidget):
             sql,
             (
                 datos["ncontrato"],
-                datos["suplemento"],
+                suplemento_correcto,
                 datos["nfactura"],
                 fec_emision_iso,
                 fec_ini_iso,
@@ -182,7 +209,7 @@ class NuevaFactura(QWidget):
                 float(datos["consumo_valle"] or 0),
                 float(datos["excedentes"] or 0),
                 float(datos["servicios"] or 0),
-                -float(datos["dcto_servicios"] or 0),  # SIEMPRE NEGATIVO
+                -float(datos["dcto_servicios"] or 0),
                 -float(datos["saldos_pendientes"] or 0),
                 float(datos["bat_virtual"] or 0),
             ),
@@ -195,29 +222,20 @@ class NuevaFactura(QWidget):
         # -----------------------------------------------------
         datos_base = obtener_datos_factura(self.cursor, datos["nfactura"])
 
-        # 1) Cargos normativos
         cargos_obj = calcular_cargos_para_factura(datos_base)
-
-        # 2) Energía
         energia_obj, datos_base = calcular_energia_para_factura(
             self.cursor, datos["nfactura"], cargos_obj.bono_social
         )
-
-        # 3) Servicios
         servicios_obj = calcular_servicios_para_factura(datos_base)
-
-        # 4) IVA
         iva_obj = calcular_iva_para_factura(
             energia_obj, cargos_obj, servicios_obj, datos_base
         )
 
-        # 5) Saldos pendientes
         total_con_iva = iva_obj.total_con_iva
         saldos_obj, total_con_saldos = calcular_saldos_pendientes(
             datos_base, total_con_iva
         )
 
-        # 6) Cloud
         total_final, aplicado_cloud, nuevo_saldo = calcular_bono_solar_cloud(
             self.cursor,
             datos_base["ncontrato"],
@@ -225,7 +243,6 @@ class NuevaFactura(QWidget):
             energia_obj.sobrante_excedentes,
         )
 
-        # 7) JSON ampliado
         detalles_json = generar_json_calculo(
             energia_obj,
             cargos_obj,
@@ -237,16 +254,12 @@ class NuevaFactura(QWidget):
             datos_base,
         )
 
-        # Versión de motor desde tabla version_motor
         from facturas.calculo import VERSION_MOTOR
 
-        version_motor = VERSION_MOTOR
-
-        # 8) Guardar cálculo
         guardar_calculo_factura(
             self.cursor,
             datos["nfactura"],
-            version_motor,
+            VERSION_MOTOR,
             energia_obj,
             cargos_obj,
             servicios_obj,
@@ -267,13 +280,8 @@ class NuevaFactura(QWidget):
             f"Total final: {total_final:.2f} €",
         )
 
-        # -----------------------------------------------------
-        # LIMPIEZA DEL FORMULARIO TRAS GUARDAR
-        # -----------------------------------------------------
         self.form.limpiar()
         self.form.set_identificacion(self.ncontrato, self.suplemento)
-
-        # Volver a ocultar campos no editables
         self.form.ocultar_campos_no_editables()
 
         self.btn_otro.setEnabled(True)
@@ -285,10 +293,7 @@ class NuevaFactura(QWidget):
     def nueva_factura(self):
         self.form.limpiar()
         self.form.set_identificacion(self.ncontrato, self.suplemento)
-
-        # Volver a ocultar campos no editables
         self.form.ocultar_campos_no_editables()
-
         self.btn_guardar.setEnabled(True)
         self.btn_otro.setEnabled(False)
 

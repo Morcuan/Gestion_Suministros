@@ -50,14 +50,16 @@ class NuevoContrato(QWidget):
         # ---------------------------------------------------------
         # FORMULARIO (IMPORTANTE: parent=MainWindow)
         # ---------------------------------------------------------
-        self.formulario = FormularioContrato(parent=self.main_window, modo="nuevo")
+        self.formulario = FormularioContrato(
+            parent=self.main_window, conn=self.conn, modo="nuevo"
+        )
+
         layout.addWidget(self.formulario)
 
         # ---------------------------------------------------------
         # CARGA DE COMPAÑÍAS DESDE BD
         # ---------------------------------------------------------
-        lista = obtener_companias(self.cursor)
-        self.formulario.cargar_companias(lista)
+        # lista = obtener_companias(self.cursor)
 
         # ---------------------------------------------------------
         # CONEXIONES

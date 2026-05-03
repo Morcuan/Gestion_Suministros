@@ -1,8 +1,9 @@
 # -------------------------------------------------------------#
 # Modulo: clonador_facturas_test.py                            #
 # Descripción: Clona facturas reales → TEST para simulaciones  #
+#          usando condiciones económicas del contrato TEST     #
 # Autor: Antonio Morales                                       #
-# Fecha: 2026-02-14                                            #
+# Fecha: 2026-02-14 (revisado)                                 #
 # -------------------------------------------------------------#
 
 from PySide6.QtWidgets import (
@@ -23,7 +24,7 @@ class ClonadorFacturasTest(QWidget):
 
         layout = QVBoxLayout(self)
 
-        layout.addWidget(QLabel("Seleccione contrato real a clonar:"))
+        layout.addWidget(QLabel("Seleccione contrato REAL a clonar:"))
 
         # Lista de contratos reales
         self.lista = QListWidget()
@@ -32,7 +33,7 @@ class ClonadorFacturasTest(QWidget):
         self.cargar_contratos_reales()
 
         # Botón principal
-        btn = QPushButton("Clonar facturas reales")
+        btn = QPushButton("Clonar facturas reales → TEST")
         btn.clicked.connect(self.clonar)
         layout.addWidget(btn)
 
@@ -42,18 +43,16 @@ class ClonadorFacturasTest(QWidget):
         layout.addWidget(btn_salir)
 
     # ---------------------------------------------------------
-    # Cargar contratos reales
+    # Cargar contratos reales (solo suplemento 0)
     # ---------------------------------------------------------
     def cargar_contratos_reales(self):
 
-        self.cursor.execute(
-            """
+        self.cursor.execute("""
             SELECT ncontrato
             FROM contratos_identificacion
-                WHERE suplemento = 0
+            WHERE suplemento = 0
             ORDER BY ncontrato
-        """
-        )
+        """)
 
         for row in self.cursor.fetchall():
             self.lista.addItem(row[0])
@@ -64,33 +63,38 @@ class ClonadorFacturasTest(QWidget):
     def clonar(self):
         item = self.lista.currentItem()
         if not item:
-            QMessageBox.warning(self, "Error", "Debe seleccionar un contrato real.")
+            QMessageBox.warning(self, "Error", "Debe seleccionar un contrato REAL.")
             return
-
-        # ---------------------------------------------------------
-        # LIMPIAR TABLAS TEST ANTES DE CLONAR
-        # ---------------------------------------------------------
-        self.cursor.execute("DELETE FROM facturas_test")
-        self.cursor.execute("DELETE FROM factura_calculos_test")
-        self.cursor.execute("DELETE FROM saldo_cloud_test")
 
         ncontrato_real = item.text()
 
-        # Obtener contrato ficticio
+        # Obtener contrato ficticio (TEST)
         self.cursor.execute(
             "SELECT ncontrato FROM contratos_identificacion_test LIMIT 1"
         )
         row = self.cursor.fetchone()
 
         if row is None:
-            QMessageBox.warning(self, "Error", "No existe contrato ficticio.")
+            QMessageBox.warning(
+                self,
+                "Error",
+                "No existe contrato ficticio en contratos_identificacion_test.",
+            )
             return
 
         ncontrato_test = row[0]
 
         try:
             # ---------------------------------------------------------
+            # 0. LIMPIAR TABLAS TEST ANTES DE CLONAR
+            # ---------------------------------------------------------
+            self.cursor.execute("DELETE FROM facturas_test")
+            self.cursor.execute("DELETE FROM factura_calculos_test")
+            self.cursor.execute("DELETE FROM saldo_cloud_test")
+
+            # ---------------------------------------------------------
             # 1. Clonar facturas → facturas_test
+            #    Suplemento TEST = 0 SIEMPRE
             # ---------------------------------------------------------
             self.cursor.execute(
                 """
@@ -118,63 +122,92 @@ class ClonadorFacturasTest(QWidget):
             """
 
             for f in facturas:
-                f = list(f)
-                f.insert(
-                    17, ncontrato_test
-                )  # insertar ncontrato en la posición correcta
-                self.cursor.execute(sql_insert_facturas, f)
+                (
+                    nfactura,
+                    inicio_factura,
+                    fin_factura,
+                    dias_factura,
+                    fec_emision,
+                    consumo_punta,
+                    consumo_llano,
+                    consumo_valle,
+                    excedentes,
+                    importe_compensado,
+                    servicios,
+                    dcto_servicios,
+                    saldos_pendientes,
+                    bat_virtual,
+                    recalcular,
+                    estado,
+                    rectifica_a,
+                    suplemento_real,  # ignorado
+                ) = f
+
+                # Suplemento TEST siempre = 0
+                suplemento_test = 0
+
+                valores_insert = [
+                    nfactura,
+                    inicio_factura,
+                    fin_factura,
+                    dias_factura,
+                    fec_emision,
+                    consumo_punta,
+                    consumo_llano,
+                    consumo_valle,
+                    excedentes,
+                    importe_compensado,
+                    servicios,
+                    dcto_servicios,
+                    saldos_pendientes,
+                    bat_virtual,
+                    recalcular,
+                    estado,
+                    rectifica_a,
+                    ncontrato_test,
+                    suplemento_test,
+                ]
+
+                self.cursor.execute(sql_insert_facturas, valores_insert)
 
             # ---------------------------------------------------------
-            # 2. Clonar cálculos → factura_calculos_test
+            # 2. NO clonar cálculos → factura_calculos_test
+            #    Se rellenará solo con los cálculos de la oferta analizada
             # ---------------------------------------------------------
-            self.cursor.execute(
-                """
-                SELECT nfactura, fecha_calculo, version_motor, total_energia,
-                       total_cargos, total_servicios, total_iva,
-                       cloud_aplicado, cloud_sobrante, total_final,
-                       detalles_json,
-                       bono_social, alq_contador, otros_gastos, i_electrico, iva
-                FROM factura_calculos
-                WHERE nfactura IN (
-                    SELECT nfactura FROM facturas WHERE ncontrato = ?
-                )
-                """,
-                (ncontrato_real,),
-            )
-
-            calculos = self.cursor.fetchall()
-
-            sql_insert_calculos = """
-                INSERT INTO factura_calculos_test (
-                    nfactura, fecha_calculo, version_motor, total_energia,
-                    total_cargos, total_servicios, total_iva,
-                    cloud_aplicado, cloud_sobrante, total_final,
-                    detalles_json,
-                    bono_social, alq_contador, otros_gastos, i_electrico, iva
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """
-
-            for c in calculos:
-                self.cursor.execute(sql_insert_calculos, c)
+            # (Intencionadamente vacío)
 
             # ---------------------------------------------------------
             # 3. Insertar saldo inicial en saldo_cloud_test
+            #    Usando saldo_cloud_inicial_test (saldo global)
             # ---------------------------------------------------------
-            self.cursor.execute(
-                "SELECT saldo FROM saldo_cloud WHERE ncontrato = ?",
-                (ncontrato_real,),
-            )
+
+            self.cursor.execute("""
+                SELECT saldo_inicial
+                FROM saldo_cloud_inicial_test
+                ORDER BY id
+                LIMIT 1
+            """)
             row = self.cursor.fetchone()
             saldo_inicial = row[0] if row else 0.0
 
             self.cursor.execute(
-                "INSERT OR REPLACE INTO saldo_cloud_test (ncontrato, saldo) VALUES (?, ?)",
+                """
+                INSERT OR REPLACE INTO saldo_cloud_test (ncontrato, saldo)
+                VALUES (?, ?)
+                """,
                 (ncontrato_test, saldo_inicial),
             )
 
             self.conn.commit()
 
-            QMessageBox.information(self, "Éxito", "Facturas clonadas correctamente.")
+            QMessageBox.information(
+                self,
+                "Éxito",
+                "Facturas clonadas correctamente.\n"
+                "• facturas_test con suplemento TEST = 0\n"
+                "• factura_calculos_test vacía para nuevos cálculos\n"
+                "• saldo_cloud_test inicializado desde saldo_cloud_inicial_test",
+            )
 
         except Exception as e:
             QMessageBox.critical(

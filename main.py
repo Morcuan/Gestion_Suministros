@@ -19,6 +19,7 @@ DB_PATH = "data/almacen.db"
 def main():
     # Crear aplicación Qt
     app = QApplication(sys.argv)
+    app.setStyle("Fusion")  # <<--- SOLUCIÓN A
 
     # Crear conexión a la base de datos (persistente durante toda la ejecución)
     conn = sqlite3.connect(DB_PATH)

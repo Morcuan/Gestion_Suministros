@@ -9,7 +9,7 @@ import json
 
 from facturas.calculo_test import (
     VERSION_MOTOR,
-    calcular_bono_solar_cloud,  # ← FALTABA ESTA LÍNEA
+    calcular_bono_solar_cloud,
     calcular_cargos_para_factura,
     calcular_energia_para_factura,
     calcular_iva_para_factura,
@@ -43,43 +43,6 @@ def obtener_datos_factura_test(cursor, nfactura):
 
 
 # -------------------------------------------------------------
-# Manejo del saldo inicial TEST
-# -------------------------------------------------------------
-def inicializar_saldo_cloud_si_es_necesario(cursor, ncontrato):
-    """
-    Si saldo_cloud_test está vacío, leer saldo inicial desde
-    saldo_cloud_inicial_test y crear el registro inicial.
-    """
-
-    cursor.execute(
-        "SELECT saldo FROM saldo_cloud_test WHERE ncontrato = ?",
-        (ncontrato,),
-    )
-    row = cursor.fetchone()
-
-    if row:
-        return  # Ya existe saldo inicial
-
-    # Leer saldo inicial de la tabla inicial
-    cursor.execute(
-        "SELECT saldo FROM saldo_cloud_inicial_test WHERE ncontrato = ?",
-        (ncontrato,),
-    )
-    row = cursor.fetchone()
-
-    saldo_inicial = row[0] if row else 0.0
-
-    # Crear saldo inicial en saldo_cloud_test
-    cursor.execute(
-        """
-        INSERT INTO saldo_cloud_test (ncontrato, saldo)
-        VALUES (?, ?)
-        """,
-        (ncontrato, saldo_inicial),
-    )
-
-
-# -------------------------------------------------------------
 # Guardar cálculo en factura_calculos_test
 # -------------------------------------------------------------
 def guardar_calculo_factura_test(
@@ -100,7 +63,7 @@ def guardar_calculo_factura_test(
     # Borrar cálculo previo
     cursor.execute("DELETE FROM factura_calculos_test WHERE nfactura = ?", (nfactura,))
 
-    # Registrar versión del motor
+    # Registrar versión del motor TEST
     registrar_version_motor(cursor)
 
     # Insertar nuevo cálculo
@@ -163,11 +126,12 @@ def recalcular_facturas_test(conn):
 
     ncontrato_test = row[0]
 
-    # 2) Inicializar saldo inicial si es necesario
-    inicializar_saldo_cloud_si_es_necesario(cursor, ncontrato_test)
-
-    # 3) Obtener facturas_test
-    cursor.execute("SELECT nfactura FROM facturas_test ORDER BY fec_emision ASC")
+    # 2) Obtener facturas_test en orden cronológico REAL
+    cursor.execute("""
+        SELECT nfactura
+        FROM facturas_test
+        ORDER BY inicio_factura ASC
+        """)
     pendientes = [row[0] for row in cursor.fetchall()]
 
     if not pendientes:
@@ -176,12 +140,12 @@ def recalcular_facturas_test(conn):
     errores = []
     procesadas = 0
 
-    # 4) Recalcular TODAS las facturas_test
+    # 3) Recalcular TODAS las facturas_test
     for nfactura in pendientes:
         try:
             datos = obtener_datos_factura_test(cursor, nfactura)
             if not datos:
-                errores.append(f"{nfactura}: datos no encontrados")
+                errores.append(f"{nfactura}: datos no encontrados en la vista")
                 continue
 
             # 1) Cargos
