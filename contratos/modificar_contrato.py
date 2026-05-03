@@ -7,7 +7,7 @@ from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from contratos.formulario_contrato import FormularioContrato
 from contratos.guardar_modificacion import GuardarModificacion
-from utilidades.utilidades_bd import obtener_companias
+from utilidades.logica_negocio import convertir_a_iso
 
 
 class ModificarContrato(QWidget):
@@ -24,7 +24,6 @@ class ModificarContrato(QWidget):
         self.cursor = conn.cursor()
         self.ncontrato = ncontrato
 
-        # Layout principal
         layout = QVBoxLayout(self)
 
         # ---------------------------------------------------------
@@ -41,21 +40,13 @@ class ModificarContrato(QWidget):
             modo="modificar",
             datos=datos,
         )
+        self.form.cargar_datos(datos)
 
         # ---------------------------------------------------------
-        # 3. Cargar compañías
-        # ---------------------------------------------------------
-        lista = obtener_companias(self.cursor)
-        self.form.cargar_companias(lista)
-
-        # ---------------------------------------------------------
-        # 4. Conectar botón GUARDAR
+        # 3. Conectar botón GUARDAR
         # ---------------------------------------------------------
         self.form.btn_guardar.clicked.connect(self._guardar_modificacion)
 
-        # ---------------------------------------------------------
-        # 5. Añadir formulario al layout del widget
-        # ---------------------------------------------------------
         layout.addWidget(self.form)
 
     # ---------------------------------------------------------
@@ -114,17 +105,44 @@ class ModificarContrato(QWidget):
         columnas = [desc[0] for desc in cursor.description]
         d = dict(zip(columnas, fila))
 
+        # ---------------------------------------------------------
+        # NORMALIZAR FECHAS A ISO PARA EL FORMULARIO
+        # ---------------------------------------------------------
+        def iso(valor):
+            if valor is None or valor == "":
+                return None
+
+            s = str(valor).strip()
+
+            # Ya es ISO
+            if "-" in s and len(s) == 10 and s[4] == "-" and s[7] == "-":
+                return s
+
+            # dd/mm/yyyy
+            if "/" in s:
+                return convertir_a_iso(s)
+
+            # Heurística: si empieza por año
+            if len(s) >= 4 and s[:4].isdigit():
+                return s
+
+            # Último recurso
+            try:
+                return convertir_a_iso(s)
+            except Exception:
+                return None
+
         datos = {
             "identificacion": {
                 "ncontrato": d["ncontrato"],
                 "suplemento": d["suplemento"],
                 "compania": d["compania"],
                 "codigo_postal": d["codigo_postal"],
-                "fec_inicio": d["fec_inicio"],
-                "fec_final": d["fec_final"],
-                "efec_suple": d["efec_suple"],
-                "fin_suple": d["fin_suple"],
-                "fec_anulacion": d["fec_anulacion"],
+                "fec_inicio": iso(d["fec_inicio"]),
+                "fec_final": iso(d["fec_final"]),
+                "efec_suple": iso(d["efec_suple"]),
+                "fin_suple": iso(d["fin_suple"]),
+                "fec_anulacion": iso(d["fec_anulacion"]),
             },
             "energia": {
                 "ppunta": d["ppunta"],
@@ -146,6 +164,7 @@ class ModificarContrato(QWidget):
             },
         }
 
+        # Datos originales para GuardarModificacion
         suplemento_real = self._cargar_suplemento_actual()
 
         self.datos_originales = {

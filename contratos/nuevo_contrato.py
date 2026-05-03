@@ -18,7 +18,6 @@ from utilidades.logica_negocio import convertir_a_iso, validar_fecha
 from utilidades.utilidades_bd import (
     insertar_codigo_postal,
     insertar_contrato,
-    obtener_companias,
     validar_codigo_postal,
 )
 
@@ -57,11 +56,6 @@ class NuevoContrato(QWidget):
         layout.addWidget(self.formulario)
 
         # ---------------------------------------------------------
-        # CARGA DE COMPAÑÍAS DESDE BD
-        # ---------------------------------------------------------
-        # lista = obtener_companias(self.cursor)
-
-        # ---------------------------------------------------------
         # CONEXIONES
         # ---------------------------------------------------------
         self.formulario.btn_guardar.clicked.connect(self.guardar)
@@ -91,11 +85,11 @@ class NuevoContrato(QWidget):
         # ==========================================================
         # 2. VALIDAR CAMPOS OBLIGATORIOS
         # ==========================================================
-        if datos_ident["ncontrato"] == "":
+        if datos_ident["ncontrato"].strip() == "":
             QMessageBox.warning(self, "Error", "Debe introducir un número de contrato.")
             return
 
-        if datos_ident["codigo_postal"] == "":
+        if datos_ident["codigo_postal"].strip() == "":
             QMessageBox.warning(self, "Error", "Debe introducir un código postal.")
             return
 
@@ -202,7 +196,6 @@ class NuevoContrato(QWidget):
             self, "Contrato guardado", f"Contrato guardado correctamente con ID {idc}."
         )
 
-        # Opcional: limpiar formulario
         self.formulario.limpiar()
 
     # ---------------------------------------------------------

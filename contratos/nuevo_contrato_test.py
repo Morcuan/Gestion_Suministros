@@ -46,8 +46,6 @@ class NuevoContratoTest(QWidget):
         )
         layout.addWidget(self.formulario)
 
-        # lista = obtener_companias(self.cursor)
-
         self.formulario.btn_guardar.clicked.connect(self.guardar)
         self.formulario.btn_cancelar.clicked.connect(self.cancelar)
 
@@ -176,10 +174,9 @@ class NuevoContratoTest(QWidget):
 
             datos_ident["ncontrato"] = f"TEST_{datos_ident['compania']}_{idc}"
 
-            # Suplemento TEST siempre = 0
             suplemento_test = 0
 
-            # Rango temporal amplio para evitar fallos en la vista
+            # Rango temporal amplio
             efec_suple = "2000-01-01"
             fin_suple = "2099-12-31"
 
@@ -200,10 +197,10 @@ class NuevoContratoTest(QWidget):
                     datos_ident["compania"],
                     datos_ident["codigo_postal"],
                     datos_ident["fec_inicio"],
-                    None,  # fec_final no aplica en TEST
+                    fin_suple,  # ← CORREGIDO: antes era None
                     efec_suple,
                     fin_suple,
-                    None,  # fec_anulacion no aplica en TEST
+                    None,
                 ),
             )
 

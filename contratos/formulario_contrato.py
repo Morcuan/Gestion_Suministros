@@ -5,7 +5,7 @@
 # Fecha: 2026-02-10 (versión corregida 2026-05-03)             #
 # -------------------------------------------------------------#
 
-from PySide6.QtCore import Qt, QRect
+from PySide6.QtCore import QRect, Qt
 from PySide6.QtWidgets import (
     QFormLayout,
     QGroupBox,
@@ -41,7 +41,7 @@ class FormularioContrato(QWidget):
         self.modo = modo
         self.datos = datos
 
-        # Popup de sugerencias (creado una vez)
+        # Popup de sugerencias
         self.popup_sugerencias = QListWidget()
         self.popup_sugerencias.setWindowFlags(Qt.Popup)
         self.popup_sugerencias.hide()
@@ -63,8 +63,6 @@ class FormularioContrato(QWidget):
         gb_ident.setLayout(layout_ident)
 
         self.txt_ncontrato = QLineEdit()
-        self.txt_ncontrato.setEnabled(False)
-
         self.txt_suplemento = QLineEdit()
         self.txt_suplemento.setEnabled(False)
 
@@ -78,18 +76,11 @@ class FormularioContrato(QWidget):
         layout_ident.addRow("Número contrato:", self.txt_ncontrato)
         layout_ident.addRow("Suplemento:", self.txt_suplemento)
 
-        # ---------------------------------------------------------
-        # CAMPO COMPAÑÍA — AUTOCOMPLETADO INTELIGENTE
-        # ---------------------------------------------------------
         self.txt_compania = QLineEdit()
         self.txt_compania.setPlaceholderText("Escribe nombre o parte…")
         self.txt_compania.textChanged.connect(self._buscar_compania)
-
         layout_ident.addRow("Compañía:", self.txt_compania)
 
-        # ---------------------------------------------------------
-        # RESTO DE CAMPOS
-        # ---------------------------------------------------------
         layout_ident.addRow("Código postal:", self.txt_codigo_postal)
         layout_ident.addRow("Fecha inicio:", self.txt_fec_inicio)
         layout_ident.addRow("Fecha final:", self.txt_fec_final)
@@ -171,7 +162,6 @@ class FormularioContrato(QWidget):
 
         self.btn_guardar = QPushButton("Guardar")
         self.btn_cancelar = QPushButton("Cancelar")
-
         self.btn_cancelar.clicked.connect(self._cancelar)
 
         botones.addWidget(self.btn_guardar)
@@ -201,146 +191,6 @@ class FormularioContrato(QWidget):
         # ---------------------------------------------------------
         self.set_modo(self.modo)
 
-        # ---------------------------------------------------------
-        # MODO TEST
-        # ---------------------------------------------------------
-        if self.modo == "test":
-
-            gris = "background-color: #e0e0e0;"
-
-            # Número de contrato NO editable
-            self.txt_ncontrato.setEnabled(False)
-            self.txt_ncontrato.setReadOnly(True)
-            self.txt_ncontrato.setStyleSheet(gris)
-
-            # Suplemento siempre 0
-            self.txt_suplemento.setEnabled(False)
-            self.txt_suplemento.setReadOnly(True)
-            self.txt_suplemento.setText("0")
-            self.txt_suplemento.setStyleSheet(gris)
-
-            # Campos automáticos NO editables
-            for w in (
-                self.txt_fec_final,
-                self.txt_efec_suple,
-                self.txt_fin_suple,
-                self.txt_fec_anulacion,
-            ):
-                w.setEnabled(False)
-                w.setReadOnly(True)
-                w.setStyleSheet(gris)
-
-            # Campos editables
-            for w in (
-                self.txt_compania,
-                self.txt_codigo_postal,
-                self.txt_fec_inicio,
-                self.txt_ppunta,
-                self.txt_pvalle,
-                self.txt_pv_ppunta,
-                self.txt_pv_pvalle,
-                self.txt_pv_conpunta,
-                self.txt_pv_conllano,
-                self.txt_pv_convalle,
-                self.txt_vertido,
-                self.txt_pv_excedentes,
-                self.txt_bono_social,
-                self.txt_i_electrico,
-                self.txt_alq_contador,
-                self.txt_otros_gastos,
-                self.txt_iva,
-            ):
-                w.setEnabled(True)
-                w.setReadOnly(False)
-                w.setStyleSheet("background-color: white;")
-
-            return
-
-        if self.modo != "modificar":
-            self._recalcular_fechas()
-
-        if self.modo == "modificar" and self.datos is not None:
-            self.cargar_datos(self.datos)
-
-    # ---------------------------------------------------------
-    # AUTOCOMPLETADO DE COMPAÑÍAS
-    # ---------------------------------------------------------
-    def _buscar_compania(self, texto):
-        # Evitar ejecución prematura durante la construcción del formulario
-        if not hasattr(self, "conn") or self.conn is None:
-            return
-
-        texto = texto.strip().upper()
-        if not texto:
-            self.popup_sugerencias.hide()
-            return
-
-        cursor = self.conn.cursor()
-        cursor.execute(
-            """
-            SELECT nombre FROM companias
-            WHERE nombre LIKE ?
-            ORDER BY nombre
-            """,
-            (f"%{texto}%",),
-        )
-
-        resultados = [fila[0] for fila in cursor.fetchall()]
-
-        if len(resultados) == 0:
-            self.txt_compania.setStyleSheet("color: red;")
-            self.popup_sugerencias.hide()
-            return
-
-        self.txt_compania.setStyleSheet("color: black;")
-
-        # if len(resultados) == 1:
-        # Autocompletar directamente
-        #    self.txt_compania.blockSignals(True)
-        #    self.txt_compania.setText(resultados[0])
-        #    self.txt_compania.blockSignals(False)
-        #    self.popup_sugerencias.hide()
-        #    return
-
-        # Varias coincidencias → mostrar sugerencias
-        self._mostrar_sugerencias(resultados)
-
-    def _mostrar_sugerencias(self, lista):
-        self.popup_sugerencias.clear()
-
-        for nombre in lista:
-            item = QListWidgetItem(nombre)
-            self.popup_sugerencias.addItem(item)
-
-        # Estilo limpio, sin borde Breeze
-        self.popup_sugerencias.setStyleSheet("""
-            QListWidget {
-                background: white;
-                border: 1px solid #888;
-                outline: none;
-                font-size: 15px;
-            }
-            QListWidget::item {
-                padding: 4px;
-            }
-            QListWidget::item:selected {
-                background-color: #3874f2;
-                color: white;
-            }
-        """)
-
-        # Posicionar justo debajo del campo
-        rect = self.txt_compania.rect()
-        pos = self.txt_compania.mapToGlobal(rect.bottomLeft())
-
-        self.popup_sugerencias.setGeometry(QRect(pos.x(), pos.y(), rect.width(), 140))
-
-        self.popup_sugerencias.show()
-
-    def _seleccionar_sugerencia(self, item):
-        self.txt_compania.setText(item.text())
-        self.popup_sugerencias.hide()
-
     # ---------------------------------------------------------
     # MODO NUEVO / MODIFICAR
     # ---------------------------------------------------------
@@ -365,6 +215,7 @@ class FormularioContrato(QWidget):
                 w.setStyleSheet(gris)
 
             editables = (
+                self.txt_ncontrato,
                 self.txt_fec_inicio,
                 self.txt_codigo_postal,
                 self.txt_compania,
@@ -429,9 +280,7 @@ class FormularioContrato(QWidget):
         self.txt_ncontrato.setText(str(ident["ncontrato"]))
         self.txt_suplemento.setText(str(ident["suplemento"]))
 
-        # Campo compañía ahora es texto
         self.txt_compania.setText(ident["compania"])
-
         self.txt_codigo_postal.setText(str(ident["codigo_postal"]))
 
         self.txt_fec_inicio.setText(convertir_a_ddmmaaaa(ident["fec_inicio"]))
@@ -577,6 +426,70 @@ class FormularioContrato(QWidget):
 
         except Exception:
             pass
+
+    # ---------------------------------------------------------
+    # AUTOCOMPLETADO DE COMPAÑÍAS
+    # ---------------------------------------------------------
+    def _buscar_compania(self, texto):
+        if not hasattr(self, "conn") or self.conn is None:
+            return
+
+        texto = texto.strip().upper()
+        if not texto:
+            self.popup_sugerencias.hide()
+            return
+
+        cursor = self.conn.cursor()
+        cursor.execute(
+            """
+            SELECT nombre FROM companias
+            WHERE nombre LIKE ?
+            ORDER BY nombre
+            """,
+            (f"%{texto}%",),
+        )
+
+        resultados = [fila[0] for fila in cursor.fetchall()]
+
+        if len(resultados) == 0:
+            self.txt_compania.setStyleSheet("color: red;")
+            self.popup_sugerencias.hide()
+            return
+
+        self.txt_compania.setStyleSheet("color: black;")
+        self._mostrar_sugerencias(resultados)
+
+    def _mostrar_sugerencias(self, lista):
+        self.popup_sugerencias.clear()
+
+        for nombre in lista:
+            item = QListWidgetItem(nombre)
+            self.popup_sugerencias.addItem(item)
+
+        self.popup_sugerencias.setStyleSheet("""
+            QListWidget {
+                background: white;
+                border: 1px solid #888;
+                outline: none;
+                font-size: 15px;
+            }
+            QListWidget::item {
+                padding: 4px;
+            }
+            QListWidget::item:selected {
+                background-color: #3874f2;
+                color: white;
+            }
+        """)
+
+        rect = self.txt_compania.rect()
+        pos = self.txt_compania.mapToGlobal(rect.bottomLeft())
+        self.popup_sugerencias.setGeometry(QRect(pos.x(), pos.y(), rect.width(), 140))
+        self.popup_sugerencias.show()
+
+    def _seleccionar_sugerencia(self, item):
+        self.txt_compania.setText(item.text())
+        self.popup_sugerencias.hide()
 
     # ---------------------------------------------------------
     # UTILIDADES
