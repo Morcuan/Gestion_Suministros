@@ -280,7 +280,11 @@ class FormularioContrato(QWidget):
         self.txt_ncontrato.setText(str(ident["ncontrato"]))
         self.txt_suplemento.setText(str(ident["suplemento"]))
 
+        # correccion al pop-up de compañia al entrar en modificar
+        self.txt_compania.blockSignals(True)
         self.txt_compania.setText(ident["compania"])
+        self.txt_compania.blockSignals(False)
+
         self.txt_codigo_postal.setText(str(ident["codigo_postal"]))
 
         self.txt_fec_inicio.setText(convertir_a_ddmmaaaa(ident["fec_inicio"]))
