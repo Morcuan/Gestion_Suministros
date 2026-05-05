@@ -11,7 +11,7 @@ echo "📁 Nivelando proyecto Gestion_Suministros"
 # Ir al proyecto
 cd ~/Desarrollo/Gestion_Suministros || {
     echo "❌ No se pudo acceder al directorio del proyecto."
-    return
+    exit 1
 }
 
 # --- Verificar identidad Git ---
@@ -32,7 +32,10 @@ fi
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 if [ "$BRANCH" != "desarrollo" ]; then
     echo "⚠️ Estabas en la rama '$BRANCH'. Cambiando a 'desarrollo'..."
-    git checkout desarrollo
+    git checkout desarrollo || {
+        echo "❌ No se pudo cambiar a la rama desarrollo."
+        exit 1
+    }
 fi
 
 echo "🔍 Estado actual:"
@@ -74,9 +77,12 @@ fi
 
 # 2) Commit si hay algo en staging
 if [ $HAY_CAMBIOS_STAGING -eq 1 ]; then
-    COMMIT_MSG="Nivelaccion manual: Terminada la rama analisis oferta externa. $(date '+%Y-%m-%d %H:%M')"
+    COMMIT_MSG="Nivelaccion manual: Consolidacion de desarrollo como funcional. $(date '+%Y-%m-%d %H:%M')"
     echo "💾 Realizando commit: $COMMIT_MSG"
-    git commit -m "$COMMIT_MSG"
+    git commit -m "$COMMIT_MSG" || {
+        echo "❌ Error realizando el commit."
+        exit 1
+    }
     HAY_COMMITS_PENDIENTES=1
 fi
 
@@ -84,6 +90,13 @@ fi
 if [ $HAY_COMMITS_PENDIENTES -eq 1 ]; then
     echo "⬆️ Subiendo commits pendientes a GitHub..."
     git push origin desarrollo
+
+    # Comprobación estricta del resultado del push
+    if [ $? -ne 0 ]; then
+        echo "❌ Error: el push ha fallado. La nivelación NO se ha completado."
+        exit 1
+    fi
+
     echo "🟢 Nivelación completada correctamente."
 else
     echo "✔️ No hay nada que subir. Todo está sincronizado."
