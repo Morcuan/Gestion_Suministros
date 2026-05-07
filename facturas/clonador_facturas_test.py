@@ -3,7 +3,7 @@
 # Descripción: Clona facturas reales → TEST para simulaciones  #
 #          usando condiciones económicas del contrato TEST     #
 # Autor: Antonio Morales                                       #
-# Fecha: 2026-02-14 (revisado)                                 #
+# Fecha: 2026-02-14 (revisado y corregido)                     #
 # -------------------------------------------------------------#
 
 from PySide6.QtWidgets import (
@@ -86,13 +86,6 @@ class ClonadorFacturasTest(QWidget):
 
         try:
             # ---------------------------------------------------------
-            # 0. LIMPIAR TABLAS TEST ANTES DE CLONAR
-            # ---------------------------------------------------------
-            self.cursor.execute("DELETE FROM facturas_test")
-            self.cursor.execute("DELETE FROM factura_calculos_test")
-            self.cursor.execute("DELETE FROM saldo_cloud_test")
-
-            # ---------------------------------------------------------
             # 1. Clonar facturas → facturas_test
             #    Suplemento TEST = 0 SIEMPRE
             # ---------------------------------------------------------
@@ -164,7 +157,7 @@ class ClonadorFacturasTest(QWidget):
                     recalcular,
                     estado,
                     rectifica_a,
-                    ncontrato_test,
+                    str(ncontrato_test),  # ← CORRECCIÓN CRÍTICA
                     suplemento_test,
                 ]
 
@@ -178,7 +171,6 @@ class ClonadorFacturasTest(QWidget):
 
             # ---------------------------------------------------------
             # 3. Insertar saldo inicial en saldo_cloud_test
-            #    Usando saldo_cloud_inicial_test (saldo global)
             # ---------------------------------------------------------
 
             self.cursor.execute("""
@@ -195,7 +187,7 @@ class ClonadorFacturasTest(QWidget):
                 INSERT OR REPLACE INTO saldo_cloud_test (ncontrato, saldo)
                 VALUES (?, ?)
                 """,
-                (ncontrato_test, saldo_inicial),
+                (str(ncontrato_test), saldo_inicial),
             )
 
             self.conn.commit()

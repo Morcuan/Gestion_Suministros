@@ -77,7 +77,9 @@ fi
 
 # 2) Commit si hay algo en staging
 if [ $HAY_CAMBIOS_STAGING -eq 1 ]; then
-    COMMIT_MSG="Nivelaccion manual: Consolidacion de desarrollo como funcional. $(date '+%Y-%m-%d %H:%M')"
+    COMMIT_MSG="Nivelaccion manual: Correcciones por problemas de interaccion en
+    comparativa interna vs oferta externa.
+    Creado paso previo de borrado de tablas test antes de contrato ficticio nuevo... $(date '+%Y-%m-%d %H:%M')"
     echo "💾 Realizando commit: $COMMIT_MSG"
     git commit -m "$COMMIT_MSG" || {
         echo "❌ Error realizando el commit."

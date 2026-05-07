@@ -71,7 +71,7 @@ class FormularioFactura(QWidget):
         self.txt_dias = QLineEdit()
 
         f_ident.addRow("Contrato:", self.txt_ncontrato)
-        f_ident.addRow("Suplemento:", self.txt_suplemento)
+        f_ident.addRow("Suplmento actual:", self.txt_suplemento)
         f_ident.addRow("Nº factura:", self.txt_nfactura)
         f_ident.addRow("Fecha emisión (dd/mm/yyyy):", self.txt_fec_emision)
         f_ident.addRow("Inicio periodo (dd/mm/yyyy):", self.txt_inicio)

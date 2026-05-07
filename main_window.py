@@ -33,6 +33,7 @@ from utilidades.estadisticas_mensuales import (
     ConsultaEstadisticasMensuales,
 )
 from utilidades.modulo_recalculo import ModuloRecalculo
+from utilidades.reset_entorno_test import reset_entorno_test
 
 
 class MainWindow(QMainWindow):
@@ -168,10 +169,10 @@ class MainWindow(QMainWindow):
             )
         )
 
-        # Análisis
+        # Consultas
         layout.addWidget(
             self.crear_seccion_acordeon(
-                "📊 Análisis",
+                "📊 Consulta y Análisis",
                 [
                     (
                         "🔎 Histórico de contratos",
@@ -227,6 +228,7 @@ class MainWindow(QMainWindow):
             self.crear_seccion_acordeon(
                 "📦 Oferta externa",
                 [
+                    ("🧹 Reset entorno TEST", self.abrir_reset_entorno_test),
                     ("➕ Nvo. contrato test", self.abrir_nuevo_contrato_test),
                     ("📥 Fact. reales a test", self.abrir_clonador_facturas_test),
                     ("🔄 Recalcular facturas test", self.abrir_recalculo_test),
@@ -420,16 +422,14 @@ class MainWindow(QMainWindow):
             lbl = QLabel(resultado_html)
             lbl.setWordWrap(True)
             lbl.setTextFormat(Qt.RichText)
-            lbl.setStyleSheet(
-                """
+            lbl.setStyleSheet("""
                 font-size: 19px;
                 padding: 16px;
                 background-color: #f5f5f5;
                 border: 1px solid #ccc;
                 border-radius: 6px;
                 line-height: 150%;
-            """
-            )
+            """)
 
             layout.addWidget(lbl)
 
@@ -565,6 +565,22 @@ class MainWindow(QMainWindow):
 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Error en recálculo test:\n{str(e)}")
+
+    def abrir_reset_entorno_test(self):
+        try:
+            reset_entorno_test(self.conn)
+            QMessageBox.information(
+                self,
+                "Entorno TEST reiniciado",
+                "Se han limpiado y recreado todas las tablas TEST.\n\n"
+                "Ahora puedes crear el contrato ficticio y clonar facturas.",
+            )
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Error al resetear TEST",
+                f"Se ha producido un error al reiniciar el entorno TEST:\n{e}",
+            )
 
     # ---------------------------------------------------------
     # INICIALIZAR BD

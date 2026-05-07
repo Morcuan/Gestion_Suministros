@@ -9,11 +9,13 @@ import json
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QTextDocument
-from PySide6.QtPrintSupport import QPrinter, QPrintDialog
+from PySide6.QtPrintSupport import QPrintDialog, QPrinter
 from PySide6.QtWidgets import (
+    QFileDialog,
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
+    QHeaderView,
     QLabel,
     QMessageBox,
     QPushButton,
@@ -21,8 +23,6 @@ from PySide6.QtWidgets import (
     QTableWidgetItem,
     QVBoxLayout,
     QWidget,
-    QHeaderView,
-    QFileDialog,
 )
 
 
@@ -33,8 +33,9 @@ class ComparativaOfertas(QWidget):
     """
 
     # ---------------------------------------------------------
-    # FORMATEADORES DE DIFERENCIAS (flechas + colores)
+    # FORMATEADORES DE DIFERENCIAS Y VALORES (flechas + colores)
     # ---------------------------------------------------------
+
     def _fmt_diff(self, valor):
         if valor < 0:
             return f"<span style='color:green;'><b>⬇️ {valor:.2f}</b></span>"
@@ -50,6 +51,19 @@ class ComparativaOfertas(QWidget):
             return f"<span style='color:red;'><b>{valor:.2f}%</b></span>"
         else:
             return f"<span style='color:gray;'><b>{valor:.2f}%</b></span>"
+
+    def _fmt_val_real(self, real, test):
+        # REAL siempre azul
+        return f"<span style='color:blue;'><b>{real:.2f}</b></span>"
+
+    def _fmt_val_test(self, real, test):
+        dif = test - real
+        if dif < 0:
+            return f"<span style='color:green;'><b>{test:.2f}</b></span>"
+        elif dif > 0:
+            return f"<span style='color:red;'><b>{test:.2f}</b></span>"
+        else:
+            return f"<span style='color:gray;'><b>{test:.2f}</b></span>"
 
     # ---------------------------------------------------------
     # INICIO
@@ -191,13 +205,20 @@ class ComparativaOfertas(QWidget):
                 # FACTURA
                 self.tabla.setItem(fila, 0, QTableWidgetItem(nfactura))
 
-                # REAL
-                self.tabla.setItem(fila, 1, QTableWidgetItem(f"{real:.2f}"))
+                # REAL (siempre azul)
+                item_real = QTableWidgetItem(f"{real:.2f}")
+                item_real.setForeground(Qt.blue)
 
-                # TEST
-                self.tabla.setItem(fila, 2, QTableWidgetItem(f"{sim:.2f}"))
+                # TEST (según diferencia)
+                item_test = QTableWidgetItem(f"{sim:.2f}")
+                if dif < 0:
+                    item_test.setForeground(Qt.green)
+                elif dif > 0:
+                    item_test.setForeground(Qt.red)
+                else:
+                    item_test.setForeground(Qt.gray)
 
-                # DIFERENCIA (coloreada)
+                # DIFERENCIA
                 item_dif = QTableWidgetItem(f"{dif:.2f}")
                 if dif < 0:
                     item_dif.setForeground(Qt.green)
@@ -205,9 +226,8 @@ class ComparativaOfertas(QWidget):
                     item_dif.setForeground(Qt.red)
                 else:
                     item_dif.setForeground(Qt.gray)
-                self.tabla.setItem(fila, 3, item_dif)
 
-                # PORCENTAJE (coloreado)
+                # PORCENTAJE
                 item_pct = QTableWidgetItem(f"{pct:.2f}%")
                 if pct < 0:
                     item_pct.setForeground(Qt.green)
@@ -215,6 +235,11 @@ class ComparativaOfertas(QWidget):
                     item_pct.setForeground(Qt.red)
                 else:
                     item_pct.setForeground(Qt.gray)
+
+                # Insertar en tabla
+                self.tabla.setItem(fila, 1, item_real)
+                self.tabla.setItem(fila, 2, item_test)
+                self.tabla.setItem(fila, 3, item_dif)
                 self.tabla.setItem(fila, 4, item_pct)
 
             # TOTALES
@@ -239,7 +264,6 @@ class ComparativaOfertas(QWidget):
 
             self.lbl_totales.setText(resumen)
 
-            # Guardamos JSON para detalle
             self.reales_json = {k: v["json"] for k, v in reales.items()}
             self.test_json = {k: v["json"] for k, v in test.items()}
 
@@ -264,12 +288,13 @@ class ComparativaOfertas(QWidget):
         self.actualizar_panel_detalle(real, test)
 
     # ---------------------------------------------------------
-    # PANEL DETALLE (coloreado)
+    # PANEL DETALLE (ESTILO B – tabla compacta con colores)
     # ---------------------------------------------------------
     def actualizar_panel_detalle(self, real, test):
         if real is None:
             return
 
+        # Si no hay test, rellenamos con ceros
         if test is None:
             test = {
                 "potencia": {
@@ -302,84 +327,74 @@ class ComparativaOfertas(QWidget):
             lbl.setAlignment(Qt.AlignLeft)
             self.layout_detalle.addWidget(lbl, row, col)
 
-        # POTENCIA
-        add(0, 0, "<b>Potencia punta</b>")
-        add(
-            0,
-            1,
-            f"{real['potencia']['punta']['kw']} kW / {real['potencia']['punta']['precio']} € / {real['potencia']['punta']['importe']} €",
-        )
-        add(
-            0,
-            2,
-            f"{test['potencia']['punta']['kw']} kW / {test['potencia']['punta']['precio']} € / {test['potencia']['punta']['importe']} €",
-        )
+        # ---------------------------------------------------------
+        # TABLA DETALLE ESTILO B
+        # ---------------------------------------------------------
+        fila = 0
 
-        add(1, 0, "<b>Potencia valle</b>")
-        add(
-            1,
-            1,
-            f"{real['potencia']['valle']['kw']} kW / {real['potencia']['valle']['precio']} € / {real['potencia']['valle']['importe']} €",
+        def fila_detalle(nombre, real_val, test_val):
+            nonlocal fila
+            dif = test_val - real_val
+            pct = (dif / real_val * 100) if real_val != 0 else 0.0
+
+            add(fila, 0, f"<b>{nombre}</b>")
+            add(fila, 1, self._fmt_val_real(real_val, test_val))  # REAL azul
+            add(fila, 2, self._fmt_val_test(real_val, test_val))  # TEST coloreado
+            add(fila, 3, self._fmt_diff(dif))  # DIF coloreado
+            add(fila, 4, self._fmt_pct(pct))  # % coloreado
+
+            fila += 1
+
+        # POTENCIA
+        fila_detalle(
+            "Potencia punta",
+            real["potencia"]["punta"]["importe"],
+            test["potencia"]["punta"]["importe"],
         )
-        add(
-            1,
-            2,
-            f"{test['potencia']['valle']['kw']} kW / {test['potencia']['valle']['precio']} € / {test['potencia']['valle']['importe']} €",
+        fila_detalle(
+            "Potencia valle",
+            real["potencia"]["valle"]["importe"],
+            test["potencia"]["valle"]["importe"],
+        )
+        fila_detalle(
+            "Total potencia",
+            real["potencia"]["total"],
+            test["potencia"]["total"],
         )
 
         # CONSUMO
-        add(2, 0, "<b>Consumo punta</b>")
-        add(
-            2,
-            1,
-            f"{real['consumo']['punta']['kwh']} kWh / {real['consumo']['punta']['precio']} € / {real['consumo']['punta']['importe']} €",
+        fila_detalle(
+            "Consumo punta",
+            real["consumo"]["punta"]["importe"],
+            test["consumo"]["punta"]["importe"],
         )
-        add(
-            2,
-            2,
-            f"{test['consumo']['punta']['kwh']} kWh / {test['consumo']['punta']['precio']} € / {test['consumo']['punta']['importe']} €",
+        fila_detalle(
+            "Consumo llano",
+            real["consumo"]["llano"]["importe"],
+            test["consumo"]["llano"]["importe"],
         )
-
-        add(3, 0, "<b>Consumo llano</b>")
-        add(
-            3,
-            1,
-            f"{real['consumo']['llano']['kwh']} kWh / {real['consumo']['llano']['precio']} € / {real['consumo']['llano']['importe']} €",
+        fila_detalle(
+            "Consumo valle",
+            real["consumo"]["valle"]["importe"],
+            test["consumo"]["valle"]["importe"],
         )
-        add(
-            3,
-            2,
-            f"{test['consumo']['llano']['kwh']} kWh / {test['consumo']['llano']['precio']} € / {test['consumo']['llano']['importe']} €",
-        )
-
-        add(4, 0, "<b>Consumo valle</b>")
-        add(
-            4,
-            1,
-            f"{real['consumo']['valle']['kwh']} kWh / {real['consumo']['valle']['precio']} € / {real['consumo']['valle']['importe']} €",
-        )
-        add(
-            4,
-            2,
-            f"{test['consumo']['valle']['kwh']} kWh / {test['consumo']['valle']['precio']} € / {test['consumo']['valle']['importe']} €",
+        fila_detalle(
+            "Total consumo",
+            real["consumo"]["total"],
+            test["consumo"]["total"],
         )
 
         # EXCEDENTES
-        add(5, 0, "<b>Excedentes generados</b>")
-        add(5, 1, f"{real['excedentes']['generados_kwh']} kWh")
-        add(5, 2, f"{test['excedentes']['generados_kwh']} kWh")
-
-        add(6, 0, "<b>Precio excedentes</b>")
-        add(6, 1, f"{real['excedentes']['precio_unitario']} €/kWh")
-        add(6, 2, f"{test['excedentes']['precio_unitario']} €/kWh")
-
-        add(7, 0, "<b>Compensados</b>")
-        add(7, 1, f"{real['excedentes']['compensados']} €")
-        add(7, 2, f"{test['excedentes']['compensados']} €")
-
-        add(8, 0, "<b>Sobrante</b>")
-        add(8, 1, f"{real['excedentes']['sobrante']} €")
-        add(8, 2, f"{test['excedentes']['sobrante']} €")
+        fila_detalle(
+            "Excedentes compensados",
+            real["excedentes"]["compensados"],
+            test["excedentes"]["compensados"],
+        )
+        fila_detalle(
+            "Excedentes sobrante",
+            real["excedentes"]["sobrante"],
+            test["excedentes"]["sobrante"],
+        )
 
         # TOTAL ENERGÍA
         total_real = (
@@ -393,28 +408,58 @@ class ComparativaOfertas(QWidget):
             + test["excedentes"]["compensados"]
         )
 
-        dif = total_test - total_real
-        pct = (dif / total_real * 100) if total_real != 0 else 0.0
-
-        add(10, 0, "<b>Total energía</b>")
-        add(10, 1, f"{total_real:.2f} €")
-        add(10, 2, f"{total_test:.2f} €")
-
-        add(11, 0, "<b>Diferencia</b>")
-        add(11, 1, "")
-        add(11, 2, f"{self._fmt_diff(dif)} ({self._fmt_pct(pct)})")
+        fila_detalle("TOTAL ENERGÍA", total_real, total_test)
 
     # ---------------------------------------------------------
-    # GENERAR HTML PARA PDF / IMPRESIÓN
+    # GENERAR HTML PARA PDF / IMPRESIÓN (ESTILO B + COLORES)
     # ---------------------------------------------------------
     def _generar_html_informe(self):
-        # Tabla resumen
+        # Tabla resumen (superior)
         filas_html = ""
         for r in range(self.tabla.rowCount()):
             cols = []
             for c in range(self.tabla.columnCount()):
                 item = self.tabla.item(r, c)
-                cols.append(item.text() if item else "")
+                texto = item.text() if item else ""
+
+                # -------------------------------------------------
+                # Colorear según columna (REAL azul, TEST según dif)
+                # -------------------------------------------------
+                if c == 1:  # REAL → azul
+                    texto = f"<span style='color:blue;'><b>{texto}</b></span>"
+
+                elif c == 2:  # TEST → según diferencia
+                    dif = float(self.tabla.item(r, 3).text())
+                    if dif < 0:
+                        color = "green"
+                    elif dif > 0:
+                        color = "red"
+                    else:
+                        color = "gray"
+                    texto = f"<span style='color:{color};'><b>{texto}</b></span>"
+
+                elif c == 3:  # DIFERENCIA → según signo
+                    dif = float(texto)
+                    if dif < 0:
+                        color = "green"
+                    elif dif > 0:
+                        color = "red"
+                    else:
+                        color = "gray"
+                    texto = f"<span style='color:{color};'><b>{texto}</b></span>"
+
+                elif c == 4:  # PORCENTAJE → según signo
+                    pct = float(texto.replace("%", ""))
+                    if pct < 0:
+                        color = "green"
+                    elif pct > 0:
+                        color = "red"
+                    else:
+                        color = "gray"
+                    texto = f"<span style='color:{color};'><b>{texto}</b></span>"
+
+                cols.append(texto)
+
             filas_html += "<tr>" + "".join(f"<td>{v}</td>" for v in cols) + "</tr>"
 
         tabla_html = (
@@ -430,7 +475,9 @@ class ComparativaOfertas(QWidget):
             + "</table><br>"
         )
 
-        # Detalle de la factura seleccionada
+        # ---------------------------------------------------------
+        # DETALLE ESTILO B COLOREADO
+        # ---------------------------------------------------------
         detalle_html = ""
         fila_sel = self.tabla.currentRow()
         if fila_sel >= 0:
@@ -442,23 +489,50 @@ class ComparativaOfertas(QWidget):
                 if test is None:
                     test = {
                         "potencia": {
-                            "punta": {"kw": 0, "precio": 0, "dias": 0, "importe": 0},
-                            "valle": {"kw": 0, "precio": 0, "dias": 0, "importe": 0},
+                            "punta": {"importe": 0},
+                            "valle": {"importe": 0},
                             "total": 0,
                         },
                         "consumo": {
-                            "punta": {"kwh": 0, "precio": 0, "importe": 0},
-                            "llano": {"kwh": 0, "precio": 0, "importe": 0},
-                            "valle": {"kwh": 0, "precio": 0, "importe": 0},
+                            "punta": {"importe": 0},
+                            "llano": {"importe": 0},
+                            "valle": {"importe": 0},
                             "total": 0,
                         },
                         "excedentes": {
-                            "generados_kwh": 0,
-                            "precio_unitario": 0,
                             "compensados": 0,
                             "sobrante": 0,
                         },
                     }
+
+                def fila_html(nombre, real_val, test_val):
+                    dif = test_val - real_val
+                    pct = (dif / real_val * 100) if real_val != 0 else 0.0
+
+                    # REAL siempre azul
+                    col_real = "blue"
+
+                    # TEST según diferencia
+                    if dif < 0:
+                        col_test = "green"
+                    elif dif > 0:
+                        col_test = "red"
+                    else:
+                        col_test = "gray"
+
+                    # DIF y % mismo color que TEST
+                    col_dif = col_test
+                    col_pct = col_test
+
+                    return f"""
+<tr>
+<td><b>{nombre}</b></td>
+<td><span style='color:{col_real};'><b>{real_val:.2f}</b></span></td>
+<td><span style='color:{col_test};'><b>{test_val:.2f}</b></span></td>
+<td><span style='color:{col_dif};'><b>{dif:.2f}</b></span></td>
+<td><span style='color:{col_pct};'><b>{pct:.2f}%</b></span></td>
+</tr>
+"""
 
                 total_real = (
                     real["potencia"]["total"]
@@ -470,57 +544,25 @@ class ComparativaOfertas(QWidget):
                     + test["consumo"]["total"]
                     + test["excedentes"]["compensados"]
                 )
-                dif = total_test - total_real
-                pct = (dif / total_real * 100) if total_real != 0 else 0.0
 
                 detalle_html = f"""
 <h3>Detalle de energía – factura {nfact}</h3>
 <table border='1' cellspacing='0' cellpadding='3'>
-<tr><th>Concepto</th><th>Real</th><th>Test</th></tr>
+<tr><th>Concepto</th><th>Real</th><th>Test</th><th>Diferencia</th><th>%</th></tr>
 
-<tr><td>Potencia punta</td>
-    <td>{real['potencia']['punta']['kw']} kW / {real['potencia']['punta']['precio']} € / {real['potencia']['punta']['importe']} €</td>
-    <td>{test['potencia']['punta']['kw']} kW / {test['potencia']['punta']['precio']} € / {test['potencia']['punta']['importe']} €</td></tr>
+{fila_html("Potencia punta", real["potencia"]["punta"]["importe"], test["potencia"]["punta"]["importe"])}
+{fila_html("Potencia valle", real["potencia"]["valle"]["importe"], test["potencia"]["valle"]["importe"])}
+{fila_html("Total potencia", real["potencia"]["total"], test["potencia"]["total"])}
 
-<tr><td>Potencia valle</td>
-    <td>{real['potencia']['valle']['kw']} kW / {real['potencia']['valle']['precio']} € / {real['potencia']['valle']['importe']} €</td>
-    <td>{test['potencia']['valle']['kw']} kW / {test['potencia']['valle']['precio']} € / {test['potencia']['valle']['importe']} €</td></tr>
+{fila_html("Consumo punta", real["consumo"]["punta"]["importe"], test["consumo"]["punta"]["importe"])}
+{fila_html("Consumo llano", real["consumo"]["llano"]["importe"], test["consumo"]["llano"]["importe"])}
+{fila_html("Consumo valle", real["consumo"]["valle"]["importe"], test["consumo"]["valle"]["importe"])}
+{fila_html("Total consumo", real["consumo"]["total"], test["consumo"]["total"])}
 
-<tr><td>Consumo punta</td>
-    <td>{real['consumo']['punta']['kwh']} kWh / {real['consumo']['punta']['precio']} € / {real['consumo']['punta']['importe']} €</td>
-    <td>{test['consumo']['punta']['kwh']} kWh / {test['consumo']['punta']['precio']} € / {test['consumo']['punta']['importe']} €</td></tr>
+{fila_html("Excedentes compensados", real["excedentes"]["compensados"], test["excedentes"]["compensados"])}
+{fila_html("Excedentes sobrante", real["excedentes"]["sobrante"], test["excedentes"]["sobrante"])}
 
-<tr><td>Consumo llano</td>
-    <td>{real['consumo']['llano']['kwh']} kWh / {real['consumo']['llano']['precio']} € / {real['consumo']['llano']['importe']} €</td>
-    <td>{test['consumo']['llano']['kwh']} kWh / {test['consumo']['llano']['precio']} € / {test['consumo']['llano']['importe']} €</td></tr>
-
-<tr><td>Consumo valle</td>
-    <td>{real['consumo']['valle']['kwh']} kWh / {real['consumo']['valle']['precio']} € / {real['consumo']['valle']['importe']} €</td>
-    <td>{test['consumo']['valle']['kwh']} kWh / {test['consumo']['valle']['precio']} € / {test['consumo']['valle']['importe']} €</td></tr>
-
-<tr><td>Excedentes generados</td>
-    <td>{real['excedentes']['generados_kwh']} kWh</td>
-    <td>{test['excedentes']['generados_kwh']} kWh</td></tr>
-
-<tr><td>Precio excedentes</td>
-    <td>{real['excedentes']['precio_unitario']} €/kWh</td>
-    <td>{test['excedentes']['precio_unitario']} €/kWh</td></tr>
-
-<tr><td>Compensados</td>
-    <td>{real['excedentes']['compensados']} €</td>
-    <td>{test['excedentes']['compensados']} €</td></tr>
-
-<tr><td>Sobrante</td>
-    <td>{real['excedentes']['sobrante']} €</td>
-    <td>{test['excedentes']['sobrante']} €</td></tr>
-
-<tr><td><b>Total energía</b></td>
-    <td><b>{total_real:.2f} €</b></td>
-    <td><b>{total_test:.2f} €</b></td></tr>
-
-<tr><td><b>Diferencia</b></td>
-    <td></td>
-    <td><b>{self._fmt_diff(dif)} ({self._fmt_pct(pct)})</b></td></tr>
+{fila_html("TOTAL ENERGÍA", total_real, total_test)}
 
 </table>
 """

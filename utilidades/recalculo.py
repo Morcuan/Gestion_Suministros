@@ -23,14 +23,12 @@ from facturas.calculo import (
 
 
 def obtener_facturas_pendientes(cursor):
-    cursor.execute(
-        """
+    cursor.execute("""
         SELECT nfactura
         FROM facturas
         WHERE recalcular = 1
         ORDER BY fec_emision ASC
-        """
-    )
+        """)
     return [row[0] for row in cursor.fetchall()]
 
 
@@ -154,6 +152,7 @@ def recalcular_facturas(conn):
                 aplicado_cloud,
                 nuevo_saldo,
                 detalles_json,
+                datos_base,
             )
 
             # -------------------------------------------------
