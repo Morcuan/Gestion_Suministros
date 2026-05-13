@@ -1,39 +1,70 @@
 #!/usr/bin/env python3
 # -------------------------------------------------------------#
-# Módulo: crear_entorno_interno.py                             #
-# Descripción: Genera tablas y vistas internas para pruebas    #
+# Módulo: crear_entorno_interno.py (versión segura)            #
+# Descripción: Prepara el entorno interno SIN destruir datos   #
 # Autor: Antonio                                               #
-# Fecha: 2026-04-13                                            #
-# Versión: 2.0                                                 #
+# Fecha: 2026-05-13                                            #
+# Versión: 2.2 (vista corregida)                               #
 # -------------------------------------------------------------#
 
 import logging
 
 logger = logging.getLogger(__name__)
 
+TABLAS_TEST = [
+    "facturas_test",
+    "factura_calculos_test",
+    "saldo_cloud_test",
+    "contratos_identificacion_test",
+    "contratos_energia_test",
+    "contratos_gastos_test",
+]
+
+
+def tabla_existe(cursor, nombre):
+    cursor.execute(
+        """
+        SELECT name FROM sqlite_master
+        WHERE type='table' AND name=?;
+    """,
+        (nombre,),
+    )
+    return cursor.fetchone() is not None
+
 
 def crear_entorno_interno(conn):
     cursor = conn.cursor()
+    logger.info("Preparando entorno interno (modo seguro)")
 
-    logger.info("Creando entorno interno")
+    # ---------------------------------------------------------
+    # 1. Verificar que TODAS las tablas test existen
+    # ---------------------------------------------------------
+    tablas_faltantes = []
 
-    tablas = [
-        ("facturas_test", "facturas"),
-        ("factura_calculos_test", "factura_calculos"),
-        ("saldo_cloud_test", "saldo_cloud"),
-    ]
+    for tabla in TABLAS_TEST:
+        if not tabla_existe(cursor, tabla):
+            tablas_faltantes.append(tabla)
 
-    for tabla_test, tabla_real in tablas:
-        logger.debug(f"Creando tabla {tabla_test}")
-        cursor.execute(f"DROP TABLE IF EXISTS {tabla_test};")
-        cursor.execute(f"CREATE TABLE {tabla_test} AS SELECT * FROM {tabla_real};")
+    if tablas_faltantes:
+        logger.warning("⚠️ Las siguientes tablas test NO existen:")
+        for t in tablas_faltantes:
+            logger.warning(f"   - {t}")
 
-    logger.debug("Creando vista v_datos_calculo_test")
+        logger.warning("El entorno interno NO se recrea automáticamente.")
+        logger.warning("Debes ejecutar un proceso de inicialización manual.")
+        conn.commit()
+        return "Entorno interno incompleto (faltan tablas test)"
+
+    logger.info("✔️ Todas las tablas test existen. No se recrean.")
+
+    # ---------------------------------------------------------
+    # 2. Recrear la vista v_datos_calculo_test (seguro y necesario)
+    # ---------------------------------------------------------
+    logger.info("Recreando vista v_datos_calculo_test")
 
     cursor.execute("DROP VIEW IF EXISTS v_datos_calculo_test;")
 
-    cursor.execute(
-        """
+    cursor.execute("""
         CREATE VIEW v_datos_calculo_test AS
             SELECT
                 fa.ncontrato,
@@ -67,15 +98,16 @@ def crear_entorno_interno(conn):
                 cg.i_electrico,
                 cg.iva
             FROM facturas_test fa
-            JOIN contratos_identificacion ci
+            JOIN contratos_identificacion_test ci
                 ON ci.ncontrato = fa.ncontrato
                AND fa.inicio_factura BETWEEN ci.efec_suple AND ci.fin_suple
-            JOIN contratos_energia ce
+            JOIN contratos_energia_test ce
                 ON ce.id_contrato = ci.id_contrato
-            JOIN contratos_gastos cg
+            JOIN contratos_gastos_test cg
                 ON cg.id_contrato = ci.id_contrato;
-        """
-    )
+        """)
 
     conn.commit()
-    logger.info("Entorno interno creado correctamente")
+    logger.info("✔️ Entorno interno preparado correctamente (modo seguro)")
+
+    return "Entorno interno preparado (sin recrear tablas test)"

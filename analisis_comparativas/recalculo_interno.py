@@ -4,8 +4,8 @@
 # Descripción: Recalcula facturas internas usando el motor     #
 #              oficial y guarda resultados en tablas *_test.   #
 # Autor: Antonio (Gestion_Suministros)                         #
-# Fecha: 2026-04-13                                            #
-# Versión: 2.1 (motor oficial)                                 #
+# Fecha: 2026-05-13                                            #
+# Versión: 2.2 (motor oficial + vista test)                    #
 # -------------------------------------------------------------#
 
 import logging
@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------
-# WRAPPER DEL MOTOR OFICIAL
+# WRAPPER DEL MOTOR OFICIAL (CORREGIDO)
 # ---------------------------------------------------------
 def motor_calculo_interno(cursor, nfactura, saldo_actual):
     """
@@ -34,29 +34,38 @@ def motor_calculo_interno(cursor, nfactura, saldo_actual):
     y devuelve un diccionario con la misma estructura que el motor externo.
     """
 
-    # 1) ENERGÍA (devuelve energia_obj y datos_base)
+    # 1) Obtener datos base desde la vista test
+    cursor.execute("SELECT * FROM v_datos_calculo_test WHERE nfactura = ?", (nfactura,))
+    row = cursor.fetchone()
+    if not row:
+        raise ValueError(f"No hay datos en vista test para factura {nfactura}")
+
+    columnas = [d[0] for d in cursor.description]
+    datos = dict(zip(columnas, row))
+
+    # 2) ENERGÍA
     energia, datos = calcular_energia_para_factura(
         cursor,
         nfactura,
-        datos["bono_social"],  # el motor oficial lo pide aquí
+        datos["bono_social"],
     )
 
-    # 2) CARGOS
+    # 3) CARGOS
     cargos = calcular_cargos_para_factura(datos)
 
-    # 3) SERVICIOS
+    # 4) SERVICIOS
     servicios = calcular_servicios_para_factura(datos)
 
-    # 4) IVA
+    # 5) IVA
     iva = calcular_iva_para_factura(energia, cargos, servicios, datos)
 
-    # 5) SALDOS PENDIENTES
+    # 6) SALDOS PENDIENTES
     saldos, total_con_saldos = calcular_saldos_pendientes(
         datos,
         iva.total_con_iva,
     )
 
-    # 6) CLOUD
+    # 7) CLOUD
     total_final, aplicado_cloud, nuevo_saldo = calcular_bono_solar_cloud(
         cursor,
         datos["id_contrato"],
@@ -64,7 +73,7 @@ def motor_calculo_interno(cursor, nfactura, saldo_actual):
         energia.sobrante_excedentes,
     )
 
-    # 7) JSON
+    # 8) JSON
     json_detalles = generar_json_calculo(
         energia,
         cargos,
@@ -93,14 +102,12 @@ def motor_calculo_interno(cursor, nfactura, saldo_actual):
 # FUNCIONES AUXILIARES
 # ---------------------------------------------------------
 def obtener_facturas_pendientes(cursor):
-    cursor.execute(
-        """
+    cursor.execute("""
         SELECT nfactura
         FROM facturas_test
         WHERE recalcular = 1
         ORDER BY fec_emision ASC
-        """
-    )
+        """)
     return [row[0] for row in cursor.fetchall()]
 
 
