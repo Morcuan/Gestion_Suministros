@@ -11,6 +11,7 @@ from PySide6.QtPrintSupport import QPrintDialog, QPrinter
 from PySide6.QtWidgets import (
     QFileDialog,
     QHBoxLayout,
+    QInputDialog,
     QLabel,
     QMainWindow,
     QMessageBox,
@@ -600,14 +601,31 @@ class MainWindow(QMainWindow):
         respuesta = msg.exec()
 
         if respuesta == QMessageBox.Yes:
-            db_init.crear_tablas_y_vistas(self.cursor)
+
+            # ---------------------------------------------------------
+            # 1. Solicitar saldo inicial al usuario
+            # ---------------------------------------------------------
+            saldo, ok = QInputDialog.getDouble(
+                self, "Saldo inicial", "Introduce tu saldo cloud inicial:", decimals=2
+            )
+
+            if not ok:
+                return  # Usuario canceló
+
+            # ---------------------------------------------------------
+            # 2. Inicializar BD con el saldo proporcionado
+            # ---------------------------------------------------------
+            db_init.crear_tablas_y_vistas(self.cursor, saldo)
             self.conn.commit()
 
-            ok = QMessageBox(self)
-            ok.setWindowTitle("BD Inicializada")
-            ok.setIcon(QMessageBox.Information)
-            ok.setText("La base de datos ha sido inicializada correctamente.")
-            ok.exec()
+            # ---------------------------------------------------------
+            # 3. Mensaje final
+            # ---------------------------------------------------------
+            ok_msg = QMessageBox(self)
+            ok_msg.setWindowTitle("BD Inicializada")
+            ok_msg.setIcon(QMessageBox.Information)
+            ok_msg.setText("La base de datos ha sido inicializada correctamente.")
+            ok_msg.exec()
 
     # ---------------------------------------------------------
     # ANULACIÓN
