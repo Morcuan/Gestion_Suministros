@@ -3,8 +3,8 @@
 # Limpieza y reinicialización de la base de datos
 # Gestión Suministros 2.0
 # ------------------------------------------------------------
-# Este módulo NO abre ni cierra la conexión.
-# Recibe un cursor externo desde main_window.
+# Este módulo recibe la CONEXIÓN completa (conn)
+# y crea su propio cursor interno.
 # ------------------------------------------------------------
 
 TABLAS_A_VACIAR = [
@@ -24,14 +24,6 @@ TABLAS_A_VACIAR = [
     "saldo_cloud_test",
 ]
 
-TABLAS_PROTEGIDAS = [
-    "cpostales",
-    "saldo_cloud_inicial_test",
-    "sqlite_sequence",
-    "version_motor",
-    "version_motor_test",
-]
-
 
 def limpiar_tablas(cursor):
     for tabla in TABLAS_A_VACIAR:
@@ -43,12 +35,9 @@ def limpiar_tablas(cursor):
 
 
 def reiniciar_secuencias(cursor):
-    """
-    Reinicia todas las secuencias y fija contratos_identificacion_test = 900000.
-    """
     try:
         cursor.execute("DELETE FROM sqlite_sequence;")
-        print("✔ Secuencias reiniciadas (sqlite_sequence)")
+        print("✔ Secuencias reiniciadas")
 
         cursor.execute("""
             INSERT INTO sqlite_sequence (name, seq)
@@ -86,11 +75,15 @@ def inicializar_saldos(cursor, saldo_inicial):
         print(f"⚠ Error inicializando saldo_cloud_inicial_test: {e}")
 
 
-def ejecutar_limpieza(cursor, saldo_inicial):
+def ejecutar_limpieza(conn, saldo_inicial):
     print("=== INICIO LIMPIEZA BD ===")
+
+    cursor = conn.cursor()
 
     limpiar_tablas(cursor)
     reiniciar_secuencias(cursor)
     inicializar_saldos(cursor, saldo_inicial)
+
+    conn.commit()
 
     print("=== LIMPIEZA COMPLETADA ===")

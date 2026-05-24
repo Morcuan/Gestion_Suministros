@@ -29,6 +29,7 @@ from contratos.nuevo_contrato import NuevoContrato
 from estilo import PALETAS, aplicar_estilo_boton, aplicar_estilo_panel_lateral
 from facturas.lista_contratos_factura import ListaContratosFactura
 from facturas.recalculo_test import recalcular_facturas_test
+from utilidades import db_init
 from utilidades.estadisticas_mensuales import (
     CapturaEstadisticasMensuales,
     ConsultaEstadisticasMensuales,
@@ -615,7 +616,7 @@ class MainWindow(QMainWindow):
             # ---------------------------------------------------------
             # 2. Inicializar BD con el saldo proporcionado
             # ---------------------------------------------------------
-            db_init.crear_tablas_y_vistas(self.cursor, saldo)
+            db_init.ejecutar_limpieza(self.conn, saldo)
             self.conn.commit()
 
             # ---------------------------------------------------------
