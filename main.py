@@ -6,6 +6,7 @@
 # Fecha: 2026-02-09                                 #
 # --------------------------------------------------#
 
+import os
 import sqlite3
 import sys
 
@@ -13,7 +14,9 @@ from PySide6.QtWidgets import QApplication
 
 from main_window import MainWindow
 
-DB_PATH = "data/almacen.db"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, "data", "almacen.db")
+DB_PATH = os.path.abspath(DB_PATH)
 
 
 def main():
