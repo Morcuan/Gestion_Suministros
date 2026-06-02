@@ -2,26 +2,22 @@
     // ============================
     //   PYTHON / INTERPRETADOR
     // ============================
-    "python.defaultInterpreterPath": "venv/bin/python",
+    "python.defaultInterpreterPath": "/home/antonio/Desarrollo/Gestion_Suministros/venv/bin/python",
 
     // ============================
     //   FORMATEO (BLACK)
     // ============================
     "editor.defaultFormatter": "ms-python.black-formatter",
     "editor.formatOnSave": true,
-    "black-formatter.args": [
-        "--line-length=88"
-    ],
+    "black-formatter.args": ["--line-length=88"],
 
     // ============================
     //   RUFF (LINTER + IMPORTS)
     // ============================
-    "ruff.path": ["venv/bin/ruff"],
     "ruff.enable": true,
     "ruff.lint.enable": true,
     "ruff.lint.select": ["E", "F", "W", "I"],
     "ruff.lint.ignore": ["E501"],
-    "ruff.format.enable": false,
     "ruff.organizeImports": true,
 
     // ============================
@@ -30,20 +26,6 @@
     "python.analysis.typeCheckingMode": "basic",
     "python.analysis.autoImportCompletions": true,
     "python.analysis.useLibraryCodeForTypes": true,
-
-    // 🔧 Desactivar diagnósticos molestos
-    "python.analysis.diagnosticSeverityOverrides": {
-        "reportOptionalMemberAccess": "none",
-        "reportOptionalCall": "none",
-        "reportUnknownMemberType": "none",
-        "reportUnknownArgumentType": "none",
-        "reportUnknownVariableType": "none",
-        "reportMissingModuleSource": "none",
-        "reportAttributeAccessIssue": "none",
-        "reportGeneralTypeIssues": "none",
-        "reportOptionalIterable": "none",
-        "reportOptionalSubscript": "none"
-    },
 
     // ============================
     //   EDITOR
@@ -55,6 +37,8 @@
     "editor.detectIndentation": false,
     "editor.guides.bracketPairs": true,
     "editor.inlineSuggest.enabled": true,
+    "editor.formatOnPaste": true,
+    "editor.formatOnType": true,
 
     // ============================
     //   ARCHIVOS
@@ -65,7 +49,7 @@
     // ============================
     //   TERMINAL
     // ============================
-    "terminal.integrated.fontSize": 14,
+    "terminal.integrated.fontSize": 16,
 
     // ============================
     //   ICONOS / UI
@@ -85,7 +69,5 @@
     //   EXPLORADOR
     // ============================
     "explorer.compactFolders": false,
-    "explorer.confirmDelete": false,
-    "editor.formatOnPaste": true,
-    "editor.formatOnType": true
+    "explorer.confirmDelete": false
 }
