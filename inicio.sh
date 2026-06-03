@@ -41,12 +41,12 @@ echo "🟢 Backup creado temporalmente en: $TMP_BACKUP"
 #   💽 COPIA AL DISCO USB
 # ============================
 
-DESTINO="/run/media/antoniom/ALMACEN/Proyecto_20"
+DESTINO="/media/almacen/Proyecto_20"
 
-if mount | grep -q "/run/media/antoniom/ALMACEN"; then
+if mount | grep -q "/media/almacen"; then
     echo "💽 Disco USB detectado."
 else
-    echo "⚠️ No se detecta el disco USB montado en /run/media/antoniom/ALMACEN"
+    echo "⚠️ No se detecta el disco USB montado en /media/almacen"
     echo "⏳ Esperando 3 segundos..."
     sleep 3
 fi

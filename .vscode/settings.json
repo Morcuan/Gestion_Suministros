@@ -49,7 +49,7 @@
     // ============================
     //   TERMINAL
     // ============================
-    "terminal.integrated.fontSize": 16,
+    "terminal.integrated.fontSize": 14,
 
     // ============================
     //   ICONOS / UI
