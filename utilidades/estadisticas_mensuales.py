@@ -5,6 +5,7 @@
 # Fecha: 2026-03-18                               #
 # ------------------------------------------------#
 
+import calendar  # Para calcular el último día del mes de forma exacta
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QComboBox,
@@ -50,23 +51,22 @@ MESES = [
 
 
 def calcular_fechas_inicio_fin(anio: int, mes_num: int):
-    if mes_num == 12:
-        anio_fin = anio + 1
-        mes_fin = 1
-    else:
-        anio_fin = anio
-        mes_fin = mes_num + 1
-
+    # El primer día siempre es el 01
     fecha_inicio = f"{anio:04d}-{mes_num:02d}-01"
-    fecha_fin = f"{anio_fin:04d}-{mes_fin:02d}-01"
+
+    # calendar.monthrange devuelve una tupla (dia_semana, cantidad_dias)
+    _, ultimo_dia = calendar.monthrange(anio, mes_num)
+    fecha_fin = f"{anio:04d}-{mes_num:02d}-{ultimo_dia:02d}"
+
     return fecha_inicio, fecha_fin
 
 
-def existe_mes_registrado(cursor, anio: int, mes_num: int) -> bool:
+def existe_mes_registrado(cursor, anio: int, mes_num: int, fuente: str) -> bool:
     fecha_inicio, _ = calcular_fechas_inicio_fin(anio, mes_num)
+    # Ahora validamos tanto la fecha de inicio como la fuente de procedencia
     cursor.execute(
-        "SELECT COUNT(*) FROM estadisticas_mensuales WHERE fecha_inicio = ?",
-        (fecha_inicio,),
+        "SELECT COUNT(*) FROM estadisticas_mensuales WHERE fecha_inicio = ? AND fuente = ?",
+        (fecha_inicio, fuente),
     )
     return cursor.fetchone()[0] > 0
 
@@ -114,7 +114,6 @@ class DetalleEstadistica(QWidget):
         btn_cerrar.clicked.connect(self.volver_inicio)
         layout.addWidget(btn_cerrar, alignment=Qt.AlignRight)
 
-    # Obtener MainWindow real
     def get_main_window(self):
         w = self
         while w is not None:
@@ -161,8 +160,10 @@ class CapturaEstadisticasMensuales(QWidget):
         self.txt_consumo = QLineEdit()
         self.txt_excedentes = QLineEdit()
         self.txt_comprado = QLineEdit()
+
+        # Modificado: Ahora los orígenes son "Factura" y "App"
         self.cmb_fuente = QComboBox()
-        self.cmb_fuente.addItems(["manual", "app"])
+        self.cmb_fuente.addItems(["Factura", "App"])
 
         grid.addWidget(QLabel("Mes:"), 0, 0, alignment=Qt.AlignRight)
         grid.addWidget(self.cmb_mes, 0, 1)
@@ -209,7 +210,16 @@ class CapturaEstadisticasMensuales(QWidget):
 
         layout.addLayout(botones)
 
-    # Obtener MainWindow real
+        # ---------------------------------------------------------
+        # AUTOMATIZACIÓN DEL FLUJO (Saltos de foco automáticos)
+        # ---------------------------------------------------------
+        self.cmb_mes.currentIndexChanged.connect(lambda: self.txt_anio.setFocus())
+        self.txt_anio.editingFinished.connect(lambda: self.txt_produccion.setFocus() if self.txt_anio.text() else None)
+        self.txt_produccion.editingFinished.connect(lambda: self.txt_consumo.setFocus() if self.txt_produccion.text() else None)
+        self.txt_consumo.editingFinished.connect(lambda: self.txt_excedentes.setFocus() if self.txt_consumo.text() else None)
+        self.txt_excedentes.editingFinished.connect(lambda: self.txt_comprado.setFocus() if self.txt_excedentes.text() else None)
+        self.txt_comprado.editingFinished.connect(lambda: self.cmb_fuente.setFocus() if self.txt_comprado.text() else None)
+
     def get_main_window(self):
         w = self
         while w is not None:
@@ -271,24 +281,27 @@ class CapturaEstadisticasMensuales(QWidget):
         except Exception:
             return
 
-        if existe_mes_registrado(self.cursor, anio, mes_num):
+        fuente = self.cmb_fuente.currentText().strip() or "Factura"
+
+        # Modificado: La comprobación de duplicados ahora incluye la procedencia/fuente
+        if existe_mes_registrado(self.cursor, anio, mes_num, fuente):
             resp = QMessageBox.question(
                 self,
                 "Confirmar",
-                "Ya existe un registro para ese mes y año.\n¿Desea sobrescribirlo?",
+                f"Ya existe un registro de tipo '{fuente}' para ese mes y año.\n¿Desea sobrescribirlo?",
                 QMessageBox.Yes | QMessageBox.No,
             )
             if resp != QMessageBox.Yes:
                 return
             fecha_inicio_existente, _ = calcular_fechas_inicio_fin(anio, mes_num)
+            # Modificado: Se borra únicamente el registro que coincide en fecha y fuente
             self.cursor.execute(
-                "DELETE FROM estadisticas_mensuales WHERE fecha_inicio = ?",
-                (fecha_inicio_existente,),
+                "DELETE FROM estadisticas_mensuales WHERE fecha_inicio = ? AND fuente = ?",
+                (fecha_inicio_existente, fuente),
             )
             self.conn.commit()
 
         fecha_inicio, fecha_fin = calcular_fechas_inicio_fin(anio, mes_num)
-        fuente = self.cmb_fuente.currentText().strip() or "manual"
 
         self.cursor.execute(
             """
@@ -321,7 +334,7 @@ class ConsultaEstadisticasMensuales(QWidget):
     def __init__(self, parent, conn, cursor=None):
         super().__init__(parent)
         self.conn = conn
-        self.cursor = conn.cursor()  # ← SIEMPRE CORRECTO
+        self.cursor = conn.cursor()
 
         self.setObjectName("ConsultaEstadisticasMensuales")
 
@@ -387,7 +400,6 @@ class ConsultaEstadisticasMensuales(QWidget):
 
         layout.addLayout(botones)
 
-    # Obtener MainWindow real
     def get_main_window(self):
         w = self
         while w is not None:
@@ -412,6 +424,7 @@ class ConsultaEstadisticasMensuales(QWidget):
     def cargar_datos(self):
         self.tabla.setRowCount(0)
         anio = self.cmb_anio.currentText().strip()
+
         if not anio:
             return
 
@@ -420,7 +433,7 @@ class ConsultaEstadisticasMensuales(QWidget):
             SELECT id, fecha_inicio, produccion, consumo, excedentes, comprado, fuente
             FROM estadisticas_mensuales
             WHERE substr(fecha_inicio,1,4) = ?
-            ORDER BY fecha_inicio ASC
+            ORDER BY fecha_inicio ASC, fuente ASC
             """,
             (anio,),
         )
@@ -468,7 +481,7 @@ class ConsultaEstadisticasMensuales(QWidget):
         detalle = DetalleEstadistica(self.parent(), registro)
         mw = self.get_main_window()
         if mw:
-            mw.cargar_modulo(detalle, "Detalle estadística mensual")
+            mw.cargar_modulo(detalle, "Detail estadística mensual")
 
     def eliminar(self):
         id_sel = self.obtener_id_seleccionado()

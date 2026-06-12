@@ -77,7 +77,9 @@ fi
 
 # 2) Commit si hay algo en staging
 if [ $HAY_CAMBIOS_STAGING -eq 1 ]; then
-    COMMIT_MSG="Nivelaccion manual: Nivelacion manual: Correccion copia de seguridad en inicio.sh. $(date '+%Y-%m-%d %H:%M')"
+    COMMIT_MSG="Nivelaccion manual: Nivelacion manual: Correccion del modulo de estadisticas_mensuales para que
+    la tabla acepte dos registros del mismo mes y distinto origen. Modificacion para corregir la fecha final
+    ya que estaba yendo al primer dia del mes siguiente. Se modifican los origenes a Factura y App. $(date '+%Y-%m-%d %H:%M')"
     echo "💾 Realizando commit: $COMMIT_MSG"
     git commit -m "$COMMIT_MSG" || {
         echo "❌ Error realizando el commit."
