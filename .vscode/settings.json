@@ -2,7 +2,7 @@
     // ============================
     //   PYTHON / INTERPRETADOR
     // ============================
-    "python.defaultInterpreterPath": "/home/antonio/Desarrollo/Gestion_Suministros/venv/bin/python",
+    "python.defaultInterpreterPath": "/home/antoniom/Entornos/gestion_suministros/bin/python",
 
     // ============================
     //   FORMATEO (BLACK)
