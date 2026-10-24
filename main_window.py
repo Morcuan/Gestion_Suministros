@@ -23,6 +23,9 @@ from PySide6.QtWidgets import (
 
 from analisis_comparativas.informe_interno import generar_html_comparativa_interna
 from analisis_contrato.lista_contratos_historico import ListaContratosHistorico
+from analisis_contrato.lista_contratos_precios import (
+    ListaContratosPrecios,
+)
 from analisis_factura.lista_con_his_factura import ListaConHisFactura
 from contratos.lista_contratos import ListaContratos
 from contratos.nuevo_contrato import NuevoContrato
@@ -171,22 +174,43 @@ class MainWindow(QMainWindow):
             )
         )
 
-        # Consultas
+        # ---------------------------------------------------------
+        # ANÁLISIS → CONTRATOS
+        # ---------------------------------------------------------
         layout.addWidget(
             self.crear_seccion_acordeon(
-                "📊 Consulta y Análisis",
+                "📊 Análisis → Contratos",
                 [
                     (
                         "🔎 Histórico de contratos",
                         lambda: self.cargar_modulo(
-                            ListaContratosHistorico(parent=self, conn=self.conn),
+                            ListaContratosHistorico(
+                                parent=self,
+                                conn=self.conn
+                            ),
                             "Histórico de contratos",
                         ),
                     ),
                     (
+                        "📈 Ev. histórica de precios",
+                        self.abrir_historico_precios,
+                    ),
+                ],
+            )
+        )
+
+        # ---------------------------------------------------------
+        # ANÁLISIS → FACTURAS
+        # ---------------------------------------------------------
+        layout.addWidget(
+            self.crear_seccion_acordeon(
+                "💡 Análisis → Facturas",
+                [
+                    (
                         "🔎 Histórico de facturas",
                         lambda: self.cargar_modulo(
-                            ListaConHisFactura(parent=self), "Histórico de facturas"
+                            ListaConHisFactura(parent=self),
+                            "Histórico de facturas",
                         ),
                     ),
                 ],
@@ -397,6 +421,21 @@ class MainWindow(QMainWindow):
         scroll.setWidget(contenedor)
         self.zona_contenido_layout.addWidget(scroll)
 
+    # ---------------------------------------------------------
+    # EVOLUCIÓN HISTÓRICA DE PRECIOS
+    # ---------------------------------------------------------
+    def abrir_historico_precios(self):
+
+        from analisis_contrato.lista_contratos_precios import (
+            ListaContratosPrecios,
+        )
+
+        widget = ListaContratosPrecios(parent=self)
+
+        self.cargar_modulo(
+            widget,
+            "Evolución histórica de precios",
+        )
     # ---------------------------------------------------------
     # MÉTODOS DE COMPARATIVAS
     # ---------------------------------------------------------

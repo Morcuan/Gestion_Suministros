@@ -26,7 +26,7 @@ NOMBRE="Gestion_Suministros_${FECHA}.tar.gz"
 # Crear backup SIEMPRE fuera del proyecto para evitar errores de tar
 TMP_BACKUP="/tmp/$NOMBRE"
 
-tar --exclude="venv" \
+tar --exclude="venv_antiguo" \
     --exclude="*/__pycache__" \
     -czf "$TMP_BACKUP" .
 
@@ -99,7 +99,7 @@ git status
 #   🐍 ACTIVAR ENTORNO VIRTUAL
 # ============================
 
-VENV_PATH="$PROYECTO/venv/bin/activate"
+VENV_PATH="/home/antoniom/Entornos/gestion_suministros/bin/python"
 
 if [[ -z "$VIRTUAL_ENV" ]]; then
     if [ -f "$VENV_PATH" ]; then
