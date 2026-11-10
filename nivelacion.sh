@@ -9,7 +9,7 @@
 echo "📁 Nivelando proyecto Gestion_Suministros"
 
 # Ir al proyecto
-cd ~/Desarrollo/Gestion_Suministros || {
+cd ~/Proyectos/Gestion_Suministros || {
     echo "❌ No se pudo acceder al directorio del proyecto."
     exit 1
 }
