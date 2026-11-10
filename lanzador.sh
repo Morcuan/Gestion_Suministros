@@ -12,7 +12,7 @@
 set -euo pipefail
 
 # Ruta del entorno virtual (CORREGIDO)
-VENV_DIR="$HOME/Entornos/gestion_suministros"
+VENV_DIR="$HOME/Entornos/venv_general"
 
 # Comprobación: ¿estamos en el proyecto correcto?
 if [[ ! -f "main.py" ]]; then

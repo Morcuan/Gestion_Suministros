@@ -18,9 +18,9 @@ cd ~/Proyectos/Gestion_Suministros || {
 if ! git config user.name >/dev/null 2>&1 || ! git config user.email >/dev/null 2>&1; then
     echo "⚠️ Git no tiene configurado nombre o correo."
     echo "🛠️ Configurando identidad global..."
-    git config --global user.name "Antonio"
-    git config --global user.email "antonio@pepino.local"
-    echo "✅ Identidad configurada: Antonio <antonio@pepino.local>"
+    git config --global user.name "Morcuan"
+    git config --global user.email "morcuan59@icloud.com"
+    echo "✅ Identidad configurada: Morcuan <morcuan59@icloud.com>"
 else
     echo "🧾 Identidad Git detectada:"
     echo "   Nombre: $(git config user.name)"

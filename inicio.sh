@@ -8,7 +8,7 @@ echo "📁 Proyecto: Gestion_Suministros"
 #   📌 IR AL DIRECTORIO DEL PROYECTO
 # ============================
 
-PROYECTO="$HOME/Desarrollo/Gestion_Suministros"
+PROYECTO="$HOME/Proyectos/Gestion_Suministros"
 cd "$PROYECTO" || {
     echo "❌ No se pudo acceder al directorio del proyecto."
     return
@@ -43,10 +43,10 @@ echo "🟢 Backup creado temporalmente en: $TMP_BACKUP"
 
 DESTINO="/media/almacen/Proyecto_20"
 
-if mount | grep -q "/media/almacen"; then
+if mount | grep -q "/run/media/antonio/ALMACEN"; then
     echo "💽 Disco USB detectado."
 else
-    echo "⚠️ No se detecta el disco USB montado en /media/almacen"
+    echo "⚠️ No se detecta el disco USB montado en /run/media/antonio/ALMACEN"
     echo "⏳ Esperando 3 segundos..."
     sleep 3
 fi
@@ -99,7 +99,7 @@ git status
 #   🐍 ACTIVAR ENTORNO VIRTUAL
 # ============================
 
-VENV_PATH="/home/antoniom/Entornos/gestion_suministros/bin/python"
+VENV_PATH="/home/antoniom/Entornos/venv_general/bin/python"
 
 if [[ -z "$VIRTUAL_ENV" ]]; then
     if [ -f "$VENV_PATH" ]; then
