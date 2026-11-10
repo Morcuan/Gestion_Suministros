@@ -99,7 +99,7 @@ git status
 #   🐍 ACTIVAR ENTORNO VIRTUAL
 # ============================
 
-VENV_PATH="/home/antoniom/Entornos/venv_general/bin/python"
+VENV_PATH="$HOME/Entornos/venv_general/bin/activate"
 
 if [[ -z "$VIRTUAL_ENV" ]]; then
     if [ -f "$VENV_PATH" ]; then
