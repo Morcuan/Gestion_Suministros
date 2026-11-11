@@ -17,7 +17,7 @@ VENV_DIR="$HOME/Entornos/venv_general"
 # Comprobación: ¿estamos en el proyecto correcto?
 if [[ ! -f "main.py" ]]; then
   echo "ERROR: No se encuentra main.py en el directorio actual."
-  echo "Asegúrate de estar en ~/Desarrollo/Gestion_Suministros"
+  echo "Asegúrate de estar en ~/Proyectos/Gestion_Suministros"
   exit 1
 fi
 
@@ -33,6 +33,10 @@ echo "🟢 Activando entorno virtual..."
 source "$VENV_DIR/bin/activate"
 
 echo "🐍 Python activo: $(which python)"
+
+
+# Evitar incompatibilidad de esquemas de GNOME con PySide6 de PyPI
+export QT_QPA_PLATFORM=xcb
 
 echo "🚀 Lanzando Gestion_Suministros..."
 exec python3 main.py
