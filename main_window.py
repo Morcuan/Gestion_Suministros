@@ -184,16 +184,17 @@ class MainWindow(QMainWindow):
                     (
                         "🔎 Histórico de contratos",
                         lambda: self.cargar_modulo(
-                            ListaContratosHistorico(
-                                parent=self,
-                                conn=self.conn
-                            ),
+                            ListaContratosHistorico(parent=self, conn=self.conn),
                             "Histórico de contratos",
                         ),
                     ),
                     (
                         "📈 Ev. histórica de precios",
                         self.abrir_historico_precios,
+                    ),
+                    (
+                        "📊 Gráfico de consumos",  # <-- Nueva opción añadida aquí
+                        self.abrir_grafico_consumos,
                     ),
                 ],
             )
@@ -426,16 +427,54 @@ class MainWindow(QMainWindow):
     # ---------------------------------------------------------
     def abrir_historico_precios(self):
 
-        from analisis_contrato.lista_contratos_precios import (
-            ListaContratosPrecios,
-        )
-
         widget = ListaContratosPrecios(parent=self)
 
         self.cargar_modulo(
             widget,
             "Evolución histórica de precios",
         )
+
+    # ---------------------------------------------------------
+    # HISTORICO DE CONSUMOS EN FACTURA
+    # ----------------------------------------------------------
+    def abrir_grafico_consumos(self):
+        """Abre el selector de contratos y muestra el gráfico de consumos en el contenedor."""
+        try:
+            cursor = self.conn.cursor()
+            # Obtenemos la lista de contratos disponibles en la BD
+            cursor.execute("SELECT DISTINCT ncontrato FROM contratos_identificacion")
+            rows = cursor.fetchall()
+            contratos = [str(row[0]) for row in rows]
+
+            if not contratos:
+                QMessageBox.warning(
+                    self,
+                    "Sin contratos",
+                    "No se encontraron contratos registrados en la base de datos.",
+                )
+                return
+
+            # Mostrar diálogo de selección previa
+            from analisis_consumos.grafico_consumos import (
+                DialogoSeleccionContrato,
+                WidgetGraficoConsumos,
+            )
+
+            dialogo = DialogoSeleccionContrato(contratos, self)
+            if dialogo.exec():
+                contrato_elegido = dialogo.obtener_contrato_seleccionado()
+
+                # Cargar el widget del gráfico en el contenedor general utilizando cargar_modulo
+                widget_grafico = WidgetGraficoConsumos(
+                    self.conn, contrato_elegido, parent=self
+                )
+                self.cargar_modulo(widget_grafico, "Gráfico de Consumos")
+
+        except Exception as e:
+            QMessageBox.critical(
+                self, "Error", f"No se pudo cargar el gráfico de consumos:\n{e}"
+            )
+
     # ---------------------------------------------------------
     # MÉTODOS DE COMPARATIVAS
     # ---------------------------------------------------------

@@ -77,8 +77,13 @@ fi
 
 # 2) Commit si hay algo en staging
 if [ $HAY_CAMBIOS_STAGING -eq 1 ]; then
-    COMMIT_MSG="Nivelaccion manual: Terminado el modulo analisis historico de precios por suplemento
-    y formateado con colores en los valores. $(date '+%Y-%m-%d %H:%M')"
+    COMMIT_MSG="Nivelaccion manual: Terminado el modulo analisis_consumos asi como la
+        representacion del grafico. Modificados main_window.py para añadir opcion al menu
+        y modificado main.py por recolocacion de la bd. En este modulo se habilita
+        la inteligencia para distinguir entre los entornos de desarrollo y produccion
+        a la hora de elegir la bd. La bd de real se mueve al directorio
+        ~/.local/share/gestion_suministros para evitar que al compilar un .deb la bd de
+        produccion se vea alterada con la bd de desarrollo. $(date '+%Y-%m-%d %H:%M')"
     echo "💾 Realizando commit: $COMMIT_MSG"
     git commit -m "$COMMIT_MSG" || {
         echo "❌ Error realizando el commit."
